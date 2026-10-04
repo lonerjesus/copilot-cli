@@ -1,17 +1,17 @@
 /**
- * Cosmogram for DOB 04/05/1987 — exact as provided.
- * Positive, pro-Black, sovereign tone only. No third-party attributions.
+ * Public cosmogram chart — house identity only.
+ * Legal / birth-certificate name is intentionally NOT exposed here.
+ * Exact DOB used only for chart math (sun / life path); not shown as a DOB line.
  */
-export const BIRTH = {
-  name: "Kendrick Tirrell Herring",
+export const COSMO_PUBLIC = {
+  /** Creative / house name shown on the chart */
+  name: "Kendrick-Kamau Negasi",
   alsoKnownAs: [
-    "Kendrick-Kamau Negasi",
     "Kamau Salaam Nasser",
     "Streetpolitik",
     "357Itsumi",
+    "30over9",
   ] as const,
-  dob: "04/05/1987",
-  dobIso: "1987-04-05",
   sunSign: "Aries",
   lifePath: 7,
   birthdayNumber: 5,
@@ -20,7 +20,7 @@ export const BIRTH = {
 export const COSMOGRAM = {
   title: "COSMOGRAM · SIGNAL CHART",
   blurb:
-    "Born 04/05/1987 under Aries fire with Life Path 7 and Birthday 5 — sharp intuition paired with fearless motion. Sovereignty, communal love, and creative Black futurism without apology.",
+    "Aries fire with Life Path 7 and Birthday 5 — sharp intuition paired with fearless motion. Sovereignty, communal love, and creative Black futurism without apology.",
   pillars: [
     {
       label: "Aries Fire",
@@ -35,7 +35,7 @@ export const COSMOGRAM = {
       line: "Freedom as form — movement, remix, and magnetic range that keeps the culture in motion.",
     },
     {
-      label: "April 5 Day Vibe",
+      label: "Day Vibe",
       line: "Curiosity with backbone: adaptable excellence rooted in community and joy.",
     },
   ],

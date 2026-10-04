@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { ALIASES, PLATFORMS, PRIMARY_NAME } from "@/data/identity";
 
-const KIND_ORDER = ["legal", "entity", "artist", "brand", "project", "handle"] as const;
+const KIND_ORDER = ["entity", "artist", "brand", "project", "handle"] as const;
 
 export function AliasMatrix() {
   const groups = useMemo(() => {

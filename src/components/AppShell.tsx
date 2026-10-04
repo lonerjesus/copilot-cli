@@ -19,7 +19,7 @@ import { AuthProvider, useAuth } from "@/components/AuthContext";
 import { DonatePanel } from "@/components/DonatePanel";
 import { SaveGuard } from "@/components/SaveGuard";
 import type { FootprintItem } from "@/lib/feed";
-import { BIRTH_NAME, SITE } from "@/data/identity";
+import { PRIMARY_NAME, SITE } from "@/data/identity";
 import { findCategoryByQuery, type CategoryId, type SubcategoryId } from "@/data/taxonomy";
 
 function ShellInner({ footprint }: { footprint: FootprintItem[] }) {
@@ -134,7 +134,7 @@ function ShellInner({ footprint }: { footprint: FootprintItem[] }) {
 
         <footer className="footer">
           <p>
-            © {new Date().getFullYear()} {BIRTH_NAME} · Kendrick-Kamau Negasi LLC · BLKDTY Music
+            © {new Date().getFullYear()} {PRIMARY_NAME} · Kendrick-Kamau Negasi LLC · BLKDTY Music
             LLC · All rights reserved.
           </p>
           <p className="footer__note">

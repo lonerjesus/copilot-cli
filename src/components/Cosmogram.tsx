@@ -1,9 +1,13 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { BIRTH, COSMOGRAM } from "@/data/cosmogram";
+import { COSMO_PUBLIC, COSMOGRAM } from "@/data/cosmogram";
 import { track } from "@/lib/analytics";
 
+/**
+ * Public chart only — no legal / birth-certificate name, no DOB string.
+ * House names + sun / life-path / birthday numbers.
+ */
 export function CosmogramPanel() {
   const seen = useRef(false);
 
@@ -35,24 +39,21 @@ export function CosmogramPanel() {
 
       <div className="cosmo-hero">
         <div>
-          <p className="cosmo-hero__name">{BIRTH.name}</p>
-          <p className="cosmo-hero__aka">
-            {BIRTH.alsoKnownAs.map((n) => n).join(" · ")}
-          </p>
-          <p className="cosmo-hero__dob">DOB {BIRTH.dob}</p>
+          <p className="cosmo-hero__name">{COSMO_PUBLIC.name}</p>
+          <p className="cosmo-hero__aka">{COSMO_PUBLIC.alsoKnownAs.join(" · ")}</p>
         </div>
         <div className="cosmo-hero__glyphs" aria-label="Core numbers">
           <div>
             <span>SUN</span>
-            <strong>{BIRTH.sunSign}</strong>
+            <strong>{COSMO_PUBLIC.sunSign}</strong>
           </div>
           <div>
             <span>LIFE PATH</span>
-            <strong>{BIRTH.lifePath}</strong>
+            <strong>{COSMO_PUBLIC.lifePath}</strong>
           </div>
           <div>
             <span>BIRTHDAY</span>
-            <strong>{BIRTH.birthdayNumber}</strong>
+            <strong>{COSMO_PUBLIC.birthdayNumber}</strong>
           </div>
         </div>
       </div>
