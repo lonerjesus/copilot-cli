@@ -32,6 +32,13 @@ export async function POST(request: NextRequest) {
     if (err instanceof AuthStoreUnavailableError) {
       return jsonError(err.message, 503);
     }
-    throw err;
+    const message = err instanceof Error ? err.message : "Login failed";
+    if (/is not a function|Cannot read|undefined/i.test(message)) {
+      return jsonError(
+        "Auth store misconfigured — bind AUTH_KV as a KV Namespace (not a Variable), then redeploy",
+        503,
+      );
+    }
+    return jsonError(message, 500);
   }
 }

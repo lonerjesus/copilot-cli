@@ -48,7 +48,14 @@ export async function POST(request: NextRequest) {
       return jsonError(err.message, 503);
     }
     const message = err instanceof Error ? err.message : "Registration failed";
-    const status = message.includes("already exists") ? 409 : 400;
-    return jsonError(message, status);
+    if (message.includes("already exists")) return jsonError(message, 409);
+    // Hide minified runtime noise (e.g. "e2.get is not a function") from clients.
+    if (/is not a function|Cannot read|undefined/i.test(message)) {
+      return jsonError(
+        "Auth store misconfigured — bind AUTH_KV as a KV Namespace (not a Variable), then redeploy",
+        503,
+      );
+    }
+    return jsonError(message, 400);
   }
 }

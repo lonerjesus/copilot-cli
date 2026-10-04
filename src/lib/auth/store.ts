@@ -66,13 +66,29 @@ function allowMemoryFallback(): boolean {
   );
 }
 
+function isAuthKv(value: unknown): value is AuthKv {
+  return (
+    !!value &&
+    typeof value === "object" &&
+    typeof (value as AuthKv).get === "function" &&
+    typeof (value as AuthKv).put === "function"
+  );
+}
+
 async function getAuthKv(): Promise<AuthKv | null> {
   try {
     const { getCloudflareContext } = await import("@opennextjs/cloudflare");
     const ctx = await getCloudflareContext({ async: true });
-    const kv = (ctx.env as { AUTH_KV?: AuthKv }).AUTH_KV;
-    return kv ?? null;
-  } catch {
+    const raw = (ctx.env as { AUTH_KV?: unknown }).AUTH_KV;
+    // Dashboard Variables named AUTH_KV are strings — not a KV binding.
+    if (raw != null && !isAuthKv(raw)) {
+      throw new AuthStoreUnavailableError(
+        "AUTH_KV is not a KV Namespace binding (delete any Variable named AUTH_KV; add Bindings → KV Namespace → variable name AUTH_KV)",
+      );
+    }
+    return raw ?? null;
+  } catch (err) {
+    if (err instanceof AuthStoreUnavailableError) throw err;
     return null;
   }
 }
