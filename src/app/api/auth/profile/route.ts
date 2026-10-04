@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { isAdminEmail } from "@/lib/admin";
 import {
   AuthStoreUnavailableError,
   publicUser,
@@ -24,7 +25,7 @@ export async function PATCH(request: NextRequest) {
     const user = await updateUserBirthDate(session.id, body.birthDate);
     if (!user) return jsonError("User not found", 404);
     return NextResponse.json(
-      { user: publicUser(user) },
+      { user: publicUser(user, { isAdmin: isAdminEmail(user.email) }) },
       { headers: { "Cache-Control": "no-store" } },
     );
   } catch (err) {

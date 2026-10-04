@@ -1,10 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { CATALOG, isPaywalled } from "@/data/catalog";
+import { isPaywalled } from "@/data/catalog";
 import { getMagazineByCatalogId } from "@/data/magazine";
 import { contentPriceCents, formatUsd } from "@/data/commerce";
 import { getSessionUserFromRequest } from "@/lib/auth/session";
 import { jsonError } from "@/lib/commerce/checkout";
 import { signPayload } from "@/lib/auth/crypto";
+import { getLiveItem } from "@/lib/live-catalog";
 
 /**
  * Download / save:
@@ -18,7 +19,7 @@ export async function GET(request: NextRequest) {
   const catalogId = request.nextUrl.searchParams.get("id")?.trim();
   if (!catalogId) return jsonError("id required", 400);
 
-  const item = CATALOG.find((c) => c.id === catalogId);
+  const item = await getLiveItem(catalogId);
   if (!item) return jsonError("Unknown catalog item", 404);
 
   const gated = isPaywalled(item);

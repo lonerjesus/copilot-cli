@@ -1,8 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { CATALOG, isPaywalled } from "@/data/catalog";
+import { isPaywalled } from "@/data/catalog";
 import { contentPriceCents, formatUsd } from "@/data/commerce";
 import { getSessionUserFromRequest } from "@/lib/auth/session";
 import { createContentCheckout, jsonError } from "@/lib/commerce/checkout";
+import { getLiveItem } from "@/lib/live-catalog";
 
 export async function POST(request: NextRequest) {
   const user = await getSessionUserFromRequest(request);
@@ -18,7 +19,7 @@ export async function POST(request: NextRequest) {
   const catalogId = body.catalogId?.trim();
   if (!catalogId) return jsonError("catalogId required", 400);
 
-  const item = CATALOG.find((c) => c.id === catalogId);
+  const item = await getLiveItem(catalogId);
   if (!item) return jsonError("Unknown catalog item", 404);
 
   if (!isPaywalled(item)) {

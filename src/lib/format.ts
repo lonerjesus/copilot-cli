@@ -40,3 +40,26 @@ export function kindGlyph(kind: string): string {
       return "›";
   }
 }
+
+/** Decode common HTML entities from RSS / scraped summaries. */
+export function decodeEntities(value: string): string {
+  return value
+    .replace(/&#(\d+);/g, (_, n: string) => {
+      const code = Number(n);
+      return Number.isFinite(code) ? String.fromCodePoint(code) : _;
+    })
+    .replace(/&#x([0-9a-f]+);/gi, (_, h: string) => {
+      const code = Number.parseInt(h, 16);
+      return Number.isFinite(code) ? String.fromCodePoint(code) : _;
+    })
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;|&apos;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&rsquo;|&lsquo;/g, "'")
+    .replace(/&rdquo;|&ldquo;/g, '"')
+    .replace(/&mdash;/g, "—")
+    .replace(/&ndash;/g, "–");
+}

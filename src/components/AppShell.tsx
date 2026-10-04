@@ -100,6 +100,7 @@ function ShellInner() {
             <a href="/footprint">footprint</a>
             <a href="#cosmogram">chart</a>
             <a href="#support">support</a>
+            {user?.isAdmin ? <a href="/admin">admin</a> : null}
           </nav>
           <div className="topbar__account">
             <span className="topbar__user" title={user?.email}>

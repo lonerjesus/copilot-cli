@@ -89,7 +89,32 @@ echo "$home" | grep -q '/footprint' && echo "PASS  home-watch-footprint-link" &&
 
 fp="$(curl -s -A "$UA" -b "$JAR" "$BASE/footprint")"
 echo "$fp" | grep -qi 'WATCH FOOTPRINT' && echo "PASS  footprint-page-title" && pass=$((pass+1)) || { echo "FAIL  footprint-page-title"; fail=$((fail+1)); }
-echo "$fp" | grep -q 'fp-card' && echo "PASS  footprint-cards" && pass=$((pass+1)) || { echo "FAIL  footprint-cards"; fail=$((fail+1)); }
+echo "$fp" | grep -q 'floppy' && echo "PASS  footprint-floppy-cards" && pass=$((pass+1)) || { echo "FAIL  footprint-floppy-cards"; fail=$((fail+1)); }
+
+# Admin station — non-admin forbidden; admin can publish
+check "admin-page-authed" "$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" -b "$JAR" "$BASE/admin")"
+check "admin-api-forbidden" "$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" -b "$JAR" "$BASE/api/admin/content")" "403"
+
+if [[ -n "${ADMIN_EMAIL:-}" ]]; then
+  AJAR="$(mktemp)"
+  areg="$(curl -s -A "$UA" -c "$AJAR" -b "$AJAR" -X POST "$BASE/api/auth/register" \
+    -H 'content-type: application/json' \
+    -d "{\"email\":\"$ADMIN_EMAIL\",\"password\":\"$PASS\",\"displayName\":\"Owner\",\"birthDate\":\"1987-04-05\",\"ageConfirmed\":true,\"website\":\"\"}")"
+  # login if already exists
+  if ! echo "$areg" | grep -q '"email"'; then
+    curl -s -A "$UA" -c "$AJAR" -b "$AJAR" -X POST "$BASE/api/auth/login" \
+      -H 'content-type: application/json' \
+      -d "{\"email\":\"$ADMIN_EMAIL\",\"password\":\"$PASS\",\"website\":\"\"}" >/dev/null
+  fi
+  check "admin-api-ok" "$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" -b "$AJAR" "$BASE/api/admin/content")"
+  pub="$(curl -s -A "$UA" -b "$AJAR" -X POST "$BASE/api/admin/content" \
+    -H 'content-type: application/json' \
+    -d '{"title":"QA Admin Vlog","brand":"TSOL","kind":"vlog","category":"vlog","subcategory":"season","platform":"house","externalUrl":"https://www.kamaunegasi.net/","blurb":"Admin station publish smoke.","paywalled":true}')"
+  echo "$pub" | grep -q '"id"' && echo "PASS  admin-publish" && pass=$((pass+1)) || { echo "FAIL  admin-publish"; fail=$((fail+1)); }
+  rm -f "$AJAR"
+else
+  echo "SKIP  admin-publish (ADMIN_EMAIL unset)"
+fi
 
 ingest="$(curl -s -A "$UA" -b "$JAR" "$BASE/api/ingest")"
 echo "$ingest" | grep -q '357Itsumi' && echo "PASS  ingest-exact-357Itsumi" && pass=$((pass+1)) || { echo "FAIL  ingest-exact-357Itsumi"; fail=$((fail+1)); }

@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { isAdminEmail } from "@/lib/admin";
 import {
   AuthStoreUnavailableError,
   createUser,
@@ -43,7 +44,7 @@ export async function POST(request: NextRequest) {
       birthDate: body.birthDate,
     });
     const response = NextResponse.json(
-      { user: publicUser(user) },
+      { user: publicUser(user, { isAdmin: isAdminEmail(user.email) }) },
       { headers: { "Cache-Control": "no-store" } },
     );
     return await attachSession(response, user.id);

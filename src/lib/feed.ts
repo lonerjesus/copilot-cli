@@ -44,10 +44,22 @@ type RssItem = {
 function stripHtml(value: string): string {
   return value
     .replace(/<[^>]+>/g, " ")
+    .replace(/&#(\d+);/g, (_, n: string) => {
+      const code = Number(n);
+      return Number.isFinite(code) ? String.fromCodePoint(code) : " ";
+    })
+    .replace(/&#x([0-9a-f]+);/gi, (_, h: string) => {
+      const code = Number.parseInt(h, 16);
+      return Number.isFinite(code) ? String.fromCodePoint(code) : " ";
+    })
     .replace(/&nbsp;/g, " ")
     .replace(/&amp;/g, "&")
     .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
+    .replace(/&#39;|&apos;/g, "'")
+    .replace(/&rsquo;|&lsquo;/g, "'")
+    .replace(/&rdquo;|&ldquo;/g, '"')
+    .replace(/&mdash;/g, "—")
+    .replace(/&ndash;/g, "–")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -148,7 +160,9 @@ export async function fetchSubstackFeed(): Promise<FootprintItem[]> {
 }
 
 export async function buildFootprint(): Promise<FootprintItem[]> {
-  const catalog = catalogToFootprint();
+  const { getLiveCatalog } = await import("@/lib/live-catalog");
+  const live = await getLiveCatalog();
+  const catalog = catalogToFootprint(live);
   const rss = await fetchSubstackFeed();
   return mergeFootprint(rss, catalog);
 }

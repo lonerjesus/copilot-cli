@@ -18,6 +18,7 @@ export type AuthUser = {
   purchasedCatalogIds: string[];
   donatedCentsTotal: number;
   createdAt: string;
+  isAdmin?: boolean;
 };
 
 type AuthSnapshot = {

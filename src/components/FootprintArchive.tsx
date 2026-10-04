@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { CATALOG, type CatalogItem, type MediaKind } from "@/data/catalog";
 import type { FootprintItem } from "@/lib/feed";
-import { formatStamp, kindGlyph, relativePulse } from "@/lib/format";
+import { decodeEntities, formatStamp, kindGlyph, relativePulse } from "@/lib/format";
 import { usePlayerState } from "@/components/player/PlayerContext";
 import { useMagazine } from "@/components/MagazineContext";
 import { MediaPoster } from "@/components/MediaPoster";
@@ -13,17 +13,13 @@ type FootprintArchiveProps = {
   initial: FootprintItem[];
 };
 
-function matchCatalog(item: FootprintItem): CatalogItem | undefined {
-  return CATALOG.find(
+function posterItem(item: FootprintItem, catalog: CatalogItem[]): CatalogItem {
+  const hit = catalog.find(
     (c) =>
       c.externalUrl.replace(/\/$/, "") === item.url.replace(/\/$/, "") ||
       c.title === item.title ||
       item.id === `catalog:${c.id}`,
   );
-}
-
-function posterItem(item: FootprintItem): CatalogItem {
-  const hit = matchCatalog(item);
   if (hit) return hit;
   const kind = (["video", "audio", "vlog", "essay", "still", "live"].includes(item.kind)
     ? item.kind
@@ -48,21 +44,30 @@ export function FootprintArchive({ initial }: FootprintArchiveProps) {
   const { playItem, current } = usePlayerState();
   const { openMagazine, hasMagazine } = useMagazine();
   const [items, setItems] = useState(initial);
+  const [liveCatalog, setLiveCatalog] = useState<CatalogItem[]>(CATALOG);
   const [filter, setFilter] = useState<string>("all");
-  const [kindFilter, setKindFilter] = useState<string>("all");
 
   useEffect(() => {
     let alive = true;
     const refresh = async () => {
       try {
-        const res = await fetch("/api/feed");
-        if (!res.ok) return;
-        const data = (await res.json()) as { items: FootprintItem[] };
-        if (alive && data.items?.length) setItems(data.items);
+        const [feedRes, catRes] = await Promise.all([
+          fetch("/api/feed"),
+          fetch("/api/catalog"),
+        ]);
+        if (feedRes.ok) {
+          const data = (await feedRes.json()) as { items: FootprintItem[] };
+          if (alive && data.items?.length) setItems(data.items);
+        }
+        if (catRes.ok) {
+          const data = (await catRes.json()) as { items: CatalogItem[] };
+          if (alive && data.items?.length) setLiveCatalog(data.items);
+        }
       } catch {
         /* keep seed */
       }
     };
+    void refresh();
     const id = window.setInterval(refresh, 5 * 60 * 1000);
     return () => {
       alive = false;
@@ -70,27 +75,28 @@ export function FootprintArchive({ initial }: FootprintArchiveProps) {
     };
   }, []);
 
+  const matchLive = (item: FootprintItem): CatalogItem | undefined => {
+    return liveCatalog.find(
+      (c) =>
+        c.externalUrl.replace(/\/$/, "") === item.url.replace(/\/$/, "") ||
+        c.title === item.title ||
+        item.id === `catalog:${c.id}`,
+    );
+  };
+
   const platforms = useMemo(() => {
     const set = new Set(items.map((i) => i.platform));
     return ["all", ...Array.from(set)];
   }, [items]);
 
-  const kinds = useMemo(() => {
-    const set = new Set(items.map((i) => i.kind));
-    return ["all", ...Array.from(set)];
-  }, [items]);
-
   const visible = useMemo(() => {
-    return items.filter((item) => {
-      if (filter !== "all" && item.platform !== filter) return false;
-      if (kindFilter !== "all" && item.kind !== kindFilter) return false;
-      return true;
-    });
-  }, [items, filter, kindFilter]);
+    if (filter === "all") return items;
+    return items.filter((item) => item.platform === filter);
+  }, [items, filter]);
 
   const openItem = (item: FootprintItem) => {
     track("footprint_open", { id: item.id, platform: item.platform });
-    const catalogMatch = matchCatalog(item);
+    const catalogMatch = matchLive(item);
     if (
       catalogMatch &&
       (catalogMatch.kind === "audio" ||
@@ -123,10 +129,7 @@ export function FootprintArchive({ initial }: FootprintArchiveProps) {
             WATCH FOOTPRINT
           </h1>
         </div>
-        <p className="section__aside">
-          Every archived post and media signal — organized as cards. Filter by platform or kind,
-          then open in-deck or outbound.
-        </p>
+        <p className="section__aside">Archive of every post and media signal.</p>
       </header>
 
       <div className="footprint__toolbar">
@@ -144,62 +147,51 @@ export function FootprintArchive({ initial }: FootprintArchiveProps) {
             </button>
           ))}
         </div>
-        <div className="footprint__filters" role="tablist" aria-label="Filter kinds">
-          {kinds.map((k) => (
-            <button
-              key={k}
-              type="button"
-              role="tab"
-              aria-selected={kindFilter === k}
-              className={`footprint__filter ${kindFilter === k ? "is-on" : ""}`}
-              onClick={() => setKindFilter(k)}
-            >
-              {k}
-            </button>
-          ))}
-        </div>
         <p className="footprint__count" aria-live="polite">
-          {visible.length} signal{visible.length === 1 ? "" : "s"}
+          {visible.length}
         </p>
       </div>
 
       <div className="footprint__grid">
         {visible.map((item) => {
-          const catalog = matchCatalog(item);
+          const catalog = matchLive(item);
           const active = catalog ? current?.id === catalog.id : false;
-          const art = posterItem(item);
+          const art = posterItem(item, liveCatalog);
+          const title = decodeEntities(item.title);
+          const summary = decodeEntities(item.summary);
           return (
             <article
               key={item.id}
-              className={`fp-card ${active ? "fp-card--active" : ""}`}
+              className={`floppy ${active ? "floppy--active" : ""}`}
             >
               <button
                 type="button"
-                className="fp-card__hit"
+                className="floppy__hit"
                 onClick={() => openItem(item)}
                 aria-pressed={active}
+                aria-label={`${title} · ${item.platformLabel}`}
               >
-                <div className={`fp-card__art tile__art--${item.kind}`} aria-hidden>
-                  <MediaPoster
-                    item={art}
-                    className="tile__poster"
-                    label={kindGlyph(item.kind)}
-                  />
-                  <span className="tile__scan" />
-                  <span className="fp-card__age">{relativePulse(item.publishedAt)}</span>
-                </div>
-                <div className="fp-card__meta">
-                  <div className="fp-card__top">
-                    <span className="fp-card__platform">{item.platformLabel}</span>
-                    <span className="fp-card__stamp">{formatStamp(item.publishedAt)}</span>
+                <div className="floppy__shell" aria-hidden>
+                  <div className="floppy__shutter">
+                    <span className="floppy__metal" />
+                    <span className="floppy__slot" />
                   </div>
-                  {item.brand ? <p className="fp-card__brand">{item.brand}</p> : null}
-                  <h2 className="fp-card__title">{item.title}</h2>
-                  <p className="fp-card__summary">{item.summary}</p>
-                  <p className="fp-card__kind">
-                    {kindGlyph(item.kind)} {item.kind}
-                    {item.source === "rss" ? " · live feed" : " · archive"}
-                  </p>
+                  <div className="floppy__notch" />
+                  <div className="floppy__hub" />
+                  <div className="floppy__label">
+                    <div className="floppy__art">
+                      <MediaPoster item={art} className="tile__poster" />
+                    </div>
+                    <div className="floppy__ink">
+                      <span className="floppy__platform">{item.platformLabel}</span>
+                      <h2 className="floppy__title">{title}</h2>
+                      <p className="floppy__meta">
+                        {kindGlyph(item.kind)} {item.kind} · {relativePulse(item.publishedAt)} ·{" "}
+                        {formatStamp(item.publishedAt)}
+                      </p>
+                      <p className="floppy__summary">{summary}</p>
+                    </div>
+                  </div>
                 </div>
               </button>
             </article>
@@ -208,7 +200,7 @@ export function FootprintArchive({ initial }: FootprintArchiveProps) {
       </div>
 
       {visible.length === 0 ? (
-        <p className="footprint__empty">No signals match these filters.</p>
+        <p className="footprint__empty">No signals match.</p>
       ) : null}
     </section>
   );
