@@ -7,7 +7,7 @@ const cloudflare = defineCloudflareConfig();
 
 const config = {
   ...cloudflare,
-  buildCommand: "npx next build",
+  buildCommand: "NODE_OPTIONS=--max-old-space-size=4096 npx next build",
 };
 
 export default config;

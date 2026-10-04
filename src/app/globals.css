@@ -1155,9 +1155,17 @@ select:focus:not(:focus-visible) {
   border: 1px solid color-mix(in oklab, #000 16%, transparent);
   background: #101410;
   min-height: 0;
+  height: 100%;
 }
 
 .floppy__art .media-poster,
+.floppy__art .tile__poster {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  width: 100%;
+}
+
 .floppy__art .media-poster img {
   height: 100%;
 }
