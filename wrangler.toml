@@ -1,0 +1,6 @@
+name = "kamaunegasi-net"
+compatibility_date = "2025-10-01"
+pages_build_output_dir = ".next"
+
+# Domain www.kamaunegasi.net is managed in Cloudflare DNS.
+# Prefer Cloudflare Pages + Next.js adapter for production API routes.
