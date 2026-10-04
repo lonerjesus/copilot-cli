@@ -63,6 +63,9 @@ function ShellInner({ footprint }: { footprint: FootprintItem[] }) {
 
   return (
     <>
+      <a className="skip-link" href="#top">
+        Skip to content
+      </a>
       <AgeGate />
       {!booted ? <BootSequence onDone={() => setBooted(true)} /> : null}
       <div className="shell shell--ready">
@@ -86,7 +89,7 @@ function ShellInner({ footprint }: { footprint: FootprintItem[] }) {
           </nav>
         </header>
 
-        <main id="top">
+        <main id="top" tabIndex={-1}>
           <Hero />
           <ContinuumRail />
           <div id="commands" className="cmd-wrap">

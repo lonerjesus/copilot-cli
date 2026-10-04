@@ -8,7 +8,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "preview": "next build && next start"
+    "preview": "next build && next start",
+    "qa:smoke": "bash scripts/qa-smoke.sh http://localhost:3000"
   },
   "dependencies": {
     "next": "16.3.8",

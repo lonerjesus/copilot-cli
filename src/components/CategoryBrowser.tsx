@@ -20,6 +20,7 @@ import {
 import { kindGlyph } from "@/lib/format";
 import { usePlayerState } from "@/components/player/PlayerContext";
 import { useMagazine } from "@/components/MagazineContext";
+import { track } from "@/lib/analytics";
 
 type CategoryBrowserProps = {
   initialQuery?: string;
@@ -105,6 +106,7 @@ export function CategoryBrowser({
       setCategory(id);
       setSubcategory("all");
     });
+    track("category_filter", { category: id });
   };
 
   const clearFilters = () => {
@@ -117,6 +119,7 @@ export function CategoryBrowser({
       setBrand("all");
       setSort("newest");
     });
+    track("category_filter", { cleared: true });
   };
 
   return (
@@ -156,7 +159,11 @@ export function CategoryBrowser({
           <span>kind</span>
           <select
             value={kind}
-            onChange={(e) => setKind(e.target.value as MediaKind | "all")}
+            onChange={(e) => {
+              const next = e.target.value as MediaKind | "all";
+              setKind(next);
+              track("category_filter", { kind: next });
+            }}
           >
             <option value="all">all kinds</option>
             {kinds.map((k) => (
@@ -168,7 +175,13 @@ export function CategoryBrowser({
         </label>
         <label className="cat-filters__field">
           <span>platform</span>
-          <select value={platform} onChange={(e) => setPlatform(e.target.value)}>
+          <select
+            value={platform}
+            onChange={(e) => {
+              setPlatform(e.target.value);
+              track("category_filter", { platform: e.target.value });
+            }}
+          >
             <option value="all">all platforms</option>
             {platforms.map((p) => (
               <option key={p} value={p}>
@@ -179,7 +192,13 @@ export function CategoryBrowser({
         </label>
         <label className="cat-filters__field">
           <span>brand</span>
-          <select value={brand} onChange={(e) => setBrand(e.target.value)}>
+          <select
+            value={brand}
+            onChange={(e) => {
+              setBrand(e.target.value);
+              track("category_filter", { brand: e.target.value });
+            }}
+          >
             <option value="all">all brands</option>
             {brands.map((b) => (
               <option key={b} value={b}>

@@ -1,0 +1,175 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "name": "kamaunegasi-net-squad",
+  "version": "1.0.0",
+  "domain": "www.kamaunegasi.net",
+  "namePolicy": {
+    "sourceOfTruth": "src/data/identity.ts",
+    "rule": "exact-house-names-only",
+    "forbidden": ["third-party-conflation", "fuzzy-rename", "autocorrect"]
+  },
+  "waves": {
+    "A": "parallel-trigger-gated",
+    "B": ["qa-browser"],
+    "C": ["cloudflare-deploy"],
+    "D": ["verifier"]
+  },
+  "rules": {
+    "verifierAlwaysLast": true,
+    "parallelWhenIndependent": true,
+    "zeroError": true
+  },
+  "agents": [
+    {
+      "id": "security",
+      "specialty": "APIs, embeds, deps, XSS/SSRF, allowlists",
+      "triggers": [
+        "src/app/api/**",
+        "package.json",
+        "next.config.ts",
+        "oembed",
+        "feed"
+      ],
+      "dependsOn": [],
+      "outputs": ["security-report.md"]
+    },
+    {
+      "id": "performance",
+      "specialty": "bundle, boot, media path latency, layout thrash",
+      "triggers": [
+        "src/components/**",
+        "src/app/**",
+        "images",
+        "media",
+        "player"
+      ],
+      "dependsOn": [],
+      "outputs": ["perf-notes.md"]
+    },
+    {
+      "id": "ux",
+      "specialty": "terminal composition, brand-first hero, motion",
+      "triggers": [
+        "src/components/**",
+        "css",
+        "tokens",
+        "hero",
+        "layout"
+      ],
+      "dependsOn": [],
+      "outputs": ["ux-checklist.md"]
+    },
+    {
+      "id": "catalog-names",
+      "specialty": "exact house names across data and UI copy",
+      "triggers": [
+        "src/data/**",
+        "copy",
+        "metadata",
+        "brand",
+        "every-pr"
+      ],
+      "dependsOn": [],
+      "outputs": ["names-audit.md"]
+    },
+    {
+      "id": "content-ingest",
+      "specialty": "catalog and magazine ingest from house platforms",
+      "triggers": [
+        "src/data/catalog.ts",
+        "src/data/magazine.ts",
+        "ingest",
+        "new-content"
+      ],
+      "dependsOn": ["catalog-names"],
+      "outputs": ["ingest-log.md", "src/data/catalog.ts", "src/data/magazine.ts"]
+    },
+    {
+      "id": "compliance-18plus",
+      "specialty": "age gate, 18+ labeling, restricted-content copy",
+      "triggers": [
+        "boot",
+        "age-gate",
+        "18+",
+        "compliance",
+        "src/data/identity.ts",
+        "new-content"
+      ],
+      "dependsOn": [],
+      "outputs": ["compliance-18plus.md"]
+    },
+    {
+      "id": "a11y",
+      "specialty": "keyboard, focus, labels, contrast",
+      "triggers": [
+        "src/components/**",
+        "interactive",
+        "player",
+        "command-bar"
+      ],
+      "dependsOn": [],
+      "outputs": ["a11y-report.md"]
+    },
+    {
+      "id": "analytics-bounce",
+      "specialty": "first-action clarity, dead CTAs, play-path friction",
+      "triggers": [
+        "cta",
+        "hero",
+        "empty-state",
+        "analytics",
+        "player-handoff"
+      ],
+      "dependsOn": [],
+      "outputs": ["bounce-risk.md"]
+    },
+    {
+      "id": "qa-browser",
+      "specialty": "desktop/mobile critical-path browser verification",
+      "triggers": [
+        "ui-change",
+        "player",
+        "gate",
+        "catalog-surface"
+      ],
+      "dependsOn": [
+        "ux",
+        "a11y",
+        "performance",
+        "compliance-18plus",
+        "analytics-bounce"
+      ],
+      "outputs": ["qa-browser.md"]
+    },
+    {
+      "id": "cloudflare-deploy",
+      "specialty": "Pages/Workers config for www.kamaunegasi.net",
+      "triggers": [
+        "wrangler.toml",
+        "next.config.ts",
+        "deploy",
+        "build-scripts"
+      ],
+      "dependsOn": ["security", "performance"],
+      "outputs": ["deploy-check.md"]
+    },
+    {
+      "id": "verifier",
+      "specialty": "final merge gate: zero-error + exact-name reconciliation",
+      "triggers": ["every-pr"],
+      "dependsOn": [
+        "security",
+        "performance",
+        "ux",
+        "catalog-names",
+        "content-ingest",
+        "compliance-18plus",
+        "a11y",
+        "analytics-bounce",
+        "qa-browser",
+        "cloudflare-deploy"
+      ],
+      "outputs": ["verify-verdict.md"]
+    }
+  ]
+}

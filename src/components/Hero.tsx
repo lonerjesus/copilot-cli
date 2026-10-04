@@ -3,6 +3,7 @@
 import { SITE, PRIMARY_NAME } from "@/data/identity";
 import { usePlayerState } from "@/components/player/PlayerContext";
 import { getQueue } from "@/data/catalog";
+import { track } from "@/lib/analytics";
 
 export function Hero() {
   const { playItem, playing, current } = usePlayerState();
@@ -29,7 +30,9 @@ export function Hero() {
             className="btn btn--primary"
             onClick={() => {
               const queue = getQueue();
-              playItem(current ?? queue[0], queue);
+              const item = current ?? queue[0];
+              track("enter_stream", { id: item?.id ?? "empty" });
+              playItem(item, queue);
             }}
           >
             {playing ? "resume deck" : "enter stream"}

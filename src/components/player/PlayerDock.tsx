@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { usePlayer } from "@/components/player/PlayerContext";
 import { useMagazine } from "@/components/MagazineContext";
 import { kindGlyph } from "@/lib/format";
+import { track } from "@/lib/analytics";
 
 function EmbedStage({
   provider,
@@ -162,10 +163,25 @@ export function PlayerDock() {
           <button type="button" onClick={prev} aria-label="Previous">
             ⏮
           </button>
-          <button type="button" className="deck__play" onClick={toggle} aria-label="Play pause">
+          <button
+            type="button"
+            className="deck__play"
+            onClick={() => {
+              if (!playing) track("play", { id: current?.id ?? "idle" });
+              toggle();
+            }}
+            aria-label="Play pause"
+          >
             {playing ? "❚❚" : "▶"}
           </button>
-          <button type="button" onClick={next} aria-label="Next">
+          <button
+            type="button"
+            onClick={() => {
+              track("next", { id: current?.id ?? "idle" });
+              next();
+            }}
+            aria-label="Next"
+          >
             ⏭
           </button>
         </div>

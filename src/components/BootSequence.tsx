@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { SITE } from "@/data/identity";
+import { track } from "@/lib/analytics";
 
 const LINES = [
   "> boot kamaunegasi.net",
@@ -14,6 +15,14 @@ export function BootSequence({ onDone }: { onDone: () => void }) {
   const [visible, setVisible] = useState(0);
   const [fade, setFade] = useState(false);
 
+  const finish = useCallback(
+    (via: "auto" | "skip") => {
+      track("boot_complete", { via });
+      onDone();
+    },
+    [onDone],
+  );
+
   useEffect(() => {
     const timers: number[] = [];
     LINES.forEach((_, i) => {
@@ -22,15 +31,15 @@ export function BootSequence({ onDone }: { onDone: () => void }) {
     timers.push(
       window.setTimeout(() => {
         setFade(true);
-        window.setTimeout(onDone, 280);
+        window.setTimeout(() => finish("auto"), 280);
       }, 120 + LINES.length * 140 + 220),
     );
     return () => timers.forEach((t) => window.clearTimeout(t));
-  }, [onDone]);
+  }, [finish]);
 
   return (
     <div className={`boot ${fade ? "boot--out" : ""}`} role="dialog" aria-label="System boot">
-      <button type="button" className="boot__skip" onClick={onDone}>
+      <button type="button" className="boot__skip" onClick={() => finish("skip")}>
         skip_
       </button>
       <div className="boot__panel">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useSyncExternalStore } from "react";
+import { track } from "@/lib/analytics";
 
 const STORAGE_KEY = "kn.age.ok.v1";
 
@@ -28,6 +29,7 @@ export function AgeGate() {
     try {
       window.localStorage.setItem(STORAGE_KEY, "1");
       window.dispatchEvent(new Event("storage"));
+      track("age_accepted");
     } catch {
       /* ignore */
     }

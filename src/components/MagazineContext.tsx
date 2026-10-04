@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import { MAGAZINE_CATALOG_IDS } from "@/data/magazine";
+import { track } from "@/lib/analytics";
 
 type MagazineContextValue = {
   openId: string | null;
@@ -23,7 +24,9 @@ export function MagazineProvider({ children }: { children: ReactNode }) {
   const [openId, setOpenId] = useState<string | null>(null);
 
   const openMagazine = useCallback((catalogId: string) => {
-    if (MAGAZINE_CATALOG_IDS.has(catalogId)) setOpenId(catalogId);
+    if (!MAGAZINE_CATALOG_IDS.has(catalogId)) return;
+    setOpenId(catalogId);
+    track("magazine_open", { id: catalogId });
   }, []);
 
   const closeMagazine = useCallback(() => setOpenId(null), []);

@@ -1,8 +1,28 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { BIRTH, COSMOGRAM } from "@/data/cosmogram";
+import { track } from "@/lib/analytics";
 
 export function CosmogramPanel() {
+  const seen = useRef(false);
+
+  useEffect(() => {
+    const node = document.getElementById("cosmogram");
+    if (!node) return;
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting && !seen.current) {
+          seen.current = true;
+          track("cosmogram_view");
+        }
+      },
+      { threshold: 0.35 },
+    );
+    io.observe(node);
+    return () => io.disconnect();
+  }, []);
+
   return (
     <section id="cosmogram" className="section cosmogram" aria-labelledby="cosmo-title">
       <header className="section__head">

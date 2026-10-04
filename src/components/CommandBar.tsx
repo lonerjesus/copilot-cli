@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { searchCatalog } from "@/lib/search";
 import { findCategoryByQuery } from "@/data/taxonomy";
+import { track } from "@/lib/analytics";
 
 const COMMANDS = [
   { cmd: "stream", hint: "focus the streaming deck" },
@@ -43,6 +44,7 @@ export function CommandBar({ onCommand, onSearch }: CommandBarProps) {
 
     const known = COMMANDS.find((c) => c.cmd === raw);
     if (known) {
+      track("command", { cmd: known.cmd });
       onCommand(known.cmd);
       setFlash(`ok · ${known.cmd}`);
       setValue("");
@@ -52,6 +54,7 @@ export function CommandBar({ onCommand, onSearch }: CommandBarProps) {
 
     const taxonomyHit = findCategoryByQuery(raw);
     if (taxonomyHit.category) {
+      track("command", { cmd: "search", q: raw });
       onSearch(raw);
       onCommand("categories");
       setFlash(
@@ -64,6 +67,7 @@ export function CommandBar({ onCommand, onSearch }: CommandBarProps) {
 
     const hits = searchCatalog(raw);
     if (hits.length > 0) {
+      track("command", { cmd: "search", q: raw, hits: hits.length });
       onSearch(raw);
       onCommand("categories");
       setFlash(`found · ${hits.length}`);
@@ -100,7 +104,10 @@ export function CommandBar({ onCommand, onSearch }: CommandBarProps) {
             key={c.cmd}
             type="button"
             className="cmd__chip"
-            onClick={() => onCommand(c.cmd)}
+            onClick={() => {
+              track("command", { cmd: c.cmd, via: "chip" });
+              onCommand(c.cmd);
+            }}
             title={c.hint}
           >
             {c.cmd}

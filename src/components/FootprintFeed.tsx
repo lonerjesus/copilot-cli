@@ -5,6 +5,7 @@ import type { FootprintItem } from "@/lib/feed";
 import { formatStamp, kindGlyph, relativePulse } from "@/lib/format";
 import { CATALOG } from "@/data/catalog";
 import { usePlayerState } from "@/components/player/PlayerContext";
+import { track } from "@/lib/analytics";
 
 type FootprintFeedProps = {
   initial: FootprintItem[];
@@ -65,6 +66,7 @@ export function FootprintFeed({ initial }: FootprintFeedProps) {
   }, [cursor]);
 
   const openItem = (item: FootprintItem) => {
+    track("footprint_open", { id: item.id, platform: item.platform });
     const catalogMatch = CATALOG.find(
       (c) =>
         c.externalUrl.replace(/\/$/, "") === item.url.replace(/\/$/, "") ||

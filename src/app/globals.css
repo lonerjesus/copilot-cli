@@ -68,6 +68,40 @@ input {
   border: 0;
 }
 
+.skip-link {
+  position: absolute;
+  left: 0.75rem;
+  top: 0.75rem;
+  z-index: 10000;
+  padding: 0.55rem 0.9rem;
+  background: var(--phosphor);
+  color: #061006;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transform: translateY(-160%);
+  transition: transform 120ms ease;
+}
+
+.skip-link:focus,
+.skip-link:focus-visible {
+  transform: translateY(0);
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+}
+
+:focus-visible {
+  outline: 2px solid var(--phosphor);
+  outline-offset: 2px;
+}
+
+button:focus:not(:focus-visible),
+a:focus:not(:focus-visible),
+input:focus:not(:focus-visible),
+select:focus:not(:focus-visible) {
+  outline: none;
+}
+
 /* Age notice */
 .agebanner {
   margin: 0;
