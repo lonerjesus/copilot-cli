@@ -43,16 +43,21 @@ npm run qa:smoke
 
 See [`agents/ROSTER.md`](./agents/ROSTER.md) and [`agents/RUNBOOK.md`](./agents/RUNBOOK.md). Eleven cooperating specialists; **verifier always last**.
 
-## Deploy on Cloudflare Pages
+## Deploy on Cloudflare Workers (OpenNext)
 
-1. Connect this repo in Cloudflare Pages.
-2. Build command: `npm run build`
-3. Framework preset: Next.js (use OpenNext / Cloudflare Next adapter if enabling edge API routes).
-4. Attach custom domain `www.kamaunegasi.net`.
-5. Set secrets: `AUTH_SECRET`, optional `STRIPE_SECRET_KEY` + `PAYMENTS_MODE=stripe`.
-6. Confirm `wrangler.toml` vars: `SITE_DOMAIN`, `EXACT_NAME_POLICY`, `AGE_GATE_REQUIRED`, `ACCOUNT_GATE=1`.
+1. In the Cloudflare project build settings set:
+   - **Build command:** `npx @opennextjs/cloudflare build`
+   - **Deploy command:** `npx @opennextjs/cloudflare deploy`
+2. Secrets: `AUTH_SECRET`, optional Stripe keys.
+3. Attach custom domain `www.kamaunegasi.net`.
 
-For a static-first preview, `npm run build && npm run start` works on any Node host (auth store uses local `.data/`).
+Local Cloudflare preview:
+
+```bash
+npm run preview
+```
+
+For a Node host instead: `npm run build && npm run start`.
 
 ## Identity nodes
 

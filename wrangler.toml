@@ -1,26 +1,24 @@
-# Cloudflare Pages / Workers notes for www.kamaunegasi.net
+# Cloudflare Workers + OpenNext for www.kamaunegasi.net
 #
-# Build: npm run build
-# Node: >=22
-# Custom domain: www.kamaunegasi.net (Cloudflare DNS)
-# Headers: public/_headers + next.config.ts + middleware CSP
+# Local: npm run preview
+# Deploy: npm run deploy
+# Dashboard build: npx @opennextjs/cloudflare build
+# Dashboard deploy: npx @opennextjs/cloudflare deploy
 #
-# Secrets (Cloudflare dashboard — never plain [vars]):
-#   AUTH_SECRET
-#   STRIPE_SECRET_KEY
-#   STRIPE_WEBHOOK_SECRET
-#   PAYMENTS_MODE=stripe
-#
-# Local/staging only: ALLOW_DEMO_PAYMENTS=1 + PAYMENTS_MODE=demo
-# Auth store (.data/) is Node-local — migrate to D1/KV before Cloudflare production accounts.
-#
-# Squad agent: cloudflare-deploy
-# Depends on: security, performance
-# Verifier: always last
+# Secrets (dashboard): AUTH_SECRET, STRIPE_*, PAYMENTS_MODE
 
 name = "kamaunegasi-net"
+main = ".open-next/worker.js"
 compatibility_date = "2025-10-01"
-pages_build_output_dir = ".next"
+compatibility_flags = ["nodejs_compat", "global_fetch_strictly_public"]
+
+[assets]
+directory = ".open-next/assets"
+binding = "ASSETS"
+
+[[services]]
+binding = "WORKER_SELF_REFERENCE"
+service = "kamaunegasi-net"
 
 [vars]
 SITE_DOMAIN = "www.kamaunegasi.net"

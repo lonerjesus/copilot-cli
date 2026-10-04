@@ -1,12 +1,10 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import path from "node:path";
 import { hashPassword, randomToken, verifyPassword } from "@/lib/auth/crypto";
 import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from "@/data/commerce";
 
 /**
- * Local durable JSON store for Node hosts.
- * Cloudflare Pages/Workers need D1/KV before production accounts — this file
- * store will not survive multi-isolate edge deploys.
+ * Auth/commerce store.
+ * - Node: persists to `.data/auth-store.json` when filesystem is writable
+ * - Cloudflare Workers: in-memory per isolate until D1/KV is wired
  */
 
 export type StoredUser = {
@@ -25,28 +23,70 @@ export type AuthStore = {
   donations: { id: string; userId: string; cents: number; at: string; mode: string }[];
 };
 
-const DATA_DIR = path.join(process.cwd(), ".data");
-const STORE_PATH = path.join(DATA_DIR, "auth-store.json");
+const g = globalThis as typeof globalThis & { __knAuthStore?: AuthStore };
+let useMemory = false;
+
+function memoryStore(): AuthStore {
+  if (!g.__knAuthStore) {
+    g.__knAuthStore = { users: [], donations: [] };
+  }
+  return g.__knAuthStore;
+}
 
 let writeQueue: Promise<void> = Promise.resolve();
 
 async function readStore(): Promise<AuthStore> {
+  if (useMemory) return memoryStore();
+
   try {
-    const raw = await readFile(STORE_PATH, "utf8");
+    const { readFile } = await import("node:fs/promises");
+    const path = await import("node:path");
+    const storePath = path.join(process.cwd(), ".data", "auth-store.json");
+    const raw = await readFile(storePath, "utf8");
     const parsed = JSON.parse(raw) as AuthStore;
     return {
-      users: Array.isArray(parsed.users) ? parsed.users : [],
-      donations: Array.isArray(parsed.donations) ? parsed.donations : [],
+      users: Array.isArray(parsed.users) ? [...parsed.users] : [],
+      donations: Array.isArray(parsed.donations) ? [...parsed.donations] : [],
     };
   } catch {
-    return { users: [], donations: [] };
+    // Empty or missing file — try to ensure write works; otherwise memory mode
+    try {
+      const { mkdir, writeFile, access } = await import("node:fs/promises");
+      const path = await import("node:path");
+      const dataDir = path.join(process.cwd(), ".data");
+      await mkdir(dataDir, { recursive: true });
+      const probe = path.join(dataDir, ".write-test");
+      await writeFile(probe, "ok", "utf8");
+      await access(probe);
+      return { users: [], donations: [] };
+    } catch {
+      useMemory = true;
+      return memoryStore();
+    }
   }
 }
 
 async function writeStore(store: AuthStore): Promise<void> {
+  if (useMemory) {
+    g.__knAuthStore = store;
+    return;
+  }
+
   writeQueue = writeQueue.then(async () => {
-    await mkdir(DATA_DIR, { recursive: true });
-    await writeFile(STORE_PATH, JSON.stringify(store, null, 2), "utf8");
+    try {
+      const { mkdir, writeFile } = await import("node:fs/promises");
+      const path = await import("node:path");
+      const dataDir = path.join(process.cwd(), ".data");
+      await mkdir(dataDir, { recursive: true });
+      await writeFile(
+        path.join(dataDir, "auth-store.json"),
+        JSON.stringify(store, null, 2),
+        "utf8",
+      );
+    } catch {
+      useMemory = true;
+      g.__knAuthStore = store;
+    }
   });
   await writeQueue;
 }
@@ -88,7 +128,7 @@ export async function createUser(input: {
   const user: StoredUser = {
     id: randomToken(18),
     email,
-    displayName: input.displayName.trim().slice(0, 64) || email.split("@")[0],
+    displayName: input.displayName.trim().slice(0, 64) || email.split("@")[0] || "member",
     passwordHash: hash,
     passwordSalt: salt,
     createdAt: new Date().toISOString(),
