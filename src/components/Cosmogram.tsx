@@ -1,15 +1,20 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { COSMO_PUBLIC, COSMOGRAM } from "@/data/cosmogram";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useAuth } from "@/components/AuthContext";
+import { buildPersonalChart, CHART_COPY } from "@/lib/chart";
 import { track } from "@/lib/analytics";
 
 /**
- * Public chart only — no legal / birth-certificate name, no DOB string.
- * House names + sun / life-path / birthday numbers.
+ * Cosmogram is personal to the signed-in member (from their birth date).
+ * Never shows house legal / birth-certificate names.
  */
 export function CosmogramPanel() {
+  const { user, refresh } = useAuth();
   const seen = useRef(false);
+  const [draftDob, setDraftDob] = useState("");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     const node = document.getElementById("cosmogram");
@@ -27,73 +32,120 @@ export function CosmogramPanel() {
     return () => io.disconnect();
   }, []);
 
+  const chart = useMemo(() => {
+    if (!user?.birthDate) return null;
+    try {
+      return buildPersonalChart(user.displayName, user.birthDate);
+    } catch {
+      return null;
+    }
+  }, [user]);
+
+  const saveDob = async (event: FormEvent) => {
+    event.preventDefault();
+    setError("");
+    setBusy(true);
+    try {
+      const res = await fetch("/api/auth/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ birthDate: draftDob }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        setError(data.error ?? "Could not save");
+        return;
+      }
+      await refresh();
+    } catch {
+      setError("Network error");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <section id="cosmogram" className="section cosmogram" aria-labelledby="cosmo-title">
       <header className="section__head">
         <div>
-          <p className="section__eyebrow">chart://cosmogram</p>
-          <h2 id="cosmo-title">{COSMOGRAM.title}</h2>
+          <p className="section__eyebrow">chart://you</p>
+          <h2 id="cosmo-title">{CHART_COPY.title}</h2>
         </div>
-        <p className="section__aside">{COSMOGRAM.blurb}</p>
+        <p className="section__aside">
+          {chart
+            ? CHART_COPY.blurbFor(chart.sunSign, chart.lifePath, chart.birthdayNumber)
+            : "Add your birth date once — the chart is private to your account."}
+        </p>
       </header>
 
-      <div className="cosmo-hero">
-        <div>
-          <p className="cosmo-hero__name">{COSMO_PUBLIC.name}</p>
-          <p className="cosmo-hero__aka">{COSMO_PUBLIC.alsoKnownAs.join(" · ")}</p>
-        </div>
-        <div className="cosmo-hero__glyphs" aria-label="Core numbers">
-          <div>
-            <span>SUN</span>
-            <strong>{COSMO_PUBLIC.sunSign}</strong>
+      {!chart ? (
+        <form className="cosmo-setup" onSubmit={saveDob}>
+          <label>
+            <span>birth date (18+ · unlocks your cosmogram)</span>
+            <input
+              type="date"
+              required
+              value={draftDob}
+              onChange={(e) => setDraftDob(e.target.value)}
+              max={new Date().toISOString().slice(0, 10)}
+            />
+          </label>
+          {error ? (
+            <p className="access__error" role="alert">
+              {error}
+            </p>
+          ) : null}
+          <button type="submit" className="btn btn--primary" disabled={busy}>
+            {busy ? "saving…" : "generate my chart"}
+          </button>
+        </form>
+      ) : (
+        <>
+          <div className="cosmo-hero">
+            <div>
+              <p className="cosmo-hero__name">{chart.displayName}</p>
+              <p className="cosmo-hero__aka">personal signal · member chart</p>
+            </div>
+            <div className="cosmo-hero__glyphs" aria-label="Core numbers">
+              <div>
+                <span>SUN</span>
+                <strong>{chart.sunSign}</strong>
+              </div>
+              <div>
+                <span>LIFE PATH</span>
+                <strong>{chart.lifePath}</strong>
+              </div>
+              <div>
+                <span>BIRTHDAY</span>
+                <strong>{chart.birthdayNumber}</strong>
+              </div>
+            </div>
           </div>
-          <div>
-            <span>LIFE PATH</span>
-            <strong>{COSMO_PUBLIC.lifePath}</strong>
-          </div>
-          <div>
-            <span>BIRTHDAY</span>
-            <strong>{COSMO_PUBLIC.birthdayNumber}</strong>
-          </div>
-        </div>
-      </div>
 
-      <ul className="cosmo-pillars">
-        {COSMOGRAM.pillars.map((pillar) => (
-          <li key={pillar.label}>
-            <strong>{pillar.label}</strong>
-            <p>{pillar.line}</p>
-          </li>
-        ))}
-      </ul>
-
-      <div className="cosmo-grid">
-        <div>
-          <h3>AFFIRMATIONS · PRO-BLACK LIGHT</h3>
-          <ul className="cosmo-affirms">
-            {COSMOGRAM.affirmations.map((line) => (
-              <li key={line}>{line}</li>
-            ))}
+          <ul className="cosmo-pillars">
+            {CHART_COPY.pillars(chart.sunSign, chart.lifePath, chart.birthdayNumber).map(
+              (pillar) => (
+                <li key={pillar.label}>
+                  <strong>{pillar.label}</strong>
+                  <p>{pillar.line}</p>
+                </li>
+              ),
+            )}
           </ul>
-        </div>
-        <div>
-          <h3>TECH · CULTURE · HOUSE</h3>
-          <ul className="cosmo-tech">
-            {COSMOGRAM.techPop.map((item) => (
-              <li key={item.label}>
-                <strong>{item.label}</strong>
-                <span>{item.line}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
 
-      <div className="cosmo-tags">
-        {COSMOGRAM.vibeTags.map((tag) => (
-          <span key={tag}>{tag}</span>
-        ))}
-      </div>
+          <div className="cosmo-grid">
+            <div>
+              <h3>AFFIRMATIONS</h3>
+              <ul className="cosmo-affirms">
+                {CHART_COPY.affirmations.map((line) => (
+                  <li key={line}>{line}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </>
+      )}
     </section>
   );
 }

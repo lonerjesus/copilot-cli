@@ -7,34 +7,124 @@ import { kindGlyph } from "@/lib/format";
 import { track } from "@/lib/analytics";
 import { ContentPayActions } from "@/components/ContentPayActions";
 
+function youtubeId(raw?: string): string | null {
+  if (!raw) return null;
+  try {
+    const u = new URL(raw);
+    if (u.hostname.includes("youtu.be")) return u.pathname.slice(1) || null;
+    if (u.hostname.includes("youtube.com")) {
+      return u.searchParams.get("v") || u.pathname.split("/embed/")[1] || null;
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+function vimeoId(raw?: string): string | null {
+  if (!raw) return null;
+  const m = /vimeo\.com\/(?:video\/)?(\d+)/i.exec(raw);
+  return m?.[1] ?? null;
+}
+
 function EmbedStage({
   provider,
   id,
   url,
   title,
+  kind,
+  src,
+  playing,
 }: {
   provider?: string;
   id?: string;
   url?: string;
   title: string;
+  kind?: string;
+  src?: string;
+  playing: boolean;
 }) {
-  if (provider === "twitch" && id) {
-    const src =
-      `https://player.twitch.tv/?channel=${id}` +
-      `&parent=www.kamaunegasi.net&parent=kamaunegasi.net&parent=localhost&muted=true`;
+  const yt = provider === "youtube" ? id || youtubeId(url) : youtubeId(url);
+  const vim = provider === "vimeo" ? id || vimeoId(url) : vimeoId(url);
+
+  if (src && (kind === "audio" || kind === "video")) {
+    if (kind === "video") {
+      return (
+        <video
+          className="deck__frame deck__frame--native"
+          src={src}
+          controls
+          playsInline
+          autoPlay={playing}
+          title={title}
+        />
+      );
+    }
     return (
-      <iframe title={title} src={src} allowFullScreen className="deck__frame" allow="autoplay; encrypted-media" />
+      <div className="deck__native-audio">
+        <audio src={src} controls autoPlay={playing} title={title} />
+        <div className="deck__visual deck__visual--mini" aria-hidden>
+          <div className="deck__orb" />
+          <div className="deck__bars">
+            {Array.from({ length: 12 }).map((_, i) => (
+              <span key={i} style={{ animationDelay: `${i * 0.08}s` }} />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if ((provider === "twitch" || (!provider && url?.includes("twitch.tv"))) && (id || url)) {
+    const channel = id || url?.split("twitch.tv/")[1]?.split(/[/?#]/)[0];
+    if (channel) {
+      const srcTw =
+        `https://player.twitch.tv/?channel=${channel}` +
+        `&parent=www.kamaunegasi.net&parent=kamaunegasi.net&parent=localhost&muted=false`;
+      return (
+        <iframe
+          title={title}
+          src={srcTw}
+          allowFullScreen
+          className="deck__frame"
+          allow="autoplay; encrypted-media; fullscreen"
+        />
+      );
+    }
+  }
+
+  if (yt) {
+    return (
+      <iframe
+        title={title}
+        className="deck__frame"
+        src={`https://www.youtube.com/embed/${yt}?rel=0&modestbranding=1&playsinline=1`}
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+        allowFullScreen
+      />
+    );
+  }
+
+  if (vim) {
+    return (
+      <iframe
+        title={title}
+        className="deck__frame"
+        src={`https://player.vimeo.com/video/${vim}?title=0&byline=0&portrait=0`}
+        allow="autoplay; fullscreen; picture-in-picture"
+        allowFullScreen
+      />
     );
   }
 
   if (provider === "bandcamp" && id) {
-    const src =
+    const srcBc =
       `https://bandcamp.com/EmbeddedPlayer/album=${encodeURIComponent(id)}` +
       `/size=large/bgcol=0a0c0a/linkcol=b8ff3c/artwork=small/transparent=true/`;
     return (
       <iframe
         title={title}
-        src={src}
+        src={srcBc}
         className="deck__frame deck__frame--audio"
         allow="autoplay; encrypted-media; clipboard-write"
         loading="lazy"
@@ -43,13 +133,13 @@ function EmbedStage({
   }
 
   if (provider === "soundcloud" && url) {
-    const src =
+    const srcSc =
       `https://w.soundcloud.com/player/?url=${encodeURIComponent(url)}` +
-      `&color=%23b8ff3c&auto_play=false&hide_related=true&show_comments=false&show_user=true&show_reposts=false&show_teaser=false`;
+      `&color=%23b8ff3c&auto_play=${playing ? "true" : "false"}&hide_related=true&show_comments=false&show_user=true&show_reposts=false&show_teaser=false`;
     return (
       <iframe
         title={title}
-        src={src}
+        src={srcSc}
         className="deck__frame deck__frame--audio"
         allow="autoplay; encrypted-media"
         loading="lazy"
@@ -57,24 +147,23 @@ function EmbedStage({
     );
   }
 
-  if (provider === "vimeo" && url) {
+  if (url && /bandcamp\.com/i.test(url)) {
     return (
       <div className="deck__fallback">
-        <p>VIMEO UPLINK</p>
+        <p>BANDCAMP</p>
         <a href={url} target="_blank" rel="noopener noreferrer">
-          open archive →
+          open in Bandcamp →
         </a>
       </div>
     );
   }
 
-  // Bandcamp / audio without embed metadata — open source, no fake “playing”
-  if (url && /bandcamp\.com/i.test(url)) {
+  if (url && /vimeo\.com/i.test(url)) {
     return (
       <div className="deck__fallback">
-        <p>BANDCAMP UPLINK</p>
+        <p>VIMEO CHANNEL</p>
         <a href={url} target="_blank" rel="noopener noreferrer">
-          open player on Bandcamp →
+          open archive →
         </a>
       </div>
     );
@@ -104,7 +193,7 @@ function RemoteMeta({ url, localTitle }: { url: string; localTitle: string }) {
         const data = (await res.json()) as { title?: string };
         if (alive && data.title) setRemoteTitle(data.title);
       } catch {
-        /* keep local metadata */
+        /* keep local */
       }
     };
     void run();
@@ -132,12 +221,23 @@ export function PlayerDock() {
   const { openMagazine, hasMagazine } = useMagazine();
 
   const label = useMemo(() => {
-    if (!current) return "NO SIGNAL · enter stream";
-    return `${current.brand} // ${current.title}`;
+    if (!current) return "NO SIGNAL";
+    return `${current.brand} — ${current.title}`;
   }, [current]);
 
+  const isTheater =
+    current?.kind === "video" ||
+    current?.kind === "live" ||
+    current?.kind === "vlog" ||
+    current?.embed?.provider === "twitch" ||
+    current?.embed?.provider === "youtube" ||
+    current?.embed?.provider === "vimeo";
+
   return (
-    <aside className={`deck ${expanded ? "deck--open" : ""}`} aria-label="Custom media player">
+    <aside
+      className={`deck ${expanded ? "deck--open" : ""} ${isTheater ? "deck--theater" : ""}`}
+      aria-label="Media player"
+    >
       <div className="deck__stage">
         {current ? (
           <EmbedStage
@@ -145,6 +245,9 @@ export function PlayerDock() {
             id={current.embed?.id}
             url={current.embed?.url ?? current.externalUrl}
             title={current.title}
+            kind={current.kind}
+            src={current.src}
+            playing={playing}
           />
         ) : (
           <div className="deck__visual" aria-hidden>
@@ -155,27 +258,19 @@ export function PlayerDock() {
           {current ? (
             <>
               <p className="deck__eyebrow">
-                {kindGlyph(current.kind)} {current.kind.toUpperCase()} · {current.platform}
+                {kindGlyph(current.kind)} {current.kind} · {current.platform}
               </p>
               <h2>{current.title}</h2>
               {current.subtitle ? <p className="deck__sub">{current.subtitle}</p> : null}
               <RemoteMeta key={current.id} url={current.externalUrl} localTitle={current.title} />
               <p className="deck__blurb">{current.blurb}</p>
-              <a
-                className="deck__external"
-                href={current.externalUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                fetch source post ↗
-              </a>
               {hasMagazine(current.id) ? (
                 <button
                   type="button"
                   className="deck__external deck__mag"
                   onClick={() => openMagazine(current.id)}
                 >
-                  open magazine view ▦
+                  magazine ▦
                 </button>
               ) : null}
               <ContentPayActions catalogId={current.id} title={current.title} />
@@ -184,7 +279,7 @@ export function PlayerDock() {
             <>
               <p className="deck__eyebrow">DECK IDLE</p>
               <h2>NO SIGNAL</h2>
-              <p className="deck__blurb">Press enter stream to lock into the continuum.</p>
+              <p className="deck__blurb">Pick a title from the stream to play in-app.</p>
             </>
           )}
         </div>
@@ -197,7 +292,7 @@ export function PlayerDock() {
           onClick={() => setExpanded(!expanded)}
           aria-expanded={expanded}
         >
-          {expanded ? "collapse" : "expand"}
+          {expanded ? "↓" : "↑"}
         </button>
         <div className="deck__now">
           <span className={`deck__dot ${playing ? "is-live" : ""}`} />
@@ -212,6 +307,7 @@ export function PlayerDock() {
             className="deck__play"
             onClick={() => {
               if (!playing) track("play", { id: current?.id ?? "idle" });
+              if (!expanded) setExpanded(true);
               toggle();
             }}
             aria-label="Play pause"

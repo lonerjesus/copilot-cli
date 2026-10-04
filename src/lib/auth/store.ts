@@ -1,5 +1,6 @@
 import { hashPassword, randomToken, verifyPassword } from "@/lib/auth/crypto";
 import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from "@/data/commerce";
+import { assertAdultBirthDate } from "@/lib/chart";
 
 /**
  * Auth/commerce store.
@@ -12,6 +13,8 @@ export type StoredUser = {
   id: string;
   email: string;
   displayName: string;
+  /** ISO YYYY-MM-DD — powers personal cosmogram; never shown as legal name */
+  birthDate?: string;
   passwordHash: string;
   passwordSalt: string;
   createdAt: string;
@@ -210,6 +213,7 @@ export async function createUser(input: {
   email: string;
   password: string;
   displayName: string;
+  birthDate: string;
 }): Promise<StoredUser> {
   const email = normalizeEmail(input.email);
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -221,6 +225,7 @@ export async function createUser(input: {
   if (input.password.length > MAX_PASSWORD_LENGTH) {
     throw new Error(`Password must be at most ${MAX_PASSWORD_LENGTH} characters`);
   }
+  const birthDate = assertAdultBirthDate(input.birthDate);
   const existing = await findUserByEmail(email);
   if (existing) throw new Error("Account already exists");
 
@@ -229,6 +234,7 @@ export async function createUser(input: {
     id: randomToken(18),
     email,
     displayName: input.displayName.trim().slice(0, 64) || email.split("@")[0] || "member",
+    birthDate,
     passwordHash: hash,
     passwordSalt: salt,
     createdAt: new Date().toISOString(),
@@ -238,6 +244,19 @@ export async function createUser(input: {
 
   const store = await readStore();
   store.users.push(user);
+  await writeStore(store);
+  return user;
+}
+
+export async function updateUserBirthDate(
+  userId: string,
+  birthDateRaw: string,
+): Promise<StoredUser | null> {
+  const birthDate = assertAdultBirthDate(birthDateRaw);
+  const store = await readStore();
+  const user = store.users.find((u) => u.id === userId);
+  if (!user) return null;
+  user.birthDate = birthDate;
   await writeStore(store);
   return user;
 }
@@ -288,6 +307,7 @@ export function publicUser(user: StoredUser) {
     id: user.id,
     email: user.email,
     displayName: user.displayName,
+    birthDate: user.birthDate ?? null,
     purchasedCatalogIds: user.purchasedCatalogIds,
     donatedCentsTotal: user.donatedCentsTotal,
     createdAt: user.createdAt,

@@ -47,7 +47,7 @@ PASS='qa-test-pass-12345'
 
 reg="$(curl -s -A "$UA" -c "$JAR" -b "$JAR" -X POST "$BASE/api/auth/register" \
   -H 'content-type: application/json' \
-  -d "{\"email\":\"$EMAIL\",\"password\":\"$PASS\",\"displayName\":\"QA\",\"ageConfirmed\":true,\"website\":\"\"}")"
+  -d "{\"email\":\"$EMAIL\",\"password\":\"$PASS\",\"displayName\":\"QA\",\"birthDate\":\"1990-06-15\",\"ageConfirmed\":true,\"website\":\"\"}")"
 echo "$reg" | grep -q '"email"' && echo "PASS  register" && pass=$((pass+1)) || { echo "FAIL  register"; fail=$((fail+1)); }
 
 check "home-authed" "$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" -b "$JAR" "$BASE/")"

@@ -83,10 +83,16 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     clearTimer();
     // Real embeds (Bandcamp / SoundCloud / Twitch) own playback — don't fake scrub/auto-advance.
-    const liveEmbed = ["bandcamp", "soundcloud", "twitch", "youtube"].includes(
+    const liveEmbed = ["bandcamp", "soundcloud", "twitch", "youtube", "vimeo"].includes(
       current?.embed?.provider ?? "",
     );
-    if (!playing || liveEmbed) return;
+    // Also treat native src / youtube|vimeo URL detection as live (no fake scrub)
+    const nativeOrUrl =
+      Boolean(current?.src) ||
+      /youtube\.com|youtu\.be|vimeo\.com\/\d+|bandcamp\.com|soundcloud\.com|twitch\.tv/i.test(
+        current?.externalUrl ?? "",
+      );
+    if (!playing || liveEmbed || nativeOrUrl) return;
     timer.current = window.setInterval(() => {
       setProgress((p) => {
         if (p >= 100) {
@@ -97,7 +103,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       });
     }, 120);
     return clearTimer;
-  }, [playing, next, current?.id, current?.embed?.provider]);
+  }, [playing, next, current?.id, current?.embed?.provider, current?.externalUrl, current?.src]);
 
   const state = useMemo(
     () => ({

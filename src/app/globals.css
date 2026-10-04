@@ -261,8 +261,8 @@ select:focus:not(:focus-visible) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
-  padding: 0.85rem 1.25rem;
+  gap: 0.65rem;
+  padding: 0.45rem 0.85rem;
   border-bottom: 1px solid var(--line);
   background: color-mix(in oklab, var(--void) 86%, transparent);
   backdrop-filter: blur(10px);
@@ -302,11 +302,13 @@ select:focus:not(:focus-visible) {
 
 .topbar__nav {
   display: flex;
-  gap: 1rem;
+  gap: 0.65rem;
   color: var(--muted);
-  font-size: 0.82rem;
-  letter-spacing: 0.08em;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
   text-transform: lowercase;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .topbar__nav a:hover {
@@ -316,10 +318,10 @@ select:focus:not(:focus-visible) {
 /* Hero — one composition, brand first, full-bleed atmosphere */
 .hero {
   position: relative;
-  min-height: min(88vh, 820px);
+  min-height: min(52vh, 520px);
   display: grid;
   align-items: end;
-  padding: clamp(2rem, 6vw, 5rem) 1.25rem 3rem;
+  padding: clamp(1.25rem, 4vw, 2.5rem) 0.85rem 1.5rem;
   overflow: hidden;
   border-bottom: 1px solid var(--line);
 }
@@ -452,15 +454,15 @@ select:focus:not(:focus-visible) {
 .cmd-wrap {
   width: min(100%, var(--max));
   margin: 0 auto;
-  padding: 1.25rem;
+  padding: 0.55rem 0.85rem;
 }
 
 .cmd {
   display: grid;
   grid-template-columns: auto 1fr auto;
-  gap: 0.65rem 0.75rem;
+  gap: 0.45rem 0.55rem;
   align-items: center;
-  padding: 0.85rem 1rem;
+  padding: 0.45rem 0.65rem;
   border: 1px solid var(--line);
   background: color-mix(in oklab, var(--panel) 92%, transparent);
 }
@@ -517,15 +519,15 @@ select:focus:not(:focus-visible) {
 .section {
   width: min(100%, var(--max));
   margin: 0 auto;
-  padding: 2.5rem 1.25rem 1rem;
+  padding: 1.35rem 0.85rem 0.65rem;
 }
 
 .section__head {
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
+  gap: 0.45rem 0.85rem;
+  margin-bottom: 0.85rem;
   align-items: end;
 }
 
@@ -1431,6 +1433,51 @@ select:focus:not(:focus-visible) {
   aspect-ratio: 16 / 12;
   min-height: 120px;
   background: #0a0c0a;
+}
+
+.deck__frame--native {
+  object-fit: contain;
+  background: #000;
+}
+
+.deck__native-audio {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.deck__native-audio audio {
+  width: 100%;
+}
+
+.deck__visual--mini {
+  aspect-ratio: 16 / 6;
+  min-height: 72px;
+}
+
+.deck--theater.deck--open .deck__stage {
+  max-height: min(70vh, 640px);
+}
+
+.deck--theater.deck--open .deck__frame {
+  aspect-ratio: 16 / 9;
+}
+
+.cosmo-setup {
+  display: grid;
+  gap: 0.75rem;
+  max-width: 22rem;
+}
+
+.cosmo-setup label {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.cosmo-setup input[type="date"] {
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--line);
+  background: color-mix(in oklab, var(--void) 80%, #111);
+  color: var(--ink);
 }
 
 .deck__fallback {

@@ -19,6 +19,7 @@ export function AccessGate() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [birthDate, setBirthDate] = useState("");
   const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [website, setWebsite] = useState(""); // honeypot
   const [error, setError] = useState("");
@@ -44,6 +45,7 @@ export function AccessGate() {
           email,
           password,
           displayName,
+          birthDate: mode === "register" ? birthDate : undefined,
           ageConfirmed,
           website,
         }),
@@ -111,16 +113,28 @@ export function AccessGate() {
           />
 
           {mode === "register" ? (
-            <label>
-              <span>display name</span>
-              <input
-                type="text"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                placeholder="how we greet you"
-                maxLength={64}
-              />
-            </label>
+            <>
+              <label>
+                <span>display name</span>
+                <input
+                  type="text"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  placeholder="how we greet you"
+                  maxLength={64}
+                />
+              </label>
+              <label>
+                <span>birth date (for your cosmogram · 18+)</span>
+                <input
+                  type="date"
+                  required
+                  value={birthDate}
+                  onChange={(e) => setBirthDate(e.target.value)}
+                  max={new Date().toISOString().slice(0, 10)}
+                />
+              </label>
+            </>
           ) : null}
 
           <label>

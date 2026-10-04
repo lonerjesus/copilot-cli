@@ -14,6 +14,7 @@ export type AuthUser = {
   id: string;
   email: string;
   displayName: string;
+  birthDate: string | null;
   purchasedCatalogIds: string[];
   donatedCentsTotal: number;
   createdAt: string;

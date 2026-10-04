@@ -12,6 +12,7 @@ export async function POST(request: NextRequest) {
     email?: string;
     password?: string;
     displayName?: string;
+    birthDate?: string;
     ageConfirmed?: boolean;
     website?: string; // honeypot
   };
@@ -21,7 +22,6 @@ export async function POST(request: NextRequest) {
     return jsonError("Invalid JSON", 400);
   }
 
-  // Honeypot — bots fill hidden fields
   if (body.website) {
     return jsonError("Rejected", 400);
   }
@@ -31,12 +31,16 @@ export async function POST(request: NextRequest) {
   if (!body.email || !body.password) {
     return jsonError("Email and password required", 400);
   }
+  if (!body.birthDate) {
+    return jsonError("Birth date required for your personal cosmogram", 400);
+  }
 
   try {
     const user = await createUser({
       email: body.email,
       password: body.password,
       displayName: body.displayName ?? "",
+      birthDate: body.birthDate,
     });
     const response = NextResponse.json(
       { user: publicUser(user) },
@@ -49,7 +53,6 @@ export async function POST(request: NextRequest) {
     }
     const message = err instanceof Error ? err.message : "Registration failed";
     if (message.includes("already exists")) return jsonError(message, 409);
-    // Hide minified runtime noise (e.g. "e2.get is not a function") from clients.
     if (/is not a function|Cannot read|undefined/i.test(message)) {
       return jsonError(
         "Auth store misconfigured — bind AUTH_KV as a KV Namespace (not a Variable), then redeploy",

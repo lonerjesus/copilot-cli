@@ -97,11 +97,9 @@ function ShellInner({ footprint }: { footprint: FootprintItem[] }) {
           </a>
           <nav className="topbar__nav" aria-label="Primary">
             <a href="#stream">stream</a>
-            <a href="#categories">categories</a>
-            <a href="#cosmogram">cosmogram</a>
-            <a href="#footprint">footprint</a>
+            <a href="#categories">browse</a>
+            <a href="#cosmogram">chart</a>
             <a href="#support">support</a>
-            <a href="#brands">brands</a>
           </nav>
           <div className="topbar__account">
             <span className="topbar__user" title={user?.email}>
