@@ -2,13 +2,14 @@
   X-Frame-Options: DENY
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
-  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(self), usb=()
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
   Cross-Origin-Opener-Policy: same-origin
   Cross-Origin-Resource-Policy: same-origin
+  X-Robots-Tag: noindex, nofollow, noarchive, nosnippet
 
 /api/*
-  Cache-Control: public, s-maxage=60, stale-while-revalidate=300
+  Cache-Control: private, no-store
   X-Robots-Tag: noindex
 
 /_next/static/*

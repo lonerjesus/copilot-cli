@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { getMagazineByCatalogId } from "@/data/magazine";
+import { ContentPayActions } from "@/components/ContentPayActions";
 
 function safeExternalHref(raw: string): string | null {
   try {
@@ -86,6 +87,10 @@ export function MagazineReader({ catalogId, onClose }: MagazineReaderProps) {
             close ✕
           </button>
         </div>
+      </div>
+
+      <div className="magazine__pay">
+        <ContentPayActions catalogId={issue.catalogId} title={issue.masthead} />
       </div>
 
       <article

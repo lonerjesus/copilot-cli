@@ -41,6 +41,16 @@ export const metadata: Metadata = {
     "portfolio",
     "vlog",
   ],
+  robots: {
+    index: false,
+    follow: false,
+    nocache: true,
+    googleBot: {
+      index: false,
+      follow: false,
+      noimageindex: true,
+    },
+  },
   openGraph: {
     title: SITE.title,
     description: SITE.description,

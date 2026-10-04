@@ -5,6 +5,15 @@
 # Custom domain: www.kamaunegasi.net (Cloudflare DNS)
 # Headers: public/_headers + next.config.ts + middleware CSP
 #
+# Secrets (Cloudflare dashboard — never plain [vars]):
+#   AUTH_SECRET
+#   STRIPE_SECRET_KEY
+#   STRIPE_WEBHOOK_SECRET
+#   PAYMENTS_MODE=stripe
+#
+# Local/staging only: ALLOW_DEMO_PAYMENTS=1 + PAYMENTS_MODE=demo
+# Auth store (.data/) is Node-local — migrate to D1/KV before Cloudflare production accounts.
+#
 # Squad agent: cloudflare-deploy
 # Depends on: security, performance
 # Verifier: always last
@@ -17,3 +26,4 @@ pages_build_output_dir = ".next"
 SITE_DOMAIN = "www.kamaunegasi.net"
 EXACT_NAME_POLICY = "1"
 AGE_GATE_REQUIRED = "1"
+ACCOUNT_GATE = "1"

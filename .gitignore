@@ -33,6 +33,9 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# local auth / commerce store
+.data/
+
 # vercel
 .vercel
 

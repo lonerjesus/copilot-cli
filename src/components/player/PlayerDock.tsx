@@ -5,6 +5,7 @@ import { usePlayer } from "@/components/player/PlayerContext";
 import { useMagazine } from "@/components/MagazineContext";
 import { kindGlyph } from "@/lib/format";
 import { track } from "@/lib/analytics";
+import { ContentPayActions } from "@/components/ContentPayActions";
 
 function EmbedStage({
   provider,
@@ -135,6 +136,7 @@ export function PlayerDock() {
                   open magazine view ▦
                 </button>
               ) : null}
+              <ContentPayActions catalogId={current.id} title={current.title} />
             </>
           ) : (
             <>
