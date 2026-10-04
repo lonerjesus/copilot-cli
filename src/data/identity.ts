@@ -65,6 +65,16 @@ export const ALIASES: Alias[] = [
     kind: "project",
     note: "Bandcamp album · 357Itsumi",
   },
+  {
+    name: "30over9",
+    kind: "brand",
+    note: "30over9 Presents: Good;Sloppy.",
+  },
+  {
+    name: "Good;Sloppy.",
+    kind: "project",
+    note: "30over9 · Bandcamp",
+  },
 ];
 
 export const PLATFORMS = [

@@ -64,6 +64,6 @@ export const COSMOGRAM = {
       label: "Tech",
       line: "Bandcamp · SoundCloud · Slushy · Shazam · MagCloud · Substack · Apple · Twitch · Vimeo",
     },
-    { label: "House", line: "Streetpolitik · 357Itsumi · TSOL · GAK · GRUNGEzhou · Golden Crow" },
+    { label: "House", line: "Streetpolitik · 357Itsumi · 30over9 · TSOL · GAK · GRUNGEzhou · Golden Crow" },
   ],
 } as const;
