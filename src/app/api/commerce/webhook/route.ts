@@ -2,23 +2,22 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getSessionUserFromRequest } from "@/lib/auth/session";
 import { grantPurchase, recordDonation, publicUser } from "@/lib/auth/store";
 import { jsonError } from "@/lib/commerce/checkout";
+import { safeEqual } from "@/lib/auth/crypto";
 
 /**
- * Stripe webhook stub — verifies shared secret header when configured.
- * Demo mode does not need this; entitlements are granted at checkout create.
+ * Stripe entitlement webhook — fail closed.
+ * Requires STRIPE_WEBHOOK_SECRET via x-kn-webhook-secret (shared secret).
+ * Demo entitlements are granted only at authenticated checkout-create in non-prod.
  */
 export async function POST(request: NextRequest) {
   const secret = process.env.STRIPE_WEBHOOK_SECRET?.trim();
-  if (secret) {
-    const header = request.headers.get("stripe-signature") ?? "";
-    if (!header.includes(secret) && header !== secret) {
-      // Full Stripe signature verification requires raw body + stripe lib;
-      // require exact shared secret header for this lightweight adapter.
-      const auth = request.headers.get("x-kn-webhook-secret");
-      if (auth !== secret) return jsonError("invalid_signature", 401);
-    }
-  } else if (process.env.PAYMENTS_MODE === "stripe") {
-    return jsonError("STRIPE_WEBHOOK_SECRET not configured", 503);
+  if (!secret || secret.length < 16) {
+    return jsonError("webhook_disabled", 503);
+  }
+
+  const provided = request.headers.get("x-kn-webhook-secret") ?? "";
+  if (!provided || !safeEqual(provided, secret)) {
+    return jsonError("invalid_signature", 401);
   }
 
   let body: {
@@ -47,7 +46,6 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // Optional: return refreshed user when caller is session-authenticated (admin tools)
   const sessionUser = await getSessionUserFromRequest(request);
   return NextResponse.json(
     {

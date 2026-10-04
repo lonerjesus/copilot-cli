@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { DONATION_PRESETS_CENTS, formatUsd, MIN_DONATION_CENTS } from "@/data/commerce";
+import { DONATION_PRESETS_CENTS, formatUsd, MIN_DONATION_CENTS, MAX_DONATION_CENTS } from "@/data/commerce";
 import { useAuth } from "@/components/AuthContext";
 import { track } from "@/lib/analytics";
 
@@ -24,6 +24,10 @@ export function DonatePanel() {
           : cents;
       if (!Number.isFinite(amount) || amount < MIN_DONATION_CENTS) {
         setMessage(`Minimum ${formatUsd(MIN_DONATION_CENTS)}`);
+        return;
+      }
+      if (amount > MAX_DONATION_CENTS) {
+        setMessage(`Maximum ${formatUsd(MAX_DONATION_CENTS)}`);
         return;
       }
       const res = await fetch("/api/donate", {

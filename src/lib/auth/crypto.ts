@@ -1,4 +1,5 @@
 import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
+import { DEV_AUTH_SECRET } from "@/lib/auth/token";
 
 const SCRYPT_KEYLEN = 64;
 
@@ -6,7 +7,7 @@ export function getAuthSecret(): string {
   const secret = process.env.AUTH_SECRET?.trim();
   if (secret && secret.length >= 16) return secret;
   if (process.env.NODE_ENV !== "production") {
-    return "kn-dev-auth-secret-change-me";
+    return DEV_AUTH_SECRET;
   }
   throw new Error("AUTH_SECRET must be set (≥16 chars) in production");
 }

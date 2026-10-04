@@ -29,6 +29,7 @@ export function ContentPayActions({ catalogId, title }: ContentPayActionsProps) 
       const data = (await res.json()) as {
         url?: string;
         alreadyOwned?: boolean;
+        mode?: string;
         error?: string;
       };
       if (!res.ok) {
@@ -40,9 +41,15 @@ export function ContentPayActions({ catalogId, title }: ContentPayActionsProps) 
         setMsg("Already licensed");
         return;
       }
-      await refresh();
-      markOwned(catalogId);
-      if (data.url) window.location.href = data.url;
+      // Demo grants server-side immediately — refresh entitlements from server.
+      // Stripe mode: do not mark owned until return/webhook settles.
+      if (data.mode === "demo") {
+        await refresh();
+        markOwned(catalogId);
+      }
+      if (data.url) {
+        window.location.assign(data.url);
+      }
     } catch {
       setMsg("Network error");
     } finally {

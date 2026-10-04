@@ -5,6 +5,15 @@ import { SITE } from "@/data/identity";
 
 type Mode = "login" | "register";
 
+/** Block open redirects: only same-origin relative paths. */
+function safeInternalPath(raw: string | null): string {
+  if (!raw) return "/";
+  if (!raw.startsWith("/")) return "/";
+  if (raw.startsWith("//") || raw.startsWith("/\\")) return "/";
+  if (raw.includes("://") || raw.includes("\\")) return "/";
+  return raw;
+}
+
 export function AccessGate() {
   const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
@@ -18,8 +27,7 @@ export function AccessGate() {
   const nextPath = useMemo(() => {
     if (typeof window === "undefined") return "/";
     const params = new URLSearchParams(window.location.search);
-    const next = params.get("next");
-    return next && next.startsWith("/") ? next : "/";
+    return safeInternalPath(params.get("next"));
   }, []);
 
   const submit = async (event: FormEvent) => {
@@ -90,18 +98,17 @@ export function AccessGate() {
         </div>
 
         <form className="access__form" onSubmit={submit} autoComplete="on">
-          {/* honeypot — must stay invisible to humans */}
-          <div className="hp" aria-hidden="true">
-            <label htmlFor="access-website">website</label>
-            <input
-              id="access-website"
-              name="website"
-              tabIndex={-1}
-              autoComplete="off"
-              value={website}
-              onChange={(e) => setWebsite(e.target.value)}
-            />
-          </div>
+          {/* honeypot — no visible label text; off-canvas only */}
+          <input
+            className="hp"
+            type="text"
+            name="website"
+            tabIndex={-1}
+            autoComplete="off"
+            aria-hidden="true"
+            value={website}
+            onChange={(e) => setWebsite(e.target.value)}
+          />
 
           {mode === "register" ? (
             <label>
@@ -133,6 +140,7 @@ export function AccessGate() {
               type="password"
               required
               minLength={mode === "register" ? 10 : 1}
+              maxLength={128}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete={mode === "login" ? "current-password" : "new-password"}

@@ -58,6 +58,10 @@ check "ingest-authed" "$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" -b "$JA
 dl="$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" -b "$JAR" "$BASE/api/commerce/download?id=qtoss-vol1")"
 check "download-paywall" "$dl" "402"
 
+# webhook must fail closed without secret
+wh="$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" -X POST "$BASE/api/commerce/webhook" -H 'content-type: application/json' -d '{"type":"checkout.session.completed"}')"
+check "webhook-fail-closed" "$wh" "503"
+
 # purchase (demo mode) then download
 buy="$(curl -s -A "$UA" -b "$JAR" -X POST "$BASE/api/commerce/purchase" \
   -H 'content-type: application/json' \

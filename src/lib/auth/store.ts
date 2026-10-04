@@ -1,6 +1,13 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { hashPassword, randomToken, verifyPassword } from "@/lib/auth/crypto";
+import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from "@/data/commerce";
+
+/**
+ * Local durable JSON store for Node hosts.
+ * Cloudflare Pages/Workers need D1/KV before production accounts — this file
+ * store will not survive multi-isolate edge deploys.
+ */
 
 export type StoredUser = {
   id: string;
@@ -68,8 +75,11 @@ export async function createUser(input: {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     throw new Error("Invalid email");
   }
-  if (input.password.length < 10) {
-    throw new Error("Password must be at least 10 characters");
+  if (input.password.length < MIN_PASSWORD_LENGTH) {
+    throw new Error(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`);
+  }
+  if (input.password.length > MAX_PASSWORD_LENGTH) {
+    throw new Error(`Password must be at most ${MAX_PASSWORD_LENGTH} characters`);
   }
   const existing = await findUserByEmail(email);
   if (existing) throw new Error("Account already exists");

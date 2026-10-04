@@ -1,15 +1,39 @@
 import { NextResponse } from "next/server";
-import { contentPriceCents, MIN_DONATION_CENTS } from "@/data/commerce";
+import {
+  contentPriceCents,
+  MIN_DONATION_CENTS,
+  MAX_DONATION_CENTS,
+} from "@/data/commerce";
 import { grantPurchase, recordDonation } from "@/lib/auth/store";
 import { randomToken } from "@/lib/auth/crypto";
 
 export type PaymentsMode = "demo" | "stripe";
 
+/** Demo grants only when explicitly allowed (local/staging). Production never free-grants. */
 export function paymentsMode(): PaymentsMode {
   const mode = process.env.PAYMENTS_MODE?.trim().toLowerCase();
+  const allowDemo =
+    process.env.ALLOW_DEMO_PAYMENTS === "1" || process.env.NODE_ENV !== "production";
+
+  if (mode === "demo") {
+    if (!allowDemo) {
+      throw new Error("Demo payments are disabled in production");
+    }
+    return "demo";
+  }
   if (mode === "stripe") return "stripe";
   if (process.env.STRIPE_SECRET_KEY?.startsWith("sk_")) return "stripe";
-  return "demo";
+  if (allowDemo) return "demo";
+  return "stripe";
+}
+
+export function assertDonationAmount(cents: number) {
+  if (!Number.isFinite(cents) || cents < MIN_DONATION_CENTS) {
+    throw new Error(`Minimum donation is $${(MIN_DONATION_CENTS / 100).toFixed(2)}`);
+  }
+  if (cents > MAX_DONATION_CENTS) {
+    throw new Error(`Maximum donation is $${(MAX_DONATION_CENTS / 100).toFixed(2)}`);
+  }
 }
 
 async function stripeRequest(
@@ -45,9 +69,7 @@ export async function createDonationCheckout(input: {
   cents: number;
   origin: string;
 }): Promise<{ url: string; mode: PaymentsMode; sessionId: string }> {
-  if (input.cents < MIN_DONATION_CENTS) {
-    throw new Error(`Minimum donation is ${MIN_DONATION_CENTS} cents`);
-  }
+  assertDonationAmount(input.cents);
 
   const origin = input.origin.replace(/\/$/, "");
   const mode = paymentsMode();

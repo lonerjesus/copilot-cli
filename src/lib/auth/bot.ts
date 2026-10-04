@@ -13,30 +13,7 @@ export function isSuspiciousBot(request: NextRequest): boolean {
   return false;
 }
 
-export function clientKey(request: NextRequest): string {
-  const fwd = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
-  const real = request.headers.get("x-real-ip")?.trim();
-  return fwd || real || "unknown";
-}
-
-/** Sliding window rate limit. Returns true if allowed. */
-export function rateLimitAllow(
-  key: string,
-  limit: number,
-  windowMs: number,
-): boolean {
-  const now = Date.now();
-  const bucket = rateBuckets.get(key);
-  if (!bucket || bucket.resetAt < now) {
-    rateBuckets.set(key, { count: 1, resetAt: now + windowMs });
-    return true;
-  }
-  if (bucket.count >= limit) return false;
-  bucket.count += 1;
-  return true;
-}
-
-/** Public paths that never require a session */
+/** Public paths that never require a session — explicit allowlist only */
 export const PUBLIC_PATHS = new Set([
   "/access",
   "/robots.txt",
@@ -51,7 +28,25 @@ export const PUBLIC_PATHS = new Set([
 ]);
 
 export function isPublicPath(pathname: string): boolean {
-  if (PUBLIC_PATHS.has(pathname)) return true;
-  if (pathname.startsWith("/api/auth/")) return true;
-  return false;
+  return PUBLIC_PATHS.has(pathname);
+}
+
+export function clientKey(request: NextRequest): string {
+  const cf = request.headers.get("cf-connecting-ip")?.trim();
+  const fwd = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+  const real = request.headers.get("x-real-ip")?.trim();
+  return cf || fwd || real || "unknown";
+}
+
+/** Sliding window rate limit. Returns true if allowed. */
+export function rateLimitAllow(key: string, limit: number, windowMs: number): boolean {
+  const now = Date.now();
+  const bucket = rateBuckets.get(key);
+  if (!bucket || bucket.resetAt < now) {
+    rateBuckets.set(key, { count: 1, resetAt: now + windowMs });
+    return true;
+  }
+  if (bucket.count >= limit) return false;
+  bucket.count += 1;
+  return true;
 }
