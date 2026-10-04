@@ -241,10 +241,15 @@ export function validateCreateInput(raw: unknown): CreateContentInput {
 }
 
 export async function listUploads(): Promise<UploadedContent[]> {
-  const items = await readUploads();
-  return [...items].sort(
-    (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime(),
-  );
+  try {
+    const items = await readUploads();
+    return [...items].sort(
+      (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime(),
+    );
+  } catch {
+    // Build / edge without store — seed catalog only
+    return [];
+  }
 }
 
 export async function createUpload(

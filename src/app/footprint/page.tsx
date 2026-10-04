@@ -3,6 +3,8 @@ import { FootprintShell } from "@/components/FootprintShell";
 import { buildFootprint } from "@/lib/feed";
 import { SITE } from "@/data/identity";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Watch Footprint",
   description: `Full archive of posts and media signals for ${SITE.title}.`,

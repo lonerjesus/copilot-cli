@@ -5,13 +5,13 @@
   "description": "www.kamaunegasi.net — autonomous portfolio & vlog streaming platform",
   "scripts": {
     "dev": "next dev",
-    "build": "opennextjs-cloudflare build",
-    "build:next": "next build",
+    "build": "NODE_OPTIONS=--max-old-space-size=4096 opennextjs-cloudflare build",
+    "build:next": "NODE_OPTIONS=--max-old-space-size=4096 next build",
     "start": "next start",
     "lint": "eslint",
-    "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
-    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
-    "cf:build": "opennextjs-cloudflare build",
+    "preview": "NODE_OPTIONS=--max-old-space-size=4096 opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "deploy": "NODE_OPTIONS=--max-old-space-size=4096 opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "cf:build": "NODE_OPTIONS=--max-old-space-size=4096 opennextjs-cloudflare build",
     "cf:deploy": "opennextjs-cloudflare deploy",
     "qa:smoke": "bash scripts/qa-smoke.sh http://localhost:3000"
   },

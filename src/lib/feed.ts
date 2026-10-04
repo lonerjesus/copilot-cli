@@ -150,6 +150,7 @@ export async function fetchSubstackFeed(): Promise<FootprintItem[]> {
     const res = await fetch(feedUrl, {
       next: { revalidate: 300 },
       headers: { "User-Agent": "kamaunegasi.net/1.0 (+https://www.kamaunegasi.net)" },
+      signal: AbortSignal.timeout(4500),
     });
     if (!res.ok) return [];
     const xml = await res.text();

@@ -9,15 +9,17 @@ const nextConfig: NextConfig = {
     formats: ["image/avif", "image/webp"],
     minimumCacheTTL: 60 * 60 * 24 * 30,
     remotePatterns: [
-      { protocol: "https", hostname: "**.substackcdn.com" },
+      { protocol: "https", hostname: "*.substackcdn.com" },
       { protocol: "https", hostname: "tellingshowoflove.substack.com" },
-      { protocol: "https", hostname: "**.vimeocdn.com" },
+      { protocol: "https", hostname: "*.vimeocdn.com" },
+      { protocol: "https", hostname: "i.vimeocdn.com" },
       { protocol: "https", hostname: "static-cdn.jtvnw.net" },
       { protocol: "https", hostname: "i.ytimg.com" },
-      { protocol: "https", hostname: "**.bcbits.com" },
-      { protocol: "https", hostname: "**.sndcdn.com" },
+      { protocol: "https", hostname: "f4.bcbits.com" },
+      { protocol: "https", hostname: "*.bcbits.com" },
+      { protocol: "https", hostname: "*.sndcdn.com" },
       { protocol: "https", hostname: "soundcloud.com" },
-      { protocol: "https", hostname: "**.googleusercontent.com" },
+      { protocol: "https", hostname: "*.googleusercontent.com" },
     ],
   },
   experimental: {
@@ -54,4 +56,7 @@ const nextConfig: NextConfig = {
 
 export default nextConfig;
 
-void initOpenNextCloudflareForDev();
+// Local `next dev` only — never during CI / Workers Builds.
+if (process.env.NODE_ENV === "development") {
+  void initOpenNextCloudflareForDev();
+}
