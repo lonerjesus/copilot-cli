@@ -2089,11 +2089,13 @@ select:focus:not(:focus-visible) {
 
 .access__form {
   display: grid;
+  grid-template-columns: 1fr;
   gap: 0.75rem;
 }
 
-.access__form label {
+.access__form > label {
   display: grid;
+  grid-template-columns: 1fr;
   gap: 0.3rem;
   font-size: 0.72rem;
   letter-spacing: 0.08em;
@@ -2101,13 +2103,18 @@ select:focus:not(:focus-visible) {
   color: var(--steel);
 }
 
-.access__form input {
-  border: 1px solid var(--line);
+.access__form input[type="email"],
+.access__form input[type="password"],
+.access__form input[type="text"] {
+  display: block;
+  width: 100%;
+  border: 1px solid var(--line-hot);
   background: var(--void);
-  padding: 0.55rem 0.65rem;
+  padding: 0.65rem 0.75rem;
   font-size: 0.9rem;
   letter-spacing: 0;
   text-transform: none;
+  color: var(--text);
 }
 
 .access__check {
@@ -2139,10 +2146,16 @@ select:focus:not(:focus-visible) {
 
 .hp {
   position: absolute !important;
-  left: -10000px !important;
   width: 1px !important;
   height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
   overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
 }
 
 .donate__row {

@@ -90,21 +90,24 @@ export function AccessGate() {
         </div>
 
         <form className="access__form" onSubmit={submit} autoComplete="on">
-          {/* honeypot */}
-          <label className="hp" aria-hidden="true">
-            website
+          {/* honeypot — must stay invisible to humans */}
+          <div className="hp" aria-hidden="true">
+            <label htmlFor="access-website">website</label>
             <input
+              id="access-website"
+              name="website"
               tabIndex={-1}
               autoComplete="off"
               value={website}
               onChange={(e) => setWebsite(e.target.value)}
             />
-          </label>
+          </div>
 
           {mode === "register" ? (
             <label>
               <span>display name</span>
               <input
+                type="text"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
                 placeholder="how we greet you"
