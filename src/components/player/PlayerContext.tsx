@@ -82,7 +82,11 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     clearTimer();
-    if (!playing) return;
+    // Real embeds (Bandcamp / SoundCloud / Twitch) own playback — don't fake scrub/auto-advance.
+    const liveEmbed = ["bandcamp", "soundcloud", "twitch", "youtube"].includes(
+      current?.embed?.provider ?? "",
+    );
+    if (!playing || liveEmbed) return;
     timer.current = window.setInterval(() => {
       setProgress((p) => {
         if (p >= 100) {
@@ -93,7 +97,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       });
     }, 120);
     return clearTimer;
-  }, [playing, next, current?.id]);
+  }, [playing, next, current?.id, current?.embed?.provider]);
 
   const state = useMemo(
     () => ({

@@ -18,7 +18,7 @@ export type CatalogItem = {
   src?: string;
   poster?: string;
   embed?: {
-    provider: "youtube" | "vimeo" | "twitch" | "soundcloud" | "substack" | "audio";
+    provider: "youtube" | "vimeo" | "twitch" | "soundcloud" | "substack" | "audio" | "bandcamp";
     id?: string;
     url?: string;
   };
@@ -521,6 +521,7 @@ export const CATALOG: CatalogItem[] = [
     publishedAt: "2024-12-24",
     platform: "bandcamp",
     externalUrl: "https://357itsumi.bandcamp.com/album/telling-songs-as-content",
+    embed: { provider: "bandcamp", id: "459847466" },
     tags: ["357Itsumi", "Bandcamp", "Telling Songs As Content", "Streetpolitik", "Faust Fakeway"],
     blurb: "Full Bandcamp album by 357Itsumi — includes Streetpolitik and Faust Fakeway cuts.",
   },
@@ -536,6 +537,7 @@ export const CATALOG: CatalogItem[] = [
     publishedAt: "2017-07-27",
     platform: "bandcamp-30over9",
     externalUrl: "https://357itsumi.bandcamp.com/album/30over9-presents-good-sloppy",
+    embed: { provider: "bandcamp", id: "944640200" },
     tags: ["30over9", "Good;Sloppy.", "357Itsumi", "Streetpolitik", "Bandcamp"],
     blurb: "30over9 prelude album by 357Itsumi — supported by Streetpolitik.",
   },
@@ -550,6 +552,7 @@ export const CATALOG: CatalogItem[] = [
     publishedAt: "2017-07-27",
     platform: "bandcamp-30over9",
     externalUrl: "https://357itsumi.bandcamp.com/album/30over9-presents-good-sloppy",
+    embed: { provider: "bandcamp", id: "944640200" },
     tags: ["30over9", "Streetpolitik", "Kendrick-Kamau Negasi", "Good;Sloppy."],
     blurb: "Streetpolitik / Kendrick-Kamau Negasi cut from 30over9 Presents: Good;Sloppy.",
   },
@@ -564,6 +567,7 @@ export const CATALOG: CatalogItem[] = [
     publishedAt: "2017-07-27",
     platform: "bandcamp-30over9",
     externalUrl: "https://357itsumi.bandcamp.com/album/30over9-presents-good-sloppy",
+    embed: { provider: "bandcamp", id: "944640200" },
     tags: ["30over9", "Good;Sloppy.", "357Itsumi"],
     blurb: "Title track from 30over9 Presents: Good;Sloppy.",
   },
@@ -578,6 +582,7 @@ export const CATALOG: CatalogItem[] = [
     publishedAt: "2017-07-27",
     platform: "bandcamp-30over9",
     externalUrl: "https://357itsumi.bandcamp.com/album/30over9-presents-good-sloppy",
+    embed: { provider: "bandcamp", id: "944640200" },
     tags: ["30over9", "Good;Sloppy.", "357Itsumi", "pro-Black"],
     blurb: "ElectroBlkLvsMttr from 30over9 Presents: Good;Sloppy.",
   },
@@ -592,6 +597,7 @@ export const CATALOG: CatalogItem[] = [
     publishedAt: "2024-12-24",
     platform: "bandcamp",
     externalUrl: "https://357itsumi.bandcamp.com/album/telling-songs-as-content",
+    embed: { provider: "bandcamp", id: "459847466" },
     tags: ["Streetpolitik", "357Itsumi", "Bandcamp"],
     blurb: "Streetpolitik track from Telling Songs As Content.",
   },
@@ -606,6 +612,7 @@ export const CATALOG: CatalogItem[] = [
     publishedAt: "2024-12-24",
     platform: "bandcamp",
     externalUrl: "https://357itsumi.bandcamp.com/album/telling-songs-as-content",
+    embed: { provider: "bandcamp", id: "459847466" },
     tags: ["Streetpolitik", "357Itsumi", "Bandcamp"],
     blurb: "Streetpolitik cut from Telling Songs As Content.",
   },
@@ -620,6 +627,7 @@ export const CATALOG: CatalogItem[] = [
     publishedAt: "2024-12-24",
     platform: "bandcamp",
     externalUrl: "https://357itsumi.bandcamp.com/album/telling-songs-as-content",
+    embed: { provider: "bandcamp", id: "459847466" },
     tags: ["Faust Fakeway", "357Itsumi", "Bandcamp"],
     blurb: "Faust Fakeway track from Telling Songs As Content.",
   },
@@ -633,6 +641,7 @@ export const CATALOG: CatalogItem[] = [
     publishedAt: "2024-01-01",
     platform: "soundcloud",
     externalUrl: "https://m.soundcloud.com/357itsumi",
+    embed: { provider: "soundcloud", url: "https://soundcloud.com/357itsumi" },
     tags: ["357Itsumi", "SoundCloud"],
     blurb: "357Itsumi SoundCloud uplink.",
   },

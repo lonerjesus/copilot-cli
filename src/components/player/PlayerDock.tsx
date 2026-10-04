@@ -23,7 +23,37 @@ function EmbedStage({
       `https://player.twitch.tv/?channel=${id}` +
       `&parent=www.kamaunegasi.net&parent=kamaunegasi.net&parent=localhost&muted=true`;
     return (
-      <iframe title={title} src={src} allowFullScreen className="deck__frame" />
+      <iframe title={title} src={src} allowFullScreen className="deck__frame" allow="autoplay; encrypted-media" />
+    );
+  }
+
+  if (provider === "bandcamp" && id) {
+    const src =
+      `https://bandcamp.com/EmbeddedPlayer/album=${encodeURIComponent(id)}` +
+      `/size=large/bgcol=0a0c0a/linkcol=b8ff3c/artwork=small/transparent=true/`;
+    return (
+      <iframe
+        title={title}
+        src={src}
+        className="deck__frame deck__frame--audio"
+        allow="autoplay; encrypted-media; clipboard-write"
+        loading="lazy"
+      />
+    );
+  }
+
+  if (provider === "soundcloud" && url) {
+    const src =
+      `https://w.soundcloud.com/player/?url=${encodeURIComponent(url)}` +
+      `&color=%23b8ff3c&auto_play=false&hide_related=true&show_comments=false&show_user=true&show_reposts=false&show_teaser=false`;
+    return (
+      <iframe
+        title={title}
+        src={src}
+        className="deck__frame deck__frame--audio"
+        allow="autoplay; encrypted-media"
+        loading="lazy"
+      />
     );
   }
 
@@ -33,6 +63,18 @@ function EmbedStage({
         <p>VIMEO UPLINK</p>
         <a href={url} target="_blank" rel="noopener noreferrer">
           open archive →
+        </a>
+      </div>
+    );
+  }
+
+  // Bandcamp / audio without embed metadata — open source, no fake “playing”
+  if (url && /bandcamp\.com/i.test(url)) {
+    return (
+      <div className="deck__fallback">
+        <p>BANDCAMP UPLINK</p>
+        <a href={url} target="_blank" rel="noopener noreferrer">
+          open player on Bandcamp →
         </a>
       </div>
     );

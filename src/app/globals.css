@@ -1427,6 +1427,12 @@ select:focus:not(:focus-visible) {
   border: 0;
 }
 
+.deck__frame--audio {
+  aspect-ratio: 16 / 12;
+  min-height: 120px;
+  background: #0a0c0a;
+}
+
 .deck__fallback {
   display: grid;
   place-content: center;
