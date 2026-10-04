@@ -9,14 +9,19 @@ export const SITE = {
   domain: "www.kamaunegasi.net",
   url: "https://www.kamaunegasi.net",
   title: "KAMAU NEGASI",
-  tagline: "autonomous portfolio · vlog · signal stream",
+  tagline: "autonomous portfolio · vlog · signal stream · digital magazine",
   description:
-    "18+ only — not for people under 18 due to certain content. Interactive portfolio and vlog platform for Kendrick-Kamau Negasi — streaming footprint, custom media deck, and live social signal across Streetpolitik, GAK, TSOL, BLKDTY, and more.",
+    "18+ only — not for people under 18 due to certain content. Interactive portfolio and vlog platform for Kendrick-Kamau Negasi / Kendrick Tirrell Herring — streaming footprint, magazine reader, cosmogram, and custom media deck across Streetpolitik, GAK, TSOL, BLKDTY, and more.",
 } as const;
 
 export const PRIMARY_NAME = "Kendrick-Kamau Negasi";
 
+/** Legal / birth identity — spelled exactly as provided */
+export const BIRTH_NAME = "Kendrick Tirrell Herring";
+export const DOB = "04/05/1987";
+
 export const ALIASES: Alias[] = [
+  { name: "Kendrick Tirrell Herring", kind: "legal", note: "DOB 04/05/1987" },
   { name: "Kendrick-Kamau Negasi", kind: "legal" },
   { name: "Kamau Salaam Nasser", kind: "legal" },
   { name: "Streetpolitik", kind: "artist", note: "f/k/a core music identity" },
@@ -36,7 +41,7 @@ export const ALIASES: Alias[] = [
   {
     name: "Imponderabilia: Wall_Carpet 235",
     kind: "project",
-    note: "podcast / imponderability stream",
+    note: "imponderabilia: wall_carpet #235",
   },
   { name: "357Itsumi", kind: "handle", note: "f/k/a Streetpolitik™ + LuxuryGuerrilla™" },
   { name: "LoveDrugVendingMachine", kind: "project" },
@@ -45,6 +50,16 @@ export const ALIASES: Alias[] = [
   { name: "GRUNGEzhou Supply", kind: "brand" },
   { name: "Golden Crow", kind: "brand" },
   { name: "Golden Crow Acquisitions", kind: "entity" },
+  {
+    name: "QUARANTINED THOUGHTS OF A STREET STATISTIC",
+    kind: "project",
+    note: "MagCloud chapbooks · Streetpolitik",
+  },
+  {
+    name: "STPK's Smoker's Lounge Music",
+    kind: "project",
+    note: "Apple Podcasts · Streetpolitik™",
+  },
 ];
 
 export const PLATFORMS = [
@@ -55,6 +70,27 @@ export const PLATFORMS = [
     url: "https://tellingshowoflove.substack.com",
     feed: "https://tellingshowoflove.substack.com/feed",
     kind: "blog" as const,
+  },
+  {
+    id: "magcloud",
+    label: "MagCloud",
+    handle: "streetpolitik",
+    url: "https://www.magcloud.com/user/streetpolitik",
+    kind: "magazine" as const,
+  },
+  {
+    id: "apple-imponderabilia",
+    label: "Apple · wall_carpet #235",
+    handle: "imponderabilia",
+    url: "https://podcasts.apple.com/us/podcast/imponderabilia-wall-carpet-235/id1831912721",
+    kind: "audio" as const,
+  },
+  {
+    id: "apple-stpks",
+    label: "Apple · STPK's Smoker's Lounge",
+    handle: "streetpolitik",
+    url: "https://podcasts.apple.com/us/podcast/stpks-smokers-lounge-music/id1110276220",
+    kind: "audio" as const,
   },
   {
     id: "twitch",

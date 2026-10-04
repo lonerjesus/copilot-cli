@@ -19,6 +19,7 @@ import {
 } from "@/lib/search";
 import { kindGlyph } from "@/lib/format";
 import { usePlayer } from "@/components/player/PlayerContext";
+import { useMagazine } from "@/components/MagazineContext";
 
 type CategoryBrowserProps = {
   initialQuery?: string;
@@ -32,6 +33,7 @@ export function CategoryBrowser({
   initialSubcategory = "all",
 }: CategoryBrowserProps) {
   const { current, playItem } = usePlayer();
+  const { openMagazine, hasMagazine } = useMagazine();
   const [query, setQuery] = useState(initialQuery);
   const [category, setCategory] = useState<CategoryId | "all">(initialCategory);
   const [subcategory, setSubcategory] = useState<SubcategoryId | "all">(initialSubcategory);
@@ -310,23 +312,33 @@ export function CategoryBrowser({
                 </header>
                 <div className="cat-group__track">
                   {group.items.map((item) => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      className={`tile tile--compact ${current?.id === item.id ? "tile--active" : ""}`}
-                      onClick={() => playItem(item, group.items)}
-                    >
-                      <div className={`tile__art tile__art--${item.kind}`} aria-hidden>
-                        <span className="tile__glyph">{kindGlyph(item.kind)}</span>
-                      </div>
-                      <div className="tile__meta">
-                        <p className="tile__brand">{item.brand}</p>
-                        <h4 className="tile__title">{item.title}</h4>
-                        <p className="tile__sub">
-                          {item.subcategory} · {item.kind} · {item.platform}
-                        </p>
-                      </div>
-                    </button>
+                    <div key={item.id} className="tile-wrap">
+                      <button
+                        type="button"
+                        className={`tile tile--compact ${current?.id === item.id ? "tile--active" : ""}`}
+                        onClick={() => playItem(item, group.items)}
+                      >
+                        <div className={`tile__art tile__art--${item.kind}`} aria-hidden>
+                          <span className="tile__glyph">{kindGlyph(item.kind)}</span>
+                        </div>
+                        <div className="tile__meta">
+                          <p className="tile__brand">{item.brand}</p>
+                          <h4 className="tile__title">{item.title}</h4>
+                          <p className="tile__sub">
+                            {item.subcategory} · {item.kind} · {item.platform}
+                          </p>
+                        </div>
+                      </button>
+                      {hasMagazine(item.id) ? (
+                        <button
+                          type="button"
+                          className="tile__mag"
+                          onClick={() => openMagazine(item.id)}
+                        >
+                          magazine view
+                        </button>
+                      ) : null}
+                    </div>
                   ))}
                 </div>
               </article>

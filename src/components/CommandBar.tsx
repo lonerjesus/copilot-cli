@@ -7,6 +7,8 @@ import { findCategoryByQuery } from "@/data/taxonomy";
 const COMMANDS = [
   { cmd: "stream", hint: "focus the streaming deck" },
   { cmd: "categories", hint: "browse separated categories" },
+  { cmd: "magazine", hint: "jump to stream for magazine chapbooks" },
+  { cmd: "cosmogram", hint: "open birthday cosmogram" },
   { cmd: "footprint", hint: "jump to live social signal" },
   { cmd: "play", hint: "toggle media deck" },
   { cmd: "brands", hint: "open alias matrix" },
@@ -85,7 +87,7 @@ export function CommandBar({ onCommand, onSearch }: CommandBarProps) {
         className="cmd__input"
         value={value}
         onChange={(e) => setValue(e.target.value)}
-        placeholder="search categories · or stream · footprint · brands  (press /)"
+        placeholder="search your names · quarantine · wall_carpet · cosmogram  (press /)"
         autoComplete="off"
         spellCheck={false}
       />

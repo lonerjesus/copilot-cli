@@ -11,6 +11,9 @@ const ALLOWED_HOSTS = new Set([
   "www.youtube.com",
   "youtube.com",
   "youtu.be",
+  "www.magcloud.com",
+  "magcloud.com",
+  "podcasts.apple.com",
 ]);
 
 function parseSafeUrl(raw: string | null): URL | null {

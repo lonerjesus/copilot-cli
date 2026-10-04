@@ -10,10 +10,13 @@ import { CategoryBrowser } from "@/components/CategoryBrowser";
 import { ContinuumRail } from "@/components/ContinuumRail";
 import { FootprintFeed } from "@/components/FootprintFeed";
 import { AliasMatrix } from "@/components/AliasMatrix";
+import { CosmogramPanel } from "@/components/Cosmogram";
+import { MagazineReader } from "@/components/MagazineReader";
+import { MagazineProvider, useMagazine } from "@/components/MagazineContext";
 import { PlayerDock } from "@/components/player/PlayerDock";
 import { PlayerProvider, usePlayer } from "@/components/player/PlayerContext";
 import type { FootprintItem } from "@/lib/feed";
-import { SITE } from "@/data/identity";
+import { BIRTH_NAME, SITE } from "@/data/identity";
 import { findCategoryByQuery, type CategoryId, type SubcategoryId } from "@/data/taxonomy";
 
 function ShellInner({ footprint }: { footprint: FootprintItem[] }) {
@@ -23,6 +26,7 @@ function ShellInner({ footprint }: { footprint: FootprintItem[] }) {
   const [searchSubcategory, setSearchSubcategory] = useState<SubcategoryId | "all">("all");
   const [browseKey, setBrowseKey] = useState(0);
   const { toggle, setExpanded } = usePlayer();
+  const { openId, closeMagazine } = useMagazine();
 
   const applySearch = useCallback((query: string) => {
     const hit = findCategoryByQuery(query);
@@ -46,6 +50,8 @@ function ShellInner({ footprint }: { footprint: FootprintItem[] }) {
       const map: Record<string, string> = {
         stream: "stream",
         categories: "categories",
+        magazine: "stream",
+        cosmogram: "cosmogram",
         footprint: "footprint",
         brands: "brands",
       };
@@ -61,7 +67,7 @@ function ShellInner({ footprint }: { footprint: FootprintItem[] }) {
       {!booted ? <BootSequence onDone={() => setBooted(true)} /> : null}
       <div className={`shell ${booted ? "shell--ready" : "shell--booting"}`}>
         <p className="agebanner" role="note">
-          18+ · not for people under 18 · mature content may appear
+          18+ · not for people under 18 · mature content may appear · pro-Black excellence only
         </p>
         <header className="topbar">
           <a className="topbar__brand" href="#top">
@@ -74,6 +80,7 @@ function ShellInner({ footprint }: { footprint: FootprintItem[] }) {
           <nav className="topbar__nav" aria-label="Primary">
             <a href="#stream">stream</a>
             <a href="#categories">categories</a>
+            <a href="#cosmogram">cosmogram</a>
             <a href="#footprint">footprint</a>
             <a href="#brands">brands</a>
           </nav>
@@ -92,24 +99,26 @@ function ShellInner({ footprint }: { footprint: FootprintItem[] }) {
             initialCategory={searchCategory}
             initialSubcategory={searchSubcategory}
           />
+          <CosmogramPanel />
           <FootprintFeed initial={footprint} />
           <AliasMatrix />
         </main>
 
         <footer className="footer">
           <p>
-            © {new Date().getFullYear()} Kendrick-Kamau Negasi LLC · BLKDTY Music LLC · All
-            rights reserved.
+            © {new Date().getFullYear()} {BIRTH_NAME} · Kendrick-Kamau Negasi LLC · BLKDTY Music
+            LLC · All rights reserved.
           </p>
           <p className="footer__note">
             Warning: 18+ only. This platform is not for people under 18 due to certain content.
           </p>
           <p className="footer__note">
-            Creating is the Ritual, Love is the Reason. · Cloudflare edge ready.
+            Creating is the Ritual, Love is the Reason. · #BeAutonomous · Cloudflare edge ready.
           </p>
         </footer>
 
         <PlayerDock />
+        <MagazineReader catalogId={openId} onClose={closeMagazine} />
       </div>
     </>
   );
@@ -118,7 +127,9 @@ function ShellInner({ footprint }: { footprint: FootprintItem[] }) {
 export function AppShell({ footprint }: { footprint: FootprintItem[] }) {
   return (
     <PlayerProvider>
-      <ShellInner footprint={footprint} />
+      <MagazineProvider>
+        <ShellInner footprint={footprint} />
+      </MagazineProvider>
     </PlayerProvider>
   );
 }

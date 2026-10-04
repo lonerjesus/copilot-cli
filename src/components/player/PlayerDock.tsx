@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { usePlayer } from "@/components/player/PlayerContext";
+import { useMagazine } from "@/components/MagazineContext";
 import { kindGlyph } from "@/lib/format";
 
 function EmbedStage({
@@ -84,6 +85,7 @@ export function PlayerDock() {
     setExpanded,
     setProgress,
   } = usePlayer();
+  const { openMagazine, hasMagazine } = useMagazine();
 
   const label = useMemo(() => {
     if (!current) return "NO SIGNAL";
@@ -117,6 +119,15 @@ export function PlayerDock() {
           >
             fetch source post ↗
           </a>
+          {hasMagazine(current.id) ? (
+            <button
+              type="button"
+              className="deck__external deck__mag"
+              onClick={() => openMagazine(current.id)}
+            >
+              open magazine view ▦
+            </button>
+          ) : null}
         </div>
       </div>
 
