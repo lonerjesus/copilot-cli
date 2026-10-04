@@ -11,7 +11,7 @@ export const SITE = {
   title: "KAMAU NEGASI",
   tagline: "autonomous portfolio · vlog · signal stream",
   description:
-    "Interactive portfolio and vlog platform for Kendrick-Kamau Negasi — streaming footprint, custom media deck, and live social signal across Streetpolitik, GAK, TSOL, BLKDTY, and more.",
+    "18+ only — not for people under 18 due to certain content. Interactive portfolio and vlog platform for Kendrick-Kamau Negasi — streaming footprint, custom media deck, and live social signal across Streetpolitik, GAK, TSOL, BLKDTY, and more.",
 } as const;
 
 export const PRIMARY_NAME = "Kendrick-Kamau Negasi";
