@@ -16,5 +16,7 @@
 | Ingest exact 357Itsumi / Streetpolitik | PASS |
 | 18+ marker in HTML | PASS |
 | Lint (`npm run lint`) | PASS |
+| Manual: age gate → enter stream → cosmogram → footprint | PASS |
 
-Script: `bash scripts/qa-smoke.sh http://localhost:3000` → 10/10.
+Script: `bash scripts/qa-smoke.sh http://localhost:3000` → 10/10.  
+Artifacts: hero / stream-player / cosmogram / footprint screenshots + squad walkthrough video.
