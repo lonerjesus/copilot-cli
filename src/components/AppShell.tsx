@@ -14,7 +14,7 @@ import { CosmogramPanel } from "@/components/Cosmogram";
 import { MagazineReader } from "@/components/MagazineReader";
 import { MagazineProvider, useMagazine } from "@/components/MagazineContext";
 import { PlayerDock } from "@/components/player/PlayerDock";
-import { PlayerProvider, usePlayer } from "@/components/player/PlayerContext";
+import { PlayerProvider, usePlayerState } from "@/components/player/PlayerContext";
 import type { FootprintItem } from "@/lib/feed";
 import { BIRTH_NAME, SITE } from "@/data/identity";
 import { findCategoryByQuery, type CategoryId, type SubcategoryId } from "@/data/taxonomy";
@@ -25,7 +25,7 @@ function ShellInner({ footprint }: { footprint: FootprintItem[] }) {
   const [searchCategory, setSearchCategory] = useState<CategoryId | "all">("all");
   const [searchSubcategory, setSearchSubcategory] = useState<SubcategoryId | "all">("all");
   const [browseKey, setBrowseKey] = useState(0);
-  const { toggle, setExpanded } = usePlayer();
+  const { toggle, setExpanded } = usePlayerState();
   const { openId, closeMagazine } = useMagazine();
 
   const applySearch = useCallback((query: string) => {
@@ -65,7 +65,7 @@ function ShellInner({ footprint }: { footprint: FootprintItem[] }) {
     <>
       <AgeGate />
       {!booted ? <BootSequence onDone={() => setBooted(true)} /> : null}
-      <div className={`shell ${booted ? "shell--ready" : "shell--booting"}`}>
+      <div className="shell shell--ready">
         <p className="agebanner" role="note">
           18+ · not for people under 18 · mature content may appear · pro-Black excellence only
         </p>

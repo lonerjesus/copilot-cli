@@ -42,10 +42,10 @@ export const MAGAZINE_ISSUES: MagazineIssue[] = [
         dek: "QUARANTINED THOUGHTS OF A STREET STATISTIC VOL. 1",
         body: [
           "poems old and new about myself and those around me which were intended for one book but instead were broken down into chapbooks.",
-          "Published on MagCloud as Kendrick Herring (streetpolitik). Digest format. Print + digital editions.",
+          "Published on MagCloud as Kendrick Tirrell Herring (Streetpolitik). Digest format. Print + digital editions.",
           "This magazine view is a digital reading room for the Streetpolitik chapbook lane — exact title preserved.",
         ],
-        pullQuote: "i am something like Andy Kaufman + Doug Funnie fused together in one poet.",
+        pullQuote: "#BeAutonomous",
         folio: "01",
       },
       {

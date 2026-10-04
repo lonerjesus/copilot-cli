@@ -2,7 +2,7 @@
 
 import { CATALOG, STREAM_ROWS, type CatalogItem } from "@/data/catalog";
 import { kindGlyph } from "@/lib/format";
-import { usePlayer } from "@/components/player/PlayerContext";
+import { usePlayerState } from "@/components/player/PlayerContext";
 import { useMagazine } from "@/components/MagazineContext";
 
 function Tile({
@@ -50,7 +50,7 @@ function Tile({
 }
 
 export function StreamDeck() {
-  const { current, playItem } = usePlayer();
+  const { current, playItem } = usePlayerState();
   const { openMagazine, hasMagazine } = useMagazine();
 
   return (

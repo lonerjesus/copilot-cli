@@ -29,6 +29,18 @@ const ALLOWED_HOSTS = new Set([
   "www.rumble.com",
 ]);
 
+const SAFE_KEYS = new Set([
+  "type",
+  "version",
+  "title",
+  "provider_name",
+  "provider_url",
+  "thumbnail_url",
+  "author_name",
+  "width",
+  "height",
+]);
+
 function parseSafeUrl(raw: string | null): URL | null {
   if (!raw || raw.length > 2048) return null;
   try {
@@ -68,15 +80,7 @@ async function resolveOEmbed(url: URL): Promise<Record<string, unknown> | null> 
   ];
 
   const hit = endpoints.find((e) => e.match.test(url.hostname));
-  if (!hit) {
-    return {
-      type: "link",
-      version: "1.0",
-      title: "External signal",
-      provider_name: "kamaunegasi.net",
-      url: href,
-    };
-  }
+  if (!hit) return null;
 
   try {
     const controller = new AbortController();
@@ -88,10 +92,19 @@ async function resolveOEmbed(url: URL): Promise<Record<string, unknown> | null> 
     });
     clearTimeout(timeout);
     if (!res.ok) return null;
-    const data = (await res.json()) as Record<string, unknown>;
-    // Strip potentially dangerous HTML from oEmbed payloads we don't render as HTML
-    if (typeof data.html === "string") delete data.html;
-    return data;
+    const ctype = res.headers.get("content-type") ?? "";
+    if (!ctype.includes("json")) return null;
+    const text = await res.text();
+    if (text.length > 32_768) return null;
+    const data = JSON.parse(text) as Record<string, unknown>;
+    const out: Record<string, unknown> = {};
+    for (const key of SAFE_KEYS) {
+      if (key in data) out[key] = data[key];
+    }
+    if (typeof out.thumbnail_url === "string" && !out.thumbnail_url.startsWith("https://")) {
+      delete out.thumbnail_url;
+    }
+    return out;
   } catch {
     return null;
   }

@@ -16,11 +16,11 @@ const SECURITY_HEADERS: Record<string, string> = {
     "form-action 'self'",
     "frame-ancestors 'none'",
     "object-src 'none'",
-    "img-src 'self' data: blob: https:",
+    "img-src 'self' data: blob: https://substackcdn.com https://i.vimeocdn.com https://static-cdn.jtvnw.net",
     "font-src 'self' data: https://fonts.gstatic.com",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-    "connect-src 'self' https://tellingshowoflove.substack.com https://vimeo.com https://www.youtube.com",
+    "script-src 'self' 'unsafe-inline'",
+    "connect-src 'self' https://tellingshowoflove.substack.com https://vimeo.com https://www.youtube.com https://bandcamp.com https://soundcloud.com",
     "frame-src 'self' https://player.twitch.tv https://www.twitch.tv https://player.vimeo.com https://www.youtube.com",
     "media-src 'self' blob: https:",
     "upgrade-insecure-requests",
@@ -34,7 +34,6 @@ export function middleware(request: NextRequest) {
     response.headers.set(key, value);
   }
 
-  // Soft rate-limit hint for edge caches / Cloudflare
   if (request.nextUrl.pathname.startsWith("/api/")) {
     response.headers.set("Cache-Control", "public, s-maxage=60, stale-while-revalidate=300");
     response.headers.set("X-Robots-Tag", "noindex");

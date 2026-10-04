@@ -88,46 +88,60 @@ export function PlayerDock() {
   const { openMagazine, hasMagazine } = useMagazine();
 
   const label = useMemo(() => {
-    if (!current) return "NO SIGNAL";
+    if (!current) return "NO SIGNAL · enter stream";
     return `${current.brand} // ${current.title}`;
   }, [current]);
-
-  if (!current) return null;
 
   return (
     <aside className={`deck ${expanded ? "deck--open" : ""}`} aria-label="Custom media player">
       <div className="deck__stage">
-        <EmbedStage
-          provider={current.embed?.provider}
-          id={current.embed?.id}
-          url={current.embed?.url ?? current.externalUrl}
-          title={current.title}
-        />
+        {current ? (
+          <EmbedStage
+            provider={current.embed?.provider}
+            id={current.embed?.id}
+            url={current.embed?.url ?? current.externalUrl}
+            title={current.title}
+          />
+        ) : (
+          <div className="deck__visual" aria-hidden>
+            <div className="deck__orb" />
+          </div>
+        )}
         <div className="deck__copy">
-          <p className="deck__eyebrow">
-            {kindGlyph(current.kind)} {current.kind.toUpperCase()} · {current.platform}
-          </p>
-          <h2>{current.title}</h2>
-          {current.subtitle ? <p className="deck__sub">{current.subtitle}</p> : null}
-          <RemoteMeta key={current.id} url={current.externalUrl} localTitle={current.title} />
-          <p className="deck__blurb">{current.blurb}</p>
-          <a
-            className="deck__external"
-            href={current.externalUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            fetch source post ↗
-          </a>
-          {hasMagazine(current.id) ? (
-            <button
-              type="button"
-              className="deck__external deck__mag"
-              onClick={() => openMagazine(current.id)}
-            >
-              open magazine view ▦
-            </button>
-          ) : null}
+          {current ? (
+            <>
+              <p className="deck__eyebrow">
+                {kindGlyph(current.kind)} {current.kind.toUpperCase()} · {current.platform}
+              </p>
+              <h2>{current.title}</h2>
+              {current.subtitle ? <p className="deck__sub">{current.subtitle}</p> : null}
+              <RemoteMeta key={current.id} url={current.externalUrl} localTitle={current.title} />
+              <p className="deck__blurb">{current.blurb}</p>
+              <a
+                className="deck__external"
+                href={current.externalUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                fetch source post ↗
+              </a>
+              {hasMagazine(current.id) ? (
+                <button
+                  type="button"
+                  className="deck__external deck__mag"
+                  onClick={() => openMagazine(current.id)}
+                >
+                  open magazine view ▦
+                </button>
+              ) : null}
+            </>
+          ) : (
+            <>
+              <p className="deck__eyebrow">DECK IDLE</p>
+              <h2>NO SIGNAL</h2>
+              <p className="deck__blurb">Press enter stream to lock into the continuum.</p>
+            </>
+          )}
         </div>
       </div>
 

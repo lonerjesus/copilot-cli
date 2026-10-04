@@ -12,22 +12,26 @@ import {
 } from "react";
 import { getQueue, type CatalogItem } from "@/data/catalog";
 
-type PlayerContextValue = {
+type PlayerStateValue = {
   queue: CatalogItem[];
   current: CatalogItem | null;
   index: number;
   playing: boolean;
   expanded: boolean;
-  progress: number;
   playItem: (item: CatalogItem, queue?: CatalogItem[]) => void;
   toggle: () => void;
   next: () => void;
   prev: () => void;
   setExpanded: (value: boolean) => void;
+};
+
+type PlayerProgressValue = {
+  progress: number;
   setProgress: (value: number) => void;
 };
 
-const PlayerContext = createContext<PlayerContextValue | null>(null);
+const PlayerStateContext = createContext<PlayerStateValue | null>(null);
+const PlayerProgressContext = createContext<PlayerProgressValue | null>(null);
 
 export function PlayerProvider({ children }: { children: ReactNode }) {
   const initial = useMemo(() => getQueue(), []);
@@ -38,7 +42,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [progress, setProgress] = useState(0);
   const timer = useRef<number | null>(null);
 
-  const current = queue[index] ?? null;
+  const current = queue[index] ?? initial[0] ?? null;
 
   const clearTimer = () => {
     if (timer.current) {
@@ -91,29 +95,52 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     return clearTimer;
   }, [playing, next, current?.id]);
 
-  const value = useMemo(
+  const state = useMemo(
     () => ({
       queue,
       current,
       index,
       playing,
       expanded,
-      progress,
       playItem,
       toggle,
       next,
       prev,
       setExpanded,
-      setProgress,
     }),
-    [queue, current, index, playing, expanded, progress, playItem, toggle, next, prev],
+    [queue, current, index, playing, expanded, playItem, toggle, next, prev],
   );
 
-  return <PlayerContext.Provider value={value}>{children}</PlayerContext.Provider>;
+  const progressValue = useMemo(
+    () => ({ progress, setProgress }),
+    [progress],
+  );
+
+  return (
+    <PlayerStateContext.Provider value={state}>
+      <PlayerProgressContext.Provider value={progressValue}>
+        {children}
+      </PlayerProgressContext.Provider>
+    </PlayerStateContext.Provider>
+  );
 }
 
 export function usePlayer() {
-  const ctx = useContext(PlayerContext);
-  if (!ctx) throw new Error("usePlayer must be used within PlayerProvider");
-  return ctx;
+  const state = useContext(PlayerStateContext);
+  const progress = useContext(PlayerProgressContext);
+  if (!state || !progress) throw new Error("usePlayer must be used within PlayerProvider");
+  return { ...state, ...progress };
+}
+
+/** Prefer this in browse surfaces so progress ticks do not re-render the tree. */
+export function usePlayerState() {
+  const state = useContext(PlayerStateContext);
+  if (!state) throw new Error("usePlayerState must be used within PlayerProvider");
+  return state;
+}
+
+export function usePlayerProgress() {
+  const progress = useContext(PlayerProgressContext);
+  if (!progress) throw new Error("usePlayerProgress must be used within PlayerProvider");
+  return progress;
 }

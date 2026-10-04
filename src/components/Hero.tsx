@@ -1,11 +1,11 @@
 "use client";
 
 import { SITE, PRIMARY_NAME } from "@/data/identity";
-import { usePlayer } from "@/components/player/PlayerContext";
+import { usePlayerState } from "@/components/player/PlayerContext";
 import { getQueue } from "@/data/catalog";
 
 export function Hero() {
-  const { playItem, playing, current } = usePlayer();
+  const { playItem, playing, current } = usePlayerState();
 
   return (
     <section className="hero" aria-label="Hero">

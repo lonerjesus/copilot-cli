@@ -15,8 +15,6 @@
   --steel: #9eb0a4;
   --glow: color-mix(in oklab, var(--phosphor) 28%, transparent);
   --radius: 2px;
-  --font-display: "Chakra Petch", sans-serif;
-  --font-mono: "IBM Plex Mono", monospace;
   --deck-h: 72px;
   --max: 1180px;
 }

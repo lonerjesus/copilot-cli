@@ -3,18 +3,19 @@
 import { useMemo } from "react";
 import { CATALOG } from "@/data/catalog";
 import { kindGlyph } from "@/lib/format";
-import { usePlayer } from "@/components/player/PlayerContext";
+import { usePlayerState } from "@/components/player/PlayerContext";
 
-/** Persistent "keep going" continuum under the hero — reduces bounce via always-on next picks. */
+const SORTED_CATALOG = [...CATALOG].sort(
+  (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime(),
+);
+
+/** Persistent "keep going" continuum — reduces bounce via always-on next picks. */
 export function ContinuumRail() {
-  const { current, playItem, playing } = usePlayer();
+  const { current, playItem, playing } = usePlayerState();
 
   const picks = useMemo(() => {
-    const pool = [...CATALOG].sort(
-      (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime(),
-    );
-    if (!current) return pool.slice(0, 8);
-    const rest = pool.filter((item) => item.id !== current.id);
+    if (!current) return SORTED_CATALOG.slice(0, 8);
+    const rest = SORTED_CATALOG.filter((item) => item.id !== current.id);
     return [current, ...rest].slice(0, 8);
   }, [current]);
 

@@ -4,14 +4,14 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { FootprintItem } from "@/lib/feed";
 import { formatStamp, kindGlyph, relativePulse } from "@/lib/format";
 import { CATALOG } from "@/data/catalog";
-import { usePlayer } from "@/components/player/PlayerContext";
+import { usePlayerState } from "@/components/player/PlayerContext";
 
 type FootprintFeedProps = {
   initial: FootprintItem[];
 };
 
 export function FootprintFeed({ initial }: FootprintFeedProps) {
-  const { playItem } = usePlayer();
+  const { playItem } = usePlayerState();
   const [items, setItems] = useState(initial);
   const [filter, setFilter] = useState<string>("all");
   const [cursor, setCursor] = useState(0);
@@ -21,7 +21,7 @@ export function FootprintFeed({ initial }: FootprintFeedProps) {
     let alive = true;
     const refresh = async () => {
       try {
-        const res = await fetch("/api/feed", { cache: "no-store" });
+        const res = await fetch("/api/feed");
         if (!res.ok) return;
         const data = (await res.json()) as { items: FootprintItem[] };
         if (alive && data.items?.length) setItems(data.items);
@@ -29,7 +29,7 @@ export function FootprintFeed({ initial }: FootprintFeedProps) {
         /* keep seed */
       }
     };
-    refresh();
+    // Honor SSR seed; only poll for updates
     const id = window.setInterval(refresh, 5 * 60 * 1000);
     return () => {
       alive = false;
@@ -70,11 +70,23 @@ export function FootprintFeed({ initial }: FootprintFeedProps) {
         c.externalUrl.replace(/\/$/, "") === item.url.replace(/\/$/, "") ||
         c.title === item.title,
     );
-    if (catalogMatch && (catalogMatch.kind === "audio" || catalogMatch.kind === "video" || catalogMatch.kind === "live" || catalogMatch.kind === "vlog")) {
+    if (
+      catalogMatch &&
+      (catalogMatch.kind === "audio" ||
+        catalogMatch.kind === "video" ||
+        catalogMatch.kind === "live" ||
+        catalogMatch.kind === "vlog")
+    ) {
       playItem(catalogMatch);
       return;
     }
-    window.open(item.url, "_blank", "noopener,noreferrer");
+    try {
+      const url = new URL(item.url);
+      if (url.protocol !== "https:") return;
+      window.open(url.toString(), "_blank", "noopener,noreferrer");
+    } catch {
+      /* ignore unsafe */
+    }
   };
 
   return (

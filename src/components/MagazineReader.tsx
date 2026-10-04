@@ -3,6 +3,23 @@
 import { useEffect, useMemo, useState } from "react";
 import { getMagazineByCatalogId } from "@/data/magazine";
 
+function safeExternalHref(raw: string): string | null {
+  try {
+    const url = new URL(raw);
+    if (url.protocol !== "https:") return null;
+    const host = url.hostname.toLowerCase();
+    const ok =
+      host === "www.magcloud.com" ||
+      host === "magcloud.com" ||
+      host === "tellingshowoflove.substack.com" ||
+      host.endsWith(".bandcamp.com") ||
+      host === "podcasts.apple.com";
+    return ok ? url.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
 type MagazineReaderProps = {
   catalogId: string | null;
   onClose: () => void;
@@ -16,6 +33,7 @@ export function MagazineReader({ catalogId, onClose }: MagazineReaderProps) {
   const [page, setPage] = useState(0);
   const pageSafe = issue ? Math.min(page, issue.spreads.length - 1) : 0;
   const spread = issue?.spreads[pageSafe];
+  const sourceHref = issue ? safeExternalHref(issue.externalUrl) : null;
 
   useEffect(() => {
     if (!issue) return;
@@ -59,9 +77,11 @@ export function MagazineReader({ catalogId, onClose }: MagazineReaderProps) {
           >
             next →
           </button>
-          <a href={issue.externalUrl} target="_blank" rel="noopener noreferrer">
-            source ↗
-          </a>
+          {sourceHref ? (
+            <a href={sourceHref} target="_blank" rel="noopener noreferrer">
+              source ↗
+            </a>
+          ) : null}
           <button type="button" className="magazine__close" onClick={onClose}>
             close ✕
           </button>

@@ -124,7 +124,7 @@ export const CATALOG: CatalogItem[] = [
     id: "wall-carpet-235",
     title: "Imponderabilia: Wall_Carpet 235",
     subtitle: "Creating is the Ritual, Love is the Reason",
-    brand: "Imponderabilia",
+    brand: "Imponderabilia: Wall_Carpet 235",
     kind: "audio",
     category: "audio",
     subcategory: "podcast",
@@ -133,7 +133,7 @@ export const CATALOG: CatalogItem[] = [
     platform: "substack",
     externalUrl: "https://tellingshowoflove.substack.com/podcast",
     tags: ["Imponderabilia", "Wall_Carpet", "podcast"],
-    blurb: "The longform imprint behind TSOL — Faust Spirit Social Society production of imponderability.",
+    blurb: "The longform imprint behind Telling Show Of Love — Imponderabilia: Wall_Carpet 235.",
   },
   {
     id: "vimeo-thinking-pt2",
@@ -177,7 +177,7 @@ export const CATALOG: CatalogItem[] = [
     externalUrl: "https://vimeo.com/streetpolitik",
     embed: { provider: "vimeo", url: "https://vimeo.com/streetpolitik" },
     tags: ["357Itsumi", "film"],
-    blurb: "St. Elsewhere transmission — TIPON&N visual.",
+    blurb: "TIPON&N visual under 357Itsumi.",
   },
   {
     id: "vimeo-thinking-of-you",
@@ -210,7 +210,7 @@ export const CATALOG: CatalogItem[] = [
     id: "twitch-live",
     title: "LIVE SIGNAL // kamaunegasi",
     subtitle: "Twitch uplink",
-    brand: "Kamau Negasi",
+    brand: "Kendrick-Kamau Negasi",
     kind: "live",
     category: "video",
     subcategory: "live",
@@ -379,7 +379,7 @@ export const CATALOG: CatalogItem[] = [
     externalUrl: "https://www.magcloud.com/user/streetpolitik",
     tags: ["QUARANTINED THOUGHTS OF A STREET STATISTIC", "Streetpolitik", "chapbook", "MagCloud"],
     blurb:
-      "poems old and new about myself and those around me — MagCloud chapbook by Kendrick Herring (streetpolitik).",
+      "poems old and new about myself and those around me — MagCloud chapbook by Kendrick Tirrell Herring (Streetpolitik).",
   },
   {
     id: "qtoss-vol2",
@@ -408,7 +408,7 @@ export const CATALOG: CatalogItem[] = [
     externalUrl:
       "https://podcasts.apple.com/us/podcast/stpks-smokers-lounge-music/id1110276220",
     tags: ["STPK's Smoker's Lounge Music", "Streetpolitik", "Apple Podcasts", "mix"],
-    blurb: "Streetpolitik™ music lounge on Apple Podcasts — mixes, mashups, SP Cult signal.",
+    blurb: "Streetpolitik™ music lounge on Apple Podcasts — mixes and mashups.",
   },
   {
     id: "apple-wall-carpet",

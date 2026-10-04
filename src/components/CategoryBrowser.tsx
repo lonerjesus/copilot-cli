@@ -18,7 +18,7 @@ import {
   type SortMode,
 } from "@/lib/search";
 import { kindGlyph } from "@/lib/format";
-import { usePlayer } from "@/components/player/PlayerContext";
+import { usePlayerState } from "@/components/player/PlayerContext";
 import { useMagazine } from "@/components/MagazineContext";
 
 type CategoryBrowserProps = {
@@ -32,7 +32,7 @@ export function CategoryBrowser({
   initialCategory = "all",
   initialSubcategory = "all",
 }: CategoryBrowserProps) {
-  const { current, playItem } = usePlayer();
+  const { current, playItem } = usePlayerState();
   const { openMagazine, hasMagazine } = useMagazine();
   const [query, setQuery] = useState(initialQuery);
   const [category, setCategory] = useState<CategoryId | "all">(initialCategory);

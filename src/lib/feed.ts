@@ -73,27 +73,42 @@ export function parseRss(xml: string): RssItem[] {
 }
 
 export function rssToFootprint(items: RssItem[], platform = "substack"): FootprintItem[] {
-  return items
-    .filter((item) => item.title && item.link)
-    .map((item, index) => {
-      const raw = item.content || item.description || "";
-      const summary = stripHtml(raw).slice(0, 220);
-      const publishedAt = item.pubDate
-        ? new Date(item.pubDate).toISOString().slice(0, 10)
-        : new Date().toISOString().slice(0, 10);
-      return {
-        id: `rss:${platform}:${item.link ?? index}`,
-        title: stripHtml(item.title ?? "Untitled"),
+  const FEED_HOSTS = new Set(["tellingshowoflove.substack.com"]);
+
+  return items.flatMap((item, index) => {
+    if (!item.title || !item.link) return [];
+    let link: string;
+    try {
+      const url = new URL(item.link);
+      if (url.protocol !== "https:") return [];
+      if (url.username || url.password) return [];
+      if (!FEED_HOSTS.has(url.hostname.toLowerCase())) return [];
+      link = url.toString();
+    } catch {
+      return [];
+    }
+
+    const raw = item.content || item.description || "";
+    const summary = stripHtml(raw).slice(0, 220);
+    const publishedAt = item.pubDate
+      ? new Date(item.pubDate).toISOString().slice(0, 10)
+      : new Date().toISOString().slice(0, 10);
+
+    return [
+      {
+        id: `rss:${platform}:${link ?? index}`,
+        title: stripHtml(item.title),
         summary: summary || "Live signal from the TSOL Substack uplink.",
         publishedAt,
         platform,
         platformLabel: platformLabel(platform),
-        url: item.link!,
+        url: link,
         brand: "Telling Show Of Love",
         kind: "essay",
         source: "rss" as const,
-      };
-    });
+      },
+    ];
+  });
 }
 
 export function mergeFootprint(

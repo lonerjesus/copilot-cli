@@ -9,7 +9,7 @@ const nextConfig: NextConfig = {
     minimumCacheTTL: 60 * 60 * 24 * 30,
     remotePatterns: [
       { protocol: "https", hostname: "substackcdn.com" },
-      { protocol: "https", hostname: "**.substack.com" },
+      { protocol: "https", hostname: "tellingshowoflove.substack.com" },
       { protocol: "https", hostname: "i.vimeocdn.com" },
       { protocol: "https", hostname: "static-cdn.jtvnw.net" },
     ],
