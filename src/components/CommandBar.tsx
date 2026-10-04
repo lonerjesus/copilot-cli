@@ -1,9 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { searchCatalog } from "@/lib/search";
+import { findCategoryByQuery } from "@/data/taxonomy";
 
 const COMMANDS = [
   { cmd: "stream", hint: "focus the streaming deck" },
+  { cmd: "categories", hint: "browse separated categories" },
   { cmd: "footprint", hint: "jump to live social signal" },
   { cmd: "play", hint: "toggle media deck" },
   { cmd: "brands", hint: "open alias matrix" },
@@ -12,9 +15,10 @@ const COMMANDS = [
 
 type CommandBarProps = {
   onCommand: (cmd: string) => void;
+  onSearch: (query: string) => void;
 };
 
-export function CommandBar({ onCommand }: CommandBarProps) {
+export function CommandBar({ onCommand, onSearch }: CommandBarProps) {
   const [value, setValue] = useState("");
   const [flash, setFlash] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -34,14 +38,39 @@ export function CommandBar({ onCommand }: CommandBarProps) {
     event.preventDefault();
     const raw = value.trim().toLowerCase().replace(/^\//, "");
     if (!raw) return;
-    const known = COMMANDS.find((c) => c.cmd === raw || raw.startsWith(c.cmd));
+
+    const known = COMMANDS.find((c) => c.cmd === raw);
     if (known) {
       onCommand(known.cmd);
       setFlash(`ok · ${known.cmd}`);
-    } else {
-      setFlash(`unknown · try help`);
+      setValue("");
+      window.setTimeout(() => setFlash(""), 1600);
+      return;
     }
-    setValue("");
+
+    const taxonomyHit = findCategoryByQuery(raw);
+    if (taxonomyHit.category) {
+      onSearch(raw);
+      onCommand("categories");
+      setFlash(
+        `cat · ${taxonomyHit.category.id}${taxonomyHit.subcategory ? `/${taxonomyHit.subcategory.id}` : ""}`,
+      );
+      setValue("");
+      window.setTimeout(() => setFlash(""), 1600);
+      return;
+    }
+
+    const hits = searchCatalog(raw);
+    if (hits.length > 0) {
+      onSearch(raw);
+      onCommand("categories");
+      setFlash(`found · ${hits.length}`);
+      setValue("");
+      window.setTimeout(() => setFlash(""), 1600);
+      return;
+    }
+
+    setFlash(`unknown · try categories`);
     window.setTimeout(() => setFlash(""), 1600);
   };
 
@@ -56,7 +85,7 @@ export function CommandBar({ onCommand }: CommandBarProps) {
         className="cmd__input"
         value={value}
         onChange={(e) => setValue(e.target.value)}
-        placeholder="type stream · footprint · play · brands · help  (press /)"
+        placeholder="search categories · or stream · footprint · brands  (press /)"
         autoComplete="off"
         spellCheck={false}
       />

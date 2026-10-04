@@ -6,16 +6,30 @@ import { BootSequence } from "@/components/BootSequence";
 import { CommandBar } from "@/components/CommandBar";
 import { Hero } from "@/components/Hero";
 import { StreamDeck } from "@/components/StreamDeck";
+import { CategoryBrowser } from "@/components/CategoryBrowser";
 import { FootprintFeed } from "@/components/FootprintFeed";
 import { AliasMatrix } from "@/components/AliasMatrix";
 import { PlayerDock } from "@/components/player/PlayerDock";
 import { PlayerProvider, usePlayer } from "@/components/player/PlayerContext";
 import type { FootprintItem } from "@/lib/feed";
 import { SITE } from "@/data/identity";
+import { findCategoryByQuery, type CategoryId, type SubcategoryId } from "@/data/taxonomy";
 
 function ShellInner({ footprint }: { footprint: FootprintItem[] }) {
   const [booted, setBooted] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchCategory, setSearchCategory] = useState<CategoryId | "all">("all");
+  const [searchSubcategory, setSearchSubcategory] = useState<SubcategoryId | "all">("all");
+  const [browseKey, setBrowseKey] = useState(0);
   const { toggle, setExpanded } = usePlayer();
+
+  const applySearch = useCallback((query: string) => {
+    const hit = findCategoryByQuery(query);
+    setSearchQuery(query);
+    setSearchCategory(hit.category?.id ?? "all");
+    setSearchSubcategory(hit.subcategory?.id ?? "all");
+    setBrowseKey((k) => k + 1);
+  }, []);
 
   const onCommand = useCallback(
     (cmd: string) => {
@@ -30,6 +44,7 @@ function ShellInner({ footprint }: { footprint: FootprintItem[] }) {
       }
       const map: Record<string, string> = {
         stream: "stream",
+        categories: "categories",
         footprint: "footprint",
         brands: "brands",
       };
@@ -57,6 +72,7 @@ function ShellInner({ footprint }: { footprint: FootprintItem[] }) {
           </a>
           <nav className="topbar__nav" aria-label="Primary">
             <a href="#stream">stream</a>
+            <a href="#categories">categories</a>
             <a href="#footprint">footprint</a>
             <a href="#brands">brands</a>
           </nav>
@@ -65,9 +81,15 @@ function ShellInner({ footprint }: { footprint: FootprintItem[] }) {
         <main id="top">
           <Hero />
           <div id="commands" className="cmd-wrap">
-            <CommandBar onCommand={onCommand} />
+            <CommandBar onCommand={onCommand} onSearch={applySearch} />
           </div>
           <StreamDeck />
+          <CategoryBrowser
+            key={browseKey}
+            initialQuery={searchQuery}
+            initialCategory={searchCategory}
+            initialSubcategory={searchSubcategory}
+          />
           <FootprintFeed initial={footprint} />
           <AliasMatrix />
         </main>

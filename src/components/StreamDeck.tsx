@@ -28,9 +28,9 @@ function Tile({
         <p className="tile__brand">{item.brand}</p>
         <h3 className="tile__title">{item.title}</h3>
         <p className="tile__sub">
-          {item.kind.toUpperCase()}
+          {item.category}/{item.subcategory}
+          {` · ${item.kind}`}
           {item.duration ? ` · ${item.duration}` : ""}
-          {` · ${item.platform}`}
         </p>
       </div>
     </button>

@@ -1,3 +1,5 @@
+import type { CategoryId, SubcategoryId } from "@/data/taxonomy";
+
 export type MediaKind = "video" | "audio" | "vlog" | "essay" | "still" | "live";
 
 export type CatalogItem = {
@@ -6,6 +8,8 @@ export type CatalogItem = {
   subtitle?: string;
   brand: string;
   kind: MediaKind;
+  category: CategoryId;
+  subcategory: SubcategoryId;
   duration?: string;
   publishedAt: string;
   platform: string;
@@ -36,6 +40,8 @@ export const CATALOG: CatalogItem[] = [
     subtitle: "Forgive them for they can't help what they hate to love",
     brand: "Telling Show Of Love",
     kind: "essay",
+    category: "writing",
+    subcategory: "essays",
     publishedAt: "2025-10-01",
     platform: "substack",
     externalUrl: "https://tellingshowoflove.substack.com/p/pardon-their-illness",
@@ -48,6 +54,8 @@ export const CATALOG: CatalogItem[] = [
     subtitle: "i could never.",
     brand: "Telling Show Of Love",
     kind: "essay",
+    category: "writing",
+    subcategory: "essays",
     publishedAt: "2025-09-12",
     platform: "substack",
     externalUrl: "https://tellingshowoflove.substack.com",
@@ -60,6 +68,8 @@ export const CATALOG: CatalogItem[] = [
     subtitle: "DADDY GONNA PULL UP UNWARRANTED SOON",
     brand: "Telling Show Of Love",
     kind: "vlog",
+    category: "vlog",
+    subcategory: "season",
     publishedAt: "2025-08-21",
     platform: "substack",
     externalUrl: "https://tellingshowoflove.substack.com",
@@ -72,6 +82,8 @@ export const CATALOG: CatalogItem[] = [
     subtitle: "Draft Four",
     brand: "Telling Show Of Love",
     kind: "essay",
+    category: "writing",
+    subcategory: "essays",
     publishedAt: "2025-08-11",
     platform: "substack",
     externalUrl: "https://tellingshowoflove.substack.com/p/final-notice",
@@ -84,6 +96,8 @@ export const CATALOG: CatalogItem[] = [
     subtitle: "EPISODE ONE: RAMBLED INTO SOMETHING",
     brand: "Telling Show Of Love",
     kind: "audio",
+    category: "audio",
+    subcategory: "podcast",
     duration: "17:00",
     publishedAt: "2025-08-08",
     platform: "substack",
@@ -98,6 +112,8 @@ export const CATALOG: CatalogItem[] = [
     subtitle: "OR CALL IT A NEW SEASON BUT NOT COMEBACK",
     brand: "Telling Show Of Love",
     kind: "vlog",
+    category: "vlog",
+    subcategory: "season",
     publishedAt: "2025-08-06",
     platform: "substack",
     externalUrl: "https://tellingshowoflove.substack.com",
@@ -110,6 +126,8 @@ export const CATALOG: CatalogItem[] = [
     subtitle: "Creating is the Ritual, Love is the Reason",
     brand: "Imponderabilia",
     kind: "audio",
+    category: "audio",
+    subcategory: "podcast",
     duration: "∞",
     publishedAt: "2024-08-24",
     platform: "substack",
@@ -122,6 +140,8 @@ export const CATALOG: CatalogItem[] = [
     title: "Jose Slim & SGM [Trailer]",
     brand: "357Itsumi",
     kind: "video",
+    category: "video",
+    subcategory: "trailers",
     duration: "01:02",
     publishedAt: "2015-06-01",
     platform: "vimeo",
@@ -135,6 +155,8 @@ export const CATALOG: CatalogItem[] = [
     title: "Official TIPON&N Trailer",
     brand: "357Itsumi",
     kind: "video",
+    category: "video",
+    subcategory: "trailers",
     duration: "01:34",
     publishedAt: "2015-06-01",
     platform: "vimeo",
@@ -148,6 +170,8 @@ export const CATALOG: CatalogItem[] = [
     title: "just thinking of you",
     brand: "Streetpolitik",
     kind: "video",
+    category: "video",
+    subcategory: "archive",
     duration: "01:18",
     publishedAt: "2011-05-01",
     platform: "vimeo",
@@ -160,6 +184,8 @@ export const CATALOG: CatalogItem[] = [
     title: "Streetpolitik™ Free Music",
     brand: "Streetpolitik",
     kind: "audio",
+    category: "audio",
+    subcategory: "music",
     publishedAt: "2012-01-01",
     platform: "toneden",
     externalUrl: "https://www.toneden.io/streetpolitk",
@@ -172,6 +198,8 @@ export const CATALOG: CatalogItem[] = [
     subtitle: "Twitch uplink",
     brand: "Kamau Negasi",
     kind: "live",
+    category: "video",
+    subcategory: "live",
     publishedAt: "2025-10-01",
     platform: "twitch",
     externalUrl: "https://www.twitch.tv/kamaunegasi",
@@ -185,6 +213,8 @@ export const CATALOG: CatalogItem[] = [
     subtitle: "GAK",
     brand: "GrownAssKids",
     kind: "vlog",
+    category: "vlog",
+    subcategory: "brand-channels",
     publishedAt: "2024-01-15",
     platform: "web",
     externalUrl: "https://www.kamaunegasi.net",
@@ -196,6 +226,8 @@ export const CATALOG: CatalogItem[] = [
     title: "Black Oh-My",
     brand: "Black Oh-My",
     kind: "still",
+    category: "visuals",
+    subcategory: "brand-art",
     publishedAt: "2023-11-11",
     platform: "web",
     externalUrl: "https://www.kamaunegasi.net",
@@ -207,6 +239,8 @@ export const CATALOG: CatalogItem[] = [
     title: "Faust Fakeway",
     brand: "Faust Fakeway",
     kind: "audio",
+    category: "audio",
+    subcategory: "music",
     publishedAt: "2023-06-06",
     platform: "web",
     externalUrl: "https://www.kamaunegasi.net",
@@ -219,6 +253,8 @@ export const CATALOG: CatalogItem[] = [
     subtitle: "TheloniousOne",
     brand: "Thelonious1",
     kind: "essay",
+    category: "writing",
+    subcategory: "criticism",
     publishedAt: "2024-03-03",
     platform: "web",
     externalUrl: "https://www.kamaunegasi.net",
@@ -230,6 +266,8 @@ export const CATALOG: CatalogItem[] = [
     title: "LoveDrugVendingMachine",
     brand: "LoveDrugVendingMachine",
     kind: "audio",
+    category: "audio",
+    subcategory: "experiments",
     publishedAt: "2022-09-09",
     platform: "web",
     externalUrl: "https://www.kamaunegasi.net",
@@ -241,6 +279,8 @@ export const CATALOG: CatalogItem[] = [
     title: "Telling Stills Of Love",
     brand: "Telling Stills Of Love",
     kind: "still",
+    category: "visuals",
+    subcategory: "stills",
     publishedAt: "2024-05-05",
     platform: "web",
     externalUrl: "https://www.kamaunegasi.net",
@@ -252,6 +292,8 @@ export const CATALOG: CatalogItem[] = [
     title: "BLKDTY Music LLC",
     brand: "BLKDTY Music LLC",
     kind: "audio",
+    category: "house",
+    subcategory: "labels",
     publishedAt: "2021-01-01",
     platform: "web",
     externalUrl: "https://www.kamaunegasi.net",
@@ -263,6 +305,8 @@ export const CATALOG: CatalogItem[] = [
     title: "GRUNGEzhou Libellus",
     brand: "GRUNGEzhou",
     kind: "essay",
+    category: "writing",
+    subcategory: "libellus",
     publishedAt: "2024-07-07",
     platform: "web",
     externalUrl: "https://www.kamaunegasi.net",
@@ -274,6 +318,8 @@ export const CATALOG: CatalogItem[] = [
     title: "GRUNGEzhou Supply",
     brand: "GRUNGEzhou Supply",
     kind: "still",
+    category: "visuals",
+    subcategory: "supply",
     publishedAt: "2024-08-08",
     platform: "web",
     externalUrl: "https://www.kamaunegasi.net",
@@ -322,7 +368,7 @@ export const STREAM_ROWS: StreamRow[] = [
   {
     id: "house",
     title: "HOUSE LABELS & ALIASES",
-    hint: "GAK · BLKDTY · Faust · TL1 · LDVM",
+    hint: "GAK · BLKDTY · Faust · TL1 · LDVM · GRUNGEzhou",
     itemIds: [
       "gak-manifest",
       "blkdty-house",
@@ -345,4 +391,14 @@ export function getQueue(): CatalogItem[] {
   return STREAM_ROWS[0].itemIds
     .map((id) => getItem(id))
     .filter((item): item is CatalogItem => Boolean(item));
+}
+
+export function getByCategory(
+  category: CategoryId,
+  subcategory?: SubcategoryId,
+): CatalogItem[] {
+  return CATALOG.filter(
+    (item) =>
+      item.category === category && (!subcategory || item.subcategory === subcategory),
+  );
 }
