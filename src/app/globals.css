@@ -647,6 +647,69 @@ select:focus:not(:focus-visible) {
   border-bottom: 1px solid var(--line);
 }
 
+.tile__poster {
+  position: absolute;
+  inset: 0;
+}
+
+.tile__badge {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.35rem;
+  z-index: 2;
+  padding: 0.15rem 0.35rem;
+  border: 1px solid var(--amber);
+  background: color-mix(in oklab, var(--void) 70%, transparent);
+  color: var(--amber);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.media-poster {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #050806;
+}
+
+.media-poster img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 280ms ease;
+  transform: scale(1.02);
+}
+
+.media-poster.is-ready img {
+  opacity: 1;
+  transform: none;
+  transition: opacity 320ms ease, transform 480ms ease;
+}
+
+.media-poster--empty {
+  display: grid;
+  place-items: center;
+}
+
+.media-poster__label {
+  position: absolute;
+  inset: auto auto 0.4rem 0.45rem;
+  z-index: 1;
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  color: color-mix(in oklab, var(--phosphor) 85%, white);
+  text-shadow: 0 1px 8px #000;
+}
+
+.pay-actions--open .btn--ghost {
+  border-color: var(--line);
+  background: transparent;
+  color: var(--phosphor);
+}
+
 .tile__art--video {
   background: linear-gradient(135deg, #142018, #1c2b14 50%, #0f1712);
 }
@@ -860,6 +923,154 @@ select:focus:not(:focus-visible) {
 .footprint__more:hover {
   color: var(--phosphor);
   border-color: var(--phosphor-dim);
+}
+
+/* Watch Footprint — dedicated archive cards */
+.footprint--archive {
+  padding-top: 1.5rem;
+}
+
+.footprint__page-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+  letter-spacing: 0.04em;
+  line-height: 1.05;
+}
+
+.footprint__toolbar {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.footprint__count {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.footprint__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+.fp-card {
+  border: 1px solid var(--line);
+  background:
+    linear-gradient(165deg, color-mix(in oklab, var(--panel-2) 88%, transparent), var(--panel)),
+    radial-gradient(280px 120px at 10% 0%, color-mix(in oklab, var(--phosphor) 8%, transparent), transparent 70%);
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+.fp-card:hover,
+.fp-card--active {
+  border-color: var(--phosphor-dim);
+  transform: translateY(-2px);
+}
+
+.fp-card__hit {
+  display: grid;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+}
+
+.fp-card__art {
+  position: relative;
+  height: 148px;
+  overflow: hidden;
+  border-bottom: 1px solid var(--line);
+}
+
+.fp-card__age {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+  z-index: 2;
+  padding: 0.15rem 0.4rem;
+  border: 1px solid var(--line-hot);
+  background: color-mix(in oklab, var(--void) 72%, transparent);
+  color: var(--amber);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+}
+
+.fp-card__meta {
+  padding: 0.85rem 0.95rem 1.05rem;
+  display: grid;
+  gap: 0.3rem;
+}
+
+.fp-card__top {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  color: var(--muted);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+}
+
+.fp-card__platform {
+  color: var(--steel);
+  text-transform: uppercase;
+}
+
+.fp-card__brand {
+  margin: 0;
+  color: var(--amber);
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.fp-card__title {
+  margin: 0.15rem 0 0;
+  font-family: var(--font-display);
+  font-size: 1.12rem;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+}
+
+.fp-card__summary {
+  margin: 0.25rem 0 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.fp-card__kind {
+  margin: 0.35rem 0 0;
+  color: var(--phosphor-dim);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: lowercase;
+}
+
+.footprint__empty {
+  margin: 2rem 0 0;
+  padding: 1.25rem;
+  border: 1px dashed var(--line);
+  color: var(--muted);
+  text-align: center;
+  letter-spacing: 0.06em;
+}
+
+@media (max-width: 640px) {
+  .footprint__grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .alias-groups {

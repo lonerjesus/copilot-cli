@@ -1,9 +1,10 @@
 "use client";
 
-import { CATALOG, STREAM_ROWS, type CatalogItem } from "@/data/catalog";
+import { CATALOG, STREAM_ROWS, isPaywalled, type CatalogItem } from "@/data/catalog";
 import { kindGlyph } from "@/lib/format";
 import { usePlayerState } from "@/components/player/PlayerContext";
 import { useMagazine } from "@/components/MagazineContext";
+import { MediaPoster } from "@/components/MediaPoster";
 
 function Tile({
   item,
@@ -18,6 +19,7 @@ function Tile({
   onMagazine?: () => void;
   canMagazine?: boolean;
 }) {
+  const paid = isPaywalled(item);
   return (
     <div className={`tile-wrap ${active ? "tile-wrap--active" : ""}`}>
       <button
@@ -27,22 +29,23 @@ function Tile({
         aria-pressed={active}
       >
         <div className={`tile__art tile__art--${item.kind}`} aria-hidden>
-          <span className="tile__glyph">{kindGlyph(item.kind)}</span>
+          <MediaPoster item={item} className="tile__poster" label={kindGlyph(item.kind)} />
           <span className="tile__scan" />
+          {paid ? <span className="tile__badge">pay</span> : null}
         </div>
         <div className="tile__meta">
           <p className="tile__brand">{item.brand}</p>
           <h3 className="tile__title">{item.title}</h3>
           <p className="tile__sub">
-            {item.category}/{item.subcategory}
-            {` · ${item.kind}`}
+            {item.kind}
             {item.duration ? ` · ${item.duration}` : ""}
+            {paid ? " · upload" : " · live source"}
           </p>
         </div>
       </button>
       {canMagazine && onMagazine ? (
         <button type="button" className="tile__mag" onClick={onMagazine}>
-          magazine view
+          magazine
         </button>
       ) : null}
     </div>
@@ -57,12 +60,11 @@ export function StreamDeck() {
     <section id="stream" className="section stream" aria-labelledby="stream-title">
       <header className="section__head">
         <div>
-          <p className="section__eyebrow">channel://portfolio</p>
-          <h2 id="stream-title">STREAM DECK</h2>
+          <p className="section__eyebrow">channel://stream</p>
+          <h2 id="stream-title">STREAM</h2>
         </div>
         <p className="section__aside">
-          Everything posted under your names — stream, chapbooks, podcasts. Open magazine view for
-          words.
+          Play in-app. Fetched sources keep original art. House uploads stay behind the paywall.
         </p>
       </header>
 

@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { CATALOG } from "@/data/catalog";
+import { CATALOG, isPaywalled } from "@/data/catalog";
 import { getMagazineByCatalogId } from "@/data/magazine";
 import { contentPriceCents, formatUsd } from "@/data/commerce";
 import { getSessionUserFromRequest } from "@/lib/auth/session";
@@ -7,8 +7,9 @@ import { jsonError } from "@/lib/commerce/checkout";
 import { signPayload } from "@/lib/auth/crypto";
 
 /**
- * Paid download endpoint — only returns a saveable payload when the account
- * owns this catalog id. Stream/view remains available to signed-in members.
+ * Download / save:
+ * - fetched/scraped media → free for signed-in members
+ * - uploaded house media → requires purchase (402)
  */
 export async function GET(request: NextRequest) {
   const user = await getSessionUserFromRequest(request);
@@ -20,13 +21,14 @@ export async function GET(request: NextRequest) {
   const item = CATALOG.find((c) => c.id === catalogId);
   if (!item) return jsonError("Unknown catalog item", 404);
 
-  if (!user.purchasedCatalogIds.includes(catalogId)) {
+  const gated = isPaywalled(item);
+  if (gated && !user.purchasedCatalogIds.includes(catalogId)) {
     return NextResponse.json(
       {
         error: "purchase_required",
         catalogId,
         price: formatUsd(contentPriceCents(catalogId)),
-        message: "Purchase this piece to download or save it.",
+        message: "Purchase this uploaded piece to download or save it.",
       },
       { status: 402, headers: { "Cache-Control": "no-store" } },
     );
@@ -34,12 +36,13 @@ export async function GET(request: NextRequest) {
 
   const magazine = getMagazineByCatalogId(catalogId);
   const issuedAt = new Date().toISOString();
-  const license = signPayload(`${user.id}:${catalogId}:${issuedAt}`);
+  const license = signPayload(`${user.id}:${catalogId}:${issuedAt}:${gated ? "paid" : "fetched"}`);
 
   const payload = {
     license,
     issuedAt,
     licensee: user.email,
+    access: gated ? "purchased-upload" : "fetched-open",
     item: {
       id: item.id,
       title: item.title,
@@ -50,6 +53,8 @@ export async function GET(request: NextRequest) {
       publishedAt: item.publishedAt,
       tags: item.tags,
       externalUrl: item.externalUrl,
+      poster: item.poster ?? null,
+      source: item.source ?? (gated ? "uploaded" : "fetched"),
     },
     magazine: magazine
       ? {
@@ -58,8 +63,9 @@ export async function GET(request: NextRequest) {
           spreads: magazine.spreads,
         }
       : null,
-    notice:
-      "Personal download license for the purchasing account only. Redistribution prohibited.",
+    notice: gated
+      ? "Personal download license for the purchasing account only. Redistribution prohibited."
+      : "Fetched/scraped source reference for members. Prefer the original platform for full media files.",
   };
 
   const body = JSON.stringify(payload, null, 2);

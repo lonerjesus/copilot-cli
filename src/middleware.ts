@@ -24,7 +24,7 @@ const SECURITY_HEADERS: Record<string, string> = {
     "form-action 'self' https://checkout.stripe.com",
     "frame-ancestors 'none'",
     "object-src 'none'",
-    "img-src 'self' data: blob: https://substackcdn.com https://i.vimeocdn.com https://static-cdn.jtvnw.net",
+    "img-src 'self' data: blob: https:",
     "font-src 'self' data: https://fonts.gstatic.com",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "script-src 'self' 'unsafe-inline'",

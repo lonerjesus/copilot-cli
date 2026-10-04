@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { CATALOG, isPaywalled } from "@/data/catalog";
 import { contentPriceCents, formatUsd } from "@/data/commerce";
 import { useAuth } from "@/components/AuthContext";
 
@@ -13,6 +14,8 @@ export function ContentPayActions({ catalogId, title }: ContentPayActionsProps) 
   const { owns, markOwned, refresh } = useAuth();
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
+  const item = CATALOG.find((c) => c.id === catalogId);
+  const paywalled = item ? isPaywalled(item) : true;
   const owned = owns(catalogId);
   const price = formatUsd(contentPriceCents(catalogId));
 
@@ -41,8 +44,6 @@ export function ContentPayActions({ catalogId, title }: ContentPayActionsProps) 
         setMsg("Already licensed");
         return;
       }
-      // Demo grants server-side immediately — refresh entitlements from server.
-      // Stripe mode: do not mark owned until return/webhook settles.
       if (data.mode === "demo") {
         await refresh();
         markOwned(catalogId);
@@ -90,6 +91,19 @@ export function ContentPayActions({ catalogId, title }: ContentPayActionsProps) 
     }
   };
 
+  // Fetched / scraped media — no paywall chrome
+  if (!paywalled) {
+    return (
+      <div className="pay-actions pay-actions--open">
+        <button type="button" className="btn btn--ghost" disabled={busy} onClick={download}>
+          {busy ? "…" : "save reference"}
+        </button>
+        <span className="pay-actions__hint">fetched source · free for members</span>
+        {msg ? <span className="pay-actions__msg">{msg}</span> : null}
+      </div>
+    );
+  }
+
   return (
     <div className="pay-actions">
       {owned ? (
@@ -98,11 +112,11 @@ export function ContentPayActions({ catalogId, title }: ContentPayActionsProps) 
         </button>
       ) : (
         <button type="button" className="btn btn--primary" disabled={busy} onClick={buy}>
-          {busy ? "…" : `unlock save · ${price}`}
+          {busy ? "…" : `unlock · ${price}`}
         </button>
       )}
       <span className="pay-actions__hint">
-        {owned ? "licensed for this account" : "stream ok · save requires purchase"}
+        {owned ? "licensed upload" : "house upload · purchase to save"}
       </span>
       {msg ? <span className="pay-actions__msg">{msg}</span> : null}
     </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { startTransition, useDeferredValue, useMemo, useState } from "react";
-import { CATALOG, type CatalogItem, type MediaKind } from "@/data/catalog";
+import { CATALOG, isPaywalled, type CatalogItem, type MediaKind } from "@/data/catalog";
 import {
   CATEGORIES,
   getCategory,
@@ -21,6 +21,7 @@ import { kindGlyph } from "@/lib/format";
 import { usePlayerState } from "@/components/player/PlayerContext";
 import { useMagazine } from "@/components/MagazineContext";
 import { track } from "@/lib/analytics";
+import { MediaPoster } from "@/components/MediaPoster";
 
 type CategoryBrowserProps = {
   initialQuery?: string;
@@ -130,8 +131,7 @@ export function CategoryBrowser({
           <h2 id="categories-title">CATEGORIES</h2>
         </div>
         <p className="section__aside">
-          Separated categories + stacked filters. Mix search, kind, platform, brand, and sort to
-          stay in the stream.
+          Filter the stream. Original platform artwork loads with each title.
         </p>
       </header>
 
@@ -338,7 +338,8 @@ export function CategoryBrowser({
                         onClick={() => playItem(item, group.items)}
                       >
                         <div className={`tile__art tile__art--${item.kind}`} aria-hidden>
-                          <span className="tile__glyph">{kindGlyph(item.kind)}</span>
+                          <MediaPoster item={item} className="tile__poster" label={kindGlyph(item.kind)} />
+                          {isPaywalled(item) ? <span className="tile__badge">pay</span> : null}
                         </div>
                         <div className="tile__meta">
                           <p className="tile__brand">{item.brand}</p>

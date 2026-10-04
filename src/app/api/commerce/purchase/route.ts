@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { CATALOG } from "@/data/catalog";
+import { CATALOG, isPaywalled } from "@/data/catalog";
 import { contentPriceCents, formatUsd } from "@/data/commerce";
 import { getSessionUserFromRequest } from "@/lib/auth/session";
 import { createContentCheckout, jsonError } from "@/lib/commerce/checkout";
@@ -20,6 +20,18 @@ export async function POST(request: NextRequest) {
 
   const item = CATALOG.find((c) => c.id === catalogId);
   if (!item) return jsonError("Unknown catalog item", 404);
+
+  if (!isPaywalled(item)) {
+    return NextResponse.json(
+      {
+        alreadyOwned: true,
+        catalogId,
+        free: true,
+        message: "Fetched media is free for members — no purchase required.",
+      },
+      { headers: { "Cache-Control": "no-store" } },
+    );
+  }
 
   if (user.purchasedCatalogIds.includes(catalogId)) {
     return NextResponse.json(

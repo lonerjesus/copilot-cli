@@ -9,10 +9,15 @@ const nextConfig: NextConfig = {
     formats: ["image/avif", "image/webp"],
     minimumCacheTTL: 60 * 60 * 24 * 30,
     remotePatterns: [
-      { protocol: "https", hostname: "substackcdn.com" },
+      { protocol: "https", hostname: "**.substackcdn.com" },
       { protocol: "https", hostname: "tellingshowoflove.substack.com" },
-      { protocol: "https", hostname: "i.vimeocdn.com" },
+      { protocol: "https", hostname: "**.vimeocdn.com" },
       { protocol: "https", hostname: "static-cdn.jtvnw.net" },
+      { protocol: "https", hostname: "i.ytimg.com" },
+      { protocol: "https", hostname: "**.bcbits.com" },
+      { protocol: "https", hostname: "**.sndcdn.com" },
+      { protocol: "https", hostname: "soundcloud.com" },
+      { protocol: "https", hostname: "**.googleusercontent.com" },
     ],
   },
   experimental: {

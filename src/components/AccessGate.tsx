@@ -185,8 +185,8 @@ export function AccessGate() {
         </form>
 
         <p className="access__fine">
-          Viewing requires an account. Saving or downloading any piece requires purchasing that
-          piece. Redistribution is prohibited.
+          Viewing requires an account. Fetched platform media is free to stream and save for
+          members. New house uploads require purchase to download. Redistribution is prohibited.
         </p>
       </section>
     </main>

@@ -8,7 +8,6 @@ import { Hero } from "@/components/Hero";
 import { StreamDeck } from "@/components/StreamDeck";
 import { CategoryBrowser } from "@/components/CategoryBrowser";
 import { ContinuumRail } from "@/components/ContinuumRail";
-import { FootprintFeed } from "@/components/FootprintFeed";
 import { AliasMatrix } from "@/components/AliasMatrix";
 import { CosmogramPanel } from "@/components/Cosmogram";
 import { MagazineReader } from "@/components/MagazineReader";
@@ -17,12 +16,10 @@ import { PlayerDock } from "@/components/player/PlayerDock";
 import { PlayerProvider, usePlayerState } from "@/components/player/PlayerContext";
 import { AuthProvider, useAuth } from "@/components/AuthContext";
 import { DonatePanel } from "@/components/DonatePanel";
-import { SaveGuard } from "@/components/SaveGuard";
-import type { FootprintItem } from "@/lib/feed";
 import { PRIMARY_NAME, SITE } from "@/data/identity";
 import { findCategoryByQuery, type CategoryId, type SubcategoryId } from "@/data/taxonomy";
 
-function ShellInner({ footprint }: { footprint: FootprintItem[] }) {
+function ShellInner() {
   const [booted, setBooted] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchCategory, setSearchCategory] = useState<CategoryId | "all">("all");
@@ -59,12 +56,15 @@ function ShellInner({ footprint }: { footprint: FootprintItem[] }) {
         toggle();
         return;
       }
+      if (cmd === "footprint") {
+        window.location.href = "/footprint";
+        return;
+      }
       const map: Record<string, string> = {
         stream: "stream",
         categories: "categories",
         magazine: "stream",
         cosmogram: "cosmogram",
-        footprint: "footprint",
         brands: "brands",
         support: "support",
         donate: "support",
@@ -81,7 +81,6 @@ function ShellInner({ footprint }: { footprint: FootprintItem[] }) {
         Skip to content
       </a>
       <AgeGate />
-      <SaveGuard />
       {!booted ? <BootSequence onDone={() => setBooted(true)} /> : null}
       <div className="shell shell--ready">
         <p className="agebanner" role="note">
@@ -98,6 +97,7 @@ function ShellInner({ footprint }: { footprint: FootprintItem[] }) {
           <nav className="topbar__nav" aria-label="Primary">
             <a href="#stream">stream</a>
             <a href="#categories">browse</a>
+            <a href="/footprint">footprint</a>
             <a href="#cosmogram">chart</a>
             <a href="#support">support</a>
           </nav>
@@ -125,7 +125,6 @@ function ShellInner({ footprint }: { footprint: FootprintItem[] }) {
             initialSubcategory={searchSubcategory}
           />
           <CosmogramPanel />
-          <FootprintFeed initial={footprint} />
           <DonatePanel />
           <AliasMatrix />
         </main>
@@ -151,12 +150,12 @@ function ShellInner({ footprint }: { footprint: FootprintItem[] }) {
   );
 }
 
-export function AppShell({ footprint }: { footprint: FootprintItem[] }) {
+export function AppShell() {
   return (
     <AuthProvider>
       <PlayerProvider>
         <MagazineProvider>
-          <ShellInner footprint={footprint} />
+          <ShellInner />
         </MagazineProvider>
       </PlayerProvider>
     </AuthProvider>

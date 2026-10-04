@@ -51,12 +51,17 @@ reg="$(curl -s -A "$UA" -c "$JAR" -b "$JAR" -X POST "$BASE/api/auth/register" \
 echo "$reg" | grep -q '"email"' && echo "PASS  register" && pass=$((pass+1)) || { echo "FAIL  register"; fail=$((fail+1)); }
 
 check "home-authed" "$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" -b "$JAR" "$BASE/")"
+check "footprint-redirect" "$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" "$BASE/footprint")" "307"
+check "footprint-authed" "$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" -b "$JAR" "$BASE/footprint")"
 check "feed-authed" "$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" -b "$JAR" "$BASE/api/feed")"
 check "ingest-authed" "$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" -b "$JAR" "$BASE/api/ingest")"
 
-# download without purchase → 402
+# download uploaded (paywalled) without purchase → 402
 dl="$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" -b "$JAR" "$BASE/api/commerce/download?id=qtoss-vol1")"
 check "download-paywall" "$dl" "402"
+
+# fetched/scraped media downloads free for members
+check "download-fetched-free" "$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" -b "$JAR" "$BASE/api/commerce/download?id=bandcamp-30over9-good-sloppy")" "200"
 
 # webhook must fail closed without secret
 wh="$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" -X POST "$BASE/api/commerce/webhook" -H 'content-type: application/json' -d '{"type":"checkout.session.completed"}')"
@@ -80,6 +85,11 @@ echo "$robots" | grep -qi 'Disallow: /' && echo "PASS  robots-disallow-all" && p
 
 home="$(curl -s -A "$UA" -b "$JAR" "$BASE/")"
 echo "$home" | grep -qi '18+' && echo "PASS  compliance-18plus-marker" && pass=$((pass+1)) || { echo "FAIL  compliance-18plus-marker"; fail=$((fail+1)); }
+echo "$home" | grep -q '/footprint' && echo "PASS  home-watch-footprint-link" && pass=$((pass+1)) || { echo "FAIL  home-watch-footprint-link"; fail=$((fail+1)); }
+
+fp="$(curl -s -A "$UA" -b "$JAR" "$BASE/footprint")"
+echo "$fp" | grep -qi 'WATCH FOOTPRINT' && echo "PASS  footprint-page-title" && pass=$((pass+1)) || { echo "FAIL  footprint-page-title"; fail=$((fail+1)); }
+echo "$fp" | grep -q 'fp-card' && echo "PASS  footprint-cards" && pass=$((pass+1)) || { echo "FAIL  footprint-cards"; fail=$((fail+1)); }
 
 ingest="$(curl -s -A "$UA" -b "$JAR" "$BASE/api/ingest")"
 echo "$ingest" | grep -q '357Itsumi' && echo "PASS  ingest-exact-357Itsumi" && pass=$((pass+1)) || { echo "FAIL  ingest-exact-357Itsumi"; fail=$((fail+1)); }

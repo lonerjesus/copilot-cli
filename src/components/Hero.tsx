@@ -37,7 +37,7 @@ export function Hero() {
           >
             {playing ? "resume deck" : "enter stream"}
           </button>
-          <a className="btn btn--ghost" href="#footprint">
+          <a className="btn btn--ghost" href="/footprint">
             watch footprint
           </a>
         </div>

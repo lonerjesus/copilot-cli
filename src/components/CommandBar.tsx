@@ -10,7 +10,7 @@ const COMMANDS = [
   { cmd: "categories", hint: "browse separated categories" },
   { cmd: "magazine", hint: "jump to stream for magazine chapbooks" },
   { cmd: "cosmogram", hint: "open birthday cosmogram" },
-  { cmd: "footprint", hint: "jump to live social signal" },
+  { cmd: "footprint", hint: "open the full footprint archive" },
   { cmd: "support", hint: "donate to keep the site online" },
   { cmd: "play", hint: "toggle media deck" },
   { cmd: "brands", hint: "open alias matrix" },
