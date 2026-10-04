@@ -17,3 +17,6 @@ pages_build_output_dir = ".next"
 SITE_DOMAIN = "www.kamaunegasi.net"
 EXACT_NAME_POLICY = "1"
 AGE_GATE_REQUIRED = "1"
+ACCOUNT_GATE = "1"
+PAYMENTS_MODE = "demo"
+# Set AUTH_SECRET + STRIPE_* as Cloudflare secrets (not plain vars)

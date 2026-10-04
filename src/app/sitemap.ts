@@ -1,13 +1,14 @@
 import type { MetadataRoute } from "next";
 import { SITE } from "@/data/identity";
 
+/** Account gate — only advertise the access door. */
 export default function sitemap(): MetadataRoute.Sitemap {
   return [
     {
-      url: SITE.url,
+      url: `${SITE.url}/access`,
       lastModified: new Date(),
-      changeFrequency: "daily",
-      priority: 1,
+      changeFrequency: "monthly",
+      priority: 0.3,
     },
   ];
 }

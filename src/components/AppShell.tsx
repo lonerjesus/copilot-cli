@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { AgeGate } from "@/components/AgeGate";
 import { BootSequence } from "@/components/BootSequence";
 import { CommandBar } from "@/components/CommandBar";
@@ -15,6 +15,9 @@ import { MagazineReader } from "@/components/MagazineReader";
 import { MagazineProvider, useMagazine } from "@/components/MagazineContext";
 import { PlayerDock } from "@/components/player/PlayerDock";
 import { PlayerProvider, usePlayerState } from "@/components/player/PlayerContext";
+import { AuthProvider, useAuth } from "@/components/AuthContext";
+import { DonatePanel } from "@/components/DonatePanel";
+import { SaveGuard } from "@/components/SaveGuard";
 import type { FootprintItem } from "@/lib/feed";
 import { BIRTH_NAME, SITE } from "@/data/identity";
 import { findCategoryByQuery, type CategoryId, type SubcategoryId } from "@/data/taxonomy";
@@ -27,6 +30,19 @@ function ShellInner({ footprint }: { footprint: FootprintItem[] }) {
   const [browseKey, setBrowseKey] = useState(0);
   const { toggle, setExpanded } = usePlayerState();
   const { openId, closeMagazine } = useMagazine();
+  const { user, logout, markOwned, refresh } = useAuth();
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const purchased = params.get("purchased");
+    if (purchased) {
+      markOwned(purchased);
+      void refresh();
+    }
+    if (params.get("donated") === "1") {
+      void refresh();
+    }
+  }, [markOwned, refresh]);
 
   const applySearch = useCallback((query: string) => {
     const hit = findCategoryByQuery(query);
@@ -54,6 +70,8 @@ function ShellInner({ footprint }: { footprint: FootprintItem[] }) {
         cosmogram: "cosmogram",
         footprint: "footprint",
         brands: "brands",
+        support: "support",
+        donate: "support",
       };
       const id = map[cmd];
       if (id) document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
@@ -67,6 +85,7 @@ function ShellInner({ footprint }: { footprint: FootprintItem[] }) {
         Skip to content
       </a>
       <AgeGate />
+      <SaveGuard />
       {!booted ? <BootSequence onDone={() => setBooted(true)} /> : null}
       <div className="shell shell--ready">
         <p className="agebanner" role="note">
@@ -85,8 +104,17 @@ function ShellInner({ footprint }: { footprint: FootprintItem[] }) {
             <a href="#categories">categories</a>
             <a href="#cosmogram">cosmogram</a>
             <a href="#footprint">footprint</a>
+            <a href="#support">support</a>
             <a href="#brands">brands</a>
           </nav>
+          <div className="topbar__account">
+            <span className="topbar__user" title={user?.email}>
+              {user?.displayName ?? "member"}
+            </span>
+            <button type="button" className="topbar__logout" onClick={() => void logout()}>
+              sign out
+            </button>
+          </div>
         </header>
 
         <main id="top" tabIndex={-1}>
@@ -104,6 +132,7 @@ function ShellInner({ footprint }: { footprint: FootprintItem[] }) {
           />
           <CosmogramPanel />
           <FootprintFeed initial={footprint} />
+          <DonatePanel />
           <AliasMatrix />
         </main>
 
@@ -113,7 +142,8 @@ function ShellInner({ footprint }: { footprint: FootprintItem[] }) {
             LLC · All rights reserved.
           </p>
           <p className="footer__note">
-            Warning: 18+ only. This platform is not for people under 18 due to certain content.
+            Warning: 18+ only. Account required. Automated scraping and bulk fetch are blocked.
+            Downloads/saves require a paid license per piece.
           </p>
           <p className="footer__note">
             Creating is the Ritual, Love is the Reason. · #BeAutonomous · Cloudflare edge ready.
@@ -129,10 +159,12 @@ function ShellInner({ footprint }: { footprint: FootprintItem[] }) {
 
 export function AppShell({ footprint }: { footprint: FootprintItem[] }) {
   return (
-    <PlayerProvider>
-      <MagazineProvider>
-        <ShellInner footprint={footprint} />
-      </MagazineProvider>
-    </PlayerProvider>
+    <AuthProvider>
+      <PlayerProvider>
+        <MagazineProvider>
+          <ShellInner footprint={footprint} />
+        </MagazineProvider>
+      </PlayerProvider>
+    </AuthProvider>
   );
 }

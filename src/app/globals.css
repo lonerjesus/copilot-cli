@@ -1974,9 +1974,253 @@ select:focus:not(:focus-visible) {
   background: #c6f54a;
 }
 
+.topbar__account {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-left: 0.5rem;
+}
+
+.topbar__user {
+  max-width: 9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--phosphor);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+}
+
+.topbar__logout {
+  border: 1px solid var(--line-hot);
+  background: transparent;
+  color: var(--muted);
+  padding: 0.25rem 0.55rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.topbar__logout:hover {
+  color: var(--phosphor);
+  border-color: var(--phosphor-dim);
+}
+
+.access {
+  position: relative;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 2rem 1.25rem;
+}
+
+.access__atmosphere {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.access__grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(color-mix(in oklab, var(--phosphor) 8%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in oklab, var(--phosphor) 8%, transparent) 1px, transparent 1px);
+  background-size: 28px 28px;
+  opacity: 0.35;
+  mask-image: radial-gradient(circle at 50% 40%, #000 20%, transparent 75%);
+}
+
+.access__panel {
+  position: relative;
+  width: min(440px, 100%);
+  padding: 1.75rem 1.5rem 1.5rem;
+  border: 1px solid var(--line-hot);
+  background: color-mix(in oklab, var(--panel) 92%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--phosphor) 8%, transparent);
+}
+
+.access__eyebrow {
+  margin: 0 0 0.65rem;
+  color: var(--amber);
+  letter-spacing: 0.14em;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+}
+
+.access__brand {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 6vw, 2.8rem);
+  letter-spacing: 0.06em;
+  line-height: 1;
+}
+
+.access__copy {
+  margin: 0.85rem 0 1.25rem;
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.55;
+}
+
+.access__tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+}
+
+.access__tabs button {
+  border: 1px solid var(--line);
+  background: transparent;
+  padding: 0.45rem 0.5rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  cursor: pointer;
+  color: var(--muted);
+}
+
+.access__tabs button.is-on {
+  border-color: var(--phosphor-dim);
+  color: var(--phosphor);
+}
+
+.access__form {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.access__form label {
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--steel);
+}
+
+.access__form input {
+  border: 1px solid var(--line);
+  background: var(--void);
+  padding: 0.55rem 0.65rem;
+  font-size: 0.9rem;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.access__check {
+  display: flex !important;
+  align-items: flex-start;
+  gap: 0.55rem;
+  text-transform: none !important;
+  letter-spacing: 0.02em !important;
+  font-size: 0.8rem !important;
+  color: var(--text) !important;
+}
+
+.access__check input {
+  margin-top: 0.15rem;
+}
+
+.access__error {
+  margin: 0;
+  color: var(--danger);
+  font-size: 0.82rem;
+}
+
+.access__fine {
+  margin: 1rem 0 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.hp {
+  position: absolute !important;
+  left: -10000px !important;
+  width: 1px !important;
+  height: 1px !important;
+  overflow: hidden !important;
+}
+
+.donate__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  align-items: center;
+}
+
+.donate__chip {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--text);
+  padding: 0.45rem 0.7rem;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+
+.donate__chip.is-on {
+  border-color: var(--phosphor-dim);
+  color: var(--phosphor);
+}
+
+.donate__custom {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.donate__custom input {
+  width: 5.5rem;
+  border: 1px solid var(--line);
+  background: var(--void);
+  padding: 0.4rem 0.5rem;
+}
+
+.donate__thanks,
+.donate__msg {
+  margin: 0.75rem 0 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.pay-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem;
+  margin-top: 0.85rem;
+}
+
+.pay-actions__hint,
+.pay-actions__msg {
+  font-size: 0.72rem;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+
+.pay-actions__msg {
+  color: var(--amber);
+  width: 100%;
+}
+
+.magazine__pay {
+  padding: 0.5rem 1rem 0;
+}
+
 @media (max-width: 820px) {
   .cosmo-hero,
   .cosmo-grid {
     grid-template-columns: 1fr;
+  }
+
+  .topbar__account {
+    display: none;
   }
 }
