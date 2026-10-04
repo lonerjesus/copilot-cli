@@ -1,0 +1,19 @@
+# Cloudflare Pages / Workers notes for www.kamaunegasi.net
+#
+# Build: npm run build
+# Node: >=22
+# Custom domain: www.kamaunegasi.net (Cloudflare DNS)
+# Headers: public/_headers + next.config.ts + middleware CSP
+#
+# Squad agent: cloudflare-deploy
+# Depends on: security, performance
+# Verifier: always last
+
+name = "kamaunegasi-net"
+compatibility_date = "2025-10-01"
+pages_build_output_dir = ".next"
+
+[vars]
+SITE_DOMAIN = "www.kamaunegasi.net"
+EXACT_NAME_POLICY = "1"
+AGE_GATE_REQUIRED = "1"

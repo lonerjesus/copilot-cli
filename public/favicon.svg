@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <rect width="64" height="64" fill="#060807"/>
+  <rect x="4" y="4" width="56" height="56" stroke="#c6f54a" stroke-width="2"/>
+  <text x="32" y="40" text-anchor="middle" font-family="ui-monospace, monospace" font-size="22" font-weight="700" fill="#c6f54a">KN</text>
+</svg>

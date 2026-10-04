@@ -1,95 +1,57 @@
-# GitHub Copilot CLI (Public Preview)
+# kamaunegasi.net
 
-The power of GitHub Copilot, now in your terminal.
+Autonomous portfolio + vlog platform for **Kendrick-Kamau Negasi**.
 
-GitHub Copilot CLI brings AI-powered coding assistance directly to your command line, enabling you to build, debug, and understand code through natural language conversations. Powered by the same agentic harness as GitHub's Copilot coding agent, it provides intelligent assistance while staying deeply integrated with your GitHub workflow.
+Futuristic terminal UI · streaming-style browse · chronic social footprint feed · custom audio/video deck that pulls posts from connected platforms.
 
-See [our official documentation](https://docs.github.com/copilot/concepts/agents/about-copilot-cli) for more information.
+## Stack
 
-![Image of the splash screen for the Copilot CLI](https://github.com/user-attachments/assets/51ac25d2-c074-467a-9c88-38a8d76690e3)
+- Next.js (App Router) + TypeScript
+- Terminal design system (CSS variables, no card-heavy chrome)
+- `/api/feed` aggregates catalog + live Substack RSS
+- `/api/oembed` proxies allowed platform oEmbed lookups
+- `/api/ingest` audits house platforms against catalog (exact-name policy)
+- First-party engagement signals in `src/lib/analytics.ts` (no third-party trackers)
+- Ready for Cloudflare Pages (`wrangler.toml` · domain `www.kamaunegasi.net`)
 
-## 🚀 Introduction and Overview
-
-We're bringing the power of GitHub Copilot coding agent directly to your terminal. With GitHub Copilot CLI, you can work locally and synchronously with an AI agent that understands your code and GitHub context.
-
-- **Terminal-native development:** Work with Copilot coding agent directly in your command line — no context switching required.
-- **GitHub integration out of the box:** Access your repositories, issues, and pull requests using natural language, all authenticated with your existing GitHub account.
-- **Agentic capabilities:** Build, edit, debug, and refactor code with an AI collaborator that can plan and execute complex tasks.
-- **MCP-powered extensibility:** Take advantage of the fact that the coding agent ships with GitHub's MCP server by default and supports custom MCP servers to extend capabilities.
-- **Full control:** Preview every action before execution — nothing happens without your explicit approval.
-
-We're still early in our journey, but with your feedback, we're rapidly iterating to make the GitHub Copilot CLI the best possible companion in your terminal.
-
-## 📦 Getting Started
-
-### Supported Platforms
-
-- **Linux**
-- **macOS**
-- **Windows**
-
-### Prerequisites
-
-- **Node.js** v22 or higher
-- **npm** v10 or higher
-- (On Windows) **PowerShell** v6 or higher
-- An **active Copilot subscription**. See [Copilot plans](https://github.com/features/copilot/plans?ref_cta=Copilot+plans+signup&ref_loc=install-copilot-cli&ref_page=docs).
-
-If you have access to GitHub Copilot via your organization or enterprise, you cannot use GitHub Copilot CLI if your organization owner or enterprise administrator has disabled it in the organization or enterprise settings. See [Managing policies and features for GitHub Copilot in your organization](http://docs.github.com/copilot/managing-copilot/managing-github-copilot-in-your-organization/managing-github-copilot-features-in-your-organization/managing-policies-for-copilot-in-your-organization) for more information.
-
-### Installation
-
-Install globally with npm:
+## Develop
 
 ```bash
-npm install -g @github/copilot
+npm install
+npm run dev
 ```
 
-Install with [Homebrew](https://formulae.brew.sh/cask/copilot-cli):
+Open [http://localhost:3000](http://localhost:3000).
+
+## QA smoke
 
 ```bash
-brew install copilot-cli
+bash scripts/qa-smoke.sh http://localhost:3000
+# or
+npm run qa:smoke
 ```
 
-Install with [WinGet](https://github.com/microsoft/winget-cli):
+## Agent squad
 
-```bash
-winget install GitHub.Copilot
-```
+See [`agents/ROSTER.md`](./agents/ROSTER.md) and [`agents/RUNBOOK.md`](./agents/RUNBOOK.md). Eleven cooperating specialists; **verifier always last**.
 
-### Launching the CLI
+## Deploy on Cloudflare Pages
 
-```bash
-copilot
-```
+1. Connect this repo in Cloudflare Pages.
+2. Build command: `npm run build`
+3. Framework preset: Next.js (use OpenNext / Cloudflare Next adapter if enabling edge API routes).
+4. Attach custom domain `www.kamaunegasi.net`.
+5. Confirm `wrangler.toml` vars: `SITE_DOMAIN`, `EXACT_NAME_POLICY`, `AGE_GATE_REQUIRED`.
 
-On first launch, you'll be greeted with our adorable animated banner! If you'd like to see this banner again, launch `copilot` with the `--banner` flag.
+For a static-first preview, `npm run build && npm run start` works on any Node host.
 
-If you're not currently logged in to GitHub, you'll be prompted to use the `/login` slash command. Enter this command and follow the on-screen instructions to authenticate.
+## Identity nodes
 
-#### Authenticate with a Personal Access Token (PAT)
+Streetpolitik · GrownAssKids (GAK) · Black Oh-My · BLKDTY Music LLC · Kendrick-Kamau Negasi LLC · Thelonious1 (TL1) · Telling Show Of Love (TSOL) · Telling Stills Of Love · Imponderabilia: Wall_Carpet 235 · 357Itsumi · Faust Fakeway · LoveDrugVendingMachine · Kamau Salaam Nasser · GRUNGEzhou · Golden Crow · 30over9
 
-You can also authenticate using a fine-grained PAT with the "Copilot Requests" permission enabled.
+## Keyboard
 
-1. Visit https://github.com/settings/personal-access-tokens/new
-2. Under "Permissions," click "add permissions" and select "Copilot Requests"
-3. Generate your token
-4. Add the token to your environment via the environment variable `GH_TOKEN` or `GITHUB_TOKEN` (in order of precedence)
-
-### Using the CLI
-
-Launch `copilot` in a folder that contains code you want to work with.
-
-By default, `copilot` utilizes Claude Sonnet 4.5. Run the `/model` slash command to choose from other available models, including Claude Sonnet 4 and GPT-5.
-
-Each time you submit a prompt to GitHub Copilot CLI, your monthly quota of premium requests is reduced by one. For information about premium requests, see [About premium requests](https://docs.github.com/copilot/managing-copilot/monitoring-usage-and-entitlements/about-premium-requests).
-
-For more information about how to use the GitHub Copilot CLI, see [our official documentation](https://docs.github.com/copilot/concepts/agents/about-copilot-cli).
-
-## 📢 Feedback and Participation
-
-We're excited to have you join us early in the Copilot CLI journey.
-
-This is an early-stage preview, and we're building quickly. Expect frequent updates--please keep your client up to date for the latest features and fixes!
-
-Your insights are invaluable! Open issue in this repo, join Discussions, and run `/feedback` from the CLI to submit a confidential feedback survey!
+- `/` focus command bar
+- `j` / `k` move footprint cursor
+- Tab then Enter on **Skip to content** for a11y jump
+- commands: `stream` · `categories` · `magazine` · `cosmogram` · `footprint` · `play` · `brands` · `help`
