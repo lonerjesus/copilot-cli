@@ -5,7 +5,8 @@
   "description": "www.kamaunegasi.net — autonomous portfolio & vlog streaming platform",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "opennextjs-cloudflare build",
+    "build:next": "next build",
     "start": "next start",
     "lint": "eslint",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",

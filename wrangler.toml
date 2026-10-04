@@ -2,8 +2,10 @@
 #
 # Local: npm run preview
 # Deploy: npm run deploy
-# Dashboard build: npx @opennextjs/cloudflare build
-# Dashboard deploy: npx @opennextjs/cloudflare deploy
+# Cloudflare dashboard:
+#   Build command:  npm run build   (OpenNext — produces .open-next/)
+#   Deploy command: npx wrangler deploy
+# Do NOT use plain `next build` for Workers — wrangler needs .open-next/
 #
 # Secrets (dashboard): AUTH_SECRET, STRIPE_*, PAYMENTS_MODE
 
