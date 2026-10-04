@@ -948,13 +948,13 @@ select:focus:not(:focus-visible) {
 
 .footprint__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 1.35rem 1.15rem;
+  grid-template-columns: repeat(auto-fill, minmax(176px, 1fr));
+  gap: 1.5rem 1.1rem;
   justify-items: center;
 }
 
 .floppy {
-  width: min(100%, 220px);
+  width: min(100%, 188px);
 }
 
 .floppy__hit {
@@ -970,100 +970,125 @@ select:focus:not(:focus-visible) {
 
 .floppy__shell {
   position: relative;
-  aspect-ratio: 1 / 1.04;
-  border-radius: 10px 10px 8px 8px;
+  aspect-ratio: 1 / 1.05;
+  border-radius: 12px 12px 10px 10px;
   background:
-    linear-gradient(180deg, #1a221c 0%, #121811 42%, #0c100e 100%);
-  border: 1px solid color-mix(in oklab, var(--line-hot) 70%, #000);
+    linear-gradient(145deg, #2a342c 0%, #171d18 38%, #0e1210 100%);
+  border: 1px solid #3a453c;
   box-shadow:
-    inset 0 1px 0 color-mix(in oklab, #fff 6%, transparent),
-    0 10px 24px color-mix(in oklab, #000 35%, transparent);
+    inset 0 1px 0 color-mix(in oklab, #fff 8%, transparent),
+    inset 0 -10px 18px color-mix(in oklab, #000 28%, transparent),
+    0 12px 28px color-mix(in oklab, #000 40%, transparent);
   overflow: hidden;
-  transition: transform 220ms ease, border-color 220ms ease;
+  transition: transform 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
+  clip-path: polygon(
+    0 8%,
+    8% 0,
+    92% 0,
+    100% 8%,
+    100% 100%,
+    0 100%
+  );
 }
 
 .floppy:hover .floppy__shell,
 .floppy--active .floppy__shell {
-  transform: translateY(-3px);
+  transform: translateY(-4px);
   border-color: var(--phosphor-dim);
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklab, #fff 8%, transparent),
+    0 0 0 1px color-mix(in oklab, var(--phosphor) 22%, transparent),
+    0 16px 32px color-mix(in oklab, #000 45%, transparent);
 }
 
 .floppy__shutter {
   position: absolute;
   top: 0;
-  left: 12%;
-  right: 12%;
-  height: 18%;
+  left: 11%;
+  right: 11%;
+  height: 20%;
   display: grid;
   place-items: center;
-  z-index: 2;
+  z-index: 3;
 }
 
 .floppy__metal {
   display: block;
   width: 100%;
-  height: 62%;
-  border-radius: 0 0 3px 3px;
-  background: linear-gradient(180deg, #8b9690, #5d675f 55%, #3e4640);
-  box-shadow: inset 0 -1px 0 #2a302c;
+  height: 68%;
+  border-radius: 0 0 4px 4px;
+  background:
+    linear-gradient(180deg, #c5cec8 0%, #8f9a92 42%, #5f6a62 100%);
+  box-shadow:
+    inset 0 1px 0 #e8eee9,
+    inset 0 -2px 0 #3d4640,
+    0 2px 4px color-mix(in oklab, #000 35%, transparent);
 }
 
 .floppy__slot {
   position: absolute;
-  width: 42%;
-  height: 18%;
-  top: 38%;
-  left: 29%;
-  background: #0a0d0b;
+  width: 46%;
+  height: 22%;
+  top: 36%;
+  left: 27%;
+  background: #070908;
   border-radius: 1px;
+  box-shadow: inset 0 0 0 1px #2c332e;
 }
 
 .floppy__notch {
   position: absolute;
-  top: 22%;
-  right: 0;
-  width: 7%;
-  height: 11%;
+  bottom: 11%;
+  left: 0;
+  width: 9%;
+  height: 12%;
   background: var(--void);
-  border-left: 1px solid var(--line);
-  z-index: 2;
+  border-right: 1px solid #2c342e;
+  z-index: 3;
 }
 
 .floppy__hub {
   position: absolute;
-  bottom: 9%;
+  bottom: 7%;
   left: 50%;
-  width: 18%;
+  width: 22%;
   aspect-ratio: 1;
   translate: -50% 0;
   border-radius: 50%;
-  border: 1px solid color-mix(in oklab, var(--line-hot) 80%, transparent);
+  border: 1px solid #4a554c;
   background:
-    radial-gradient(circle at 50% 50%, #0a0d0b 0 28%, transparent 29%),
-    radial-gradient(circle at 50% 50%, transparent 0 42%, #2a332c 43% 58%, transparent 59%);
-  z-index: 1;
-  opacity: 0.85;
+    radial-gradient(circle at 50% 50%, #050706 0 26%, transparent 27%),
+    radial-gradient(circle at 50% 50%, #1b221d 0 48%, transparent 49%),
+    radial-gradient(circle at 50% 50%, transparent 0 58%, #3a443c 59% 72%, transparent 73%);
+  z-index: 2;
+  box-shadow: inset 0 0 0 1px #0a0d0b;
 }
 
 .floppy__label {
   position: absolute;
-  inset: 22% 9% 18% 9%;
+  inset: 24% 10% 22% 10%;
   display: grid;
-  grid-template-rows: 52% 1fr;
-  gap: 0.3rem;
-  padding: 0.35rem 0.4rem 0.4rem;
-  border: 1px solid color-mix(in oklab, var(--line) 85%, transparent);
+  grid-template-rows: 54% 1fr;
+  gap: 0.28rem;
+  padding: 0.32rem 0.38rem 0.36rem;
+  border: 1px solid #cfc8b4;
   background:
-    linear-gradient(180deg, #f2efe4 0%, #e7e2d2 100%);
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0 0.72rem,
+      color-mix(in oklab, #000 5%, transparent) 0.72rem 0.73rem
+    ),
+    linear-gradient(180deg, #f7f3e7 0%, #ebe4d2 100%);
   color: #1a1c16;
   z-index: 2;
+  box-shadow: 0 1px 0 color-mix(in oklab, #fff 50%, transparent);
 }
 
 .floppy__art {
   position: relative;
   overflow: hidden;
-  border: 1px solid color-mix(in oklab, #000 18%, transparent);
-  background: #111;
+  border: 1px solid color-mix(in oklab, #000 16%, transparent);
+  background: #101410;
   min-height: 0;
 }
 
@@ -1076,21 +1101,21 @@ select:focus:not(:focus-visible) {
   min-height: 0;
   display: grid;
   align-content: start;
-  gap: 0.15rem;
+  gap: 0.12rem;
 }
 
 .floppy__platform {
-  font-size: 0.58rem;
-  letter-spacing: 0.12em;
+  font-size: 0.55rem;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #5a6254;
+  color: #6a7264;
 }
 
 .floppy__title {
   margin: 0;
   font-family: var(--font-display);
-  font-size: 0.82rem;
-  line-height: 1.15;
+  font-size: 0.78rem;
+  line-height: 1.12;
   letter-spacing: 0.01em;
   color: #14160f;
   display: -webkit-box;
@@ -1101,10 +1126,10 @@ select:focus:not(:focus-visible) {
 
 .floppy__meta {
   margin: 0;
-  font-size: 0.56rem;
-  letter-spacing: 0.06em;
-  color: #6a7264;
-  text-transform: lowercase;
+  font-size: 0.54rem;
+  letter-spacing: 0.08em;
+  color: #7a8274;
+  text-transform: uppercase;
 }
 
 .floppy__summary {
@@ -1118,6 +1143,17 @@ select:focus:not(:focus-visible) {
   color: var(--muted);
   text-align: center;
   letter-spacing: 0.06em;
+}
+
+@media (max-width: 640px) {
+  .footprint__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem 0.7rem;
+  }
+
+  .floppy {
+    width: 100%;
+  }
 }
 
 /* Admin station */
@@ -1293,15 +1329,6 @@ select:focus:not(:focus-visible) {
 }
 
 @media (max-width: 640px) {
-  .footprint__grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 1rem 0.75rem;
-  }
-
-  .floppy {
-    width: 100%;
-  }
-
   .admin__row {
     grid-template-columns: 1fr;
   }
