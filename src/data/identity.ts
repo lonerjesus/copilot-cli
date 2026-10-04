@@ -60,6 +60,11 @@ export const ALIASES: Alias[] = [
     kind: "project",
     note: "Apple Podcasts · Streetpolitik™",
   },
+  {
+    name: "Telling Songs As Content",
+    kind: "project",
+    note: "Bandcamp album · 357Itsumi",
+  },
 ];
 
 export const PLATFORMS = [
@@ -77,6 +82,48 @@ export const PLATFORMS = [
     handle: "streetpolitik",
     url: "https://www.magcloud.com/user/streetpolitik",
     kind: "magazine" as const,
+  },
+  {
+    id: "bandcamp",
+    label: "Bandcamp · 357Itsumi",
+    handle: "357itsumi",
+    url: "https://357itsumi.bandcamp.com/album/telling-songs-as-content",
+    kind: "audio" as const,
+  },
+  {
+    id: "soundcloud",
+    label: "SoundCloud · 357Itsumi",
+    handle: "357itsumi",
+    url: "https://m.soundcloud.com/357itsumi",
+    kind: "audio" as const,
+  },
+  {
+    id: "slushy",
+    label: "Slushy · 357Itsumi",
+    handle: "357Itsumi",
+    url: "https://www.slushy.com/357Itsumi",
+    kind: "audio" as const,
+  },
+  {
+    id: "shazam-357",
+    label: "Shazam · 357Itsumi",
+    handle: "357Itsumi",
+    url: "https://www.shazam.com/artist/-/1776608082",
+    kind: "audio" as const,
+  },
+  {
+    id: "shazam-streetpolitik",
+    label: "Shazam · Streetpolitik",
+    handle: "Streetpolitik",
+    url: "https://www.shazam.com/artist/-/1188877723",
+    kind: "audio" as const,
+  },
+  {
+    id: "facebook",
+    label: "Facebook",
+    handle: "357Itsumi",
+    url: "https://www.facebook.com/profile.php?id=61566165809486",
+    kind: "web" as const,
   },
   {
     id: "apple-imponderabilia",

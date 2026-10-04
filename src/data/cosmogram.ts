@@ -60,7 +60,10 @@ export const COSMOGRAM = {
   techPop: [
     { label: "Signal", line: "Terminal stream · autonomous portfolio OS" },
     { label: "Culture", line: "Street lyric · spoken word · vlog · remix" },
-    { label: "Tech", line: "MagCloud · Substack · Apple Podcasts · Twitch · Vimeo" },
-    { label: "House", line: "Streetpolitik · TSOL · GAK · GRUNGEzhou · Golden Crow" },
+    {
+      label: "Tech",
+      line: "Bandcamp · SoundCloud · Slushy · Shazam · MagCloud · Substack · Apple · Twitch · Vimeo",
+    },
+    { label: "House", line: "Streetpolitik · 357Itsumi · TSOL · GAK · GRUNGEzhou · Golden Crow" },
   ],
 } as const;

@@ -14,6 +14,17 @@ const ALLOWED_HOSTS = new Set([
   "www.magcloud.com",
   "magcloud.com",
   "podcasts.apple.com",
+  "357itsumi.bandcamp.com",
+  "bandcamp.com",
+  "m.soundcloud.com",
+  "soundcloud.com",
+  "www.soundcloud.com",
+  "www.slushy.com",
+  "slushy.com",
+  "www.shazam.com",
+  "shazam.com",
+  "www.facebook.com",
+  "facebook.com",
 ]);
 
 function parseSafeUrl(raw: string | null): URL | null {
@@ -43,6 +54,14 @@ async function resolveOEmbed(url: URL): Promise<Record<string, unknown> | null> 
     {
       match: /(youtube\.com|youtu\.be)$/i,
       endpoint: `https://www.youtube.com/oembed?url=${encodeURIComponent(href)}&format=json`,
+    },
+    {
+      match: /bandcamp\.com$/i,
+      endpoint: `https://bandcamp.com/oembed?url=${encodeURIComponent(href)}&format=json`,
+    },
+    {
+      match: /soundcloud\.com$/i,
+      endpoint: `https://soundcloud.com/oembed?url=${encodeURIComponent(href)}&format=json`,
     },
   ];
 
