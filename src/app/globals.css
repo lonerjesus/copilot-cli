@@ -954,7 +954,7 @@ select:focus:not(:focus-visible) {
 }
 
 .floppy {
-  width: min(100%, 188px);
+  width: min(100%, 196px);
 }
 
 .floppy__hit {
@@ -970,78 +970,129 @@ select:focus:not(:focus-visible) {
 
 .floppy__shell {
   position: relative;
-  aspect-ratio: 1 / 1.05;
-  border-radius: 12px 12px 10px 10px;
+  aspect-ratio: 90 / 94;
+  border-radius: 10px 10px 7px 7px;
   background:
-    linear-gradient(145deg, #2a342c 0%, #171d18 38%, #0e1210 100%);
-  border: 1px solid #3a453c;
+    linear-gradient(180deg, color-mix(in oklab, #fff 5%, transparent) 0 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in oklab, #000 18%, transparent), transparent 10%, transparent 90%, color-mix(in oklab, #000 18%, transparent)),
+    linear-gradient(145deg, #323c33 0%, #1a211c 42%, #0c100e 100%);
+  border: 1px solid #465048;
   box-shadow:
-    inset 0 1px 0 color-mix(in oklab, #fff 8%, transparent),
-    inset 0 -10px 18px color-mix(in oklab, #000 28%, transparent),
-    0 12px 28px color-mix(in oklab, #000 40%, transparent);
+    inset 0 1px 0 color-mix(in oklab, #fff 10%, transparent),
+    inset 0 -12px 20px color-mix(in oklab, #000 32%, transparent),
+    0 14px 30px color-mix(in oklab, #000 42%, transparent);
   overflow: hidden;
-  transition: transform 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
+  transition: transform 240ms ease, border-color 240ms ease, box-shadow 240ms ease;
   clip-path: polygon(
-    0 8%,
-    8% 0,
-    92% 0,
-    100% 8%,
+    0 7.5%,
+    7.5% 0,
+    92.5% 0,
+    100% 7.5%,
     100% 100%,
     0 100%
   );
 }
 
+.floppy__bevel {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow:
+    inset 0 0 0 1px color-mix(in oklab, #fff 6%, transparent),
+    inset 0 18% 0 -1px color-mix(in oklab, #000 22%, transparent);
+  pointer-events: none;
+  z-index: 1;
+}
+
 .floppy:hover .floppy__shell,
 .floppy--active .floppy__shell {
-  transform: translateY(-4px);
+  transform: translateY(-5px) rotate(-0.4deg);
   border-color: var(--phosphor-dim);
   box-shadow:
-    inset 0 1px 0 color-mix(in oklab, #fff 8%, transparent),
-    0 0 0 1px color-mix(in oklab, var(--phosphor) 22%, transparent),
-    0 16px 32px color-mix(in oklab, #000 45%, transparent);
+    inset 0 1px 0 color-mix(in oklab, #fff 10%, transparent),
+    0 0 0 1px color-mix(in oklab, var(--phosphor) 24%, transparent),
+    0 18px 34px color-mix(in oklab, #000 48%, transparent);
 }
 
 .floppy__shutter {
   position: absolute;
   top: 0;
-  left: 11%;
-  right: 11%;
-  height: 20%;
-  display: grid;
-  place-items: center;
-  z-index: 3;
+  left: 10%;
+  right: 10%;
+  height: 19%;
+  z-index: 4;
+  overflow: hidden;
 }
 
 .floppy__metal {
   display: block;
+  position: relative;
   width: 100%;
-  height: 68%;
-  border-radius: 0 0 4px 4px;
+  height: 72%;
+  margin-top: 0;
+  border-radius: 0 0 3px 3px;
   background:
-    linear-gradient(180deg, #c5cec8 0%, #8f9a92 42%, #5f6a62 100%);
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 3px,
+      color-mix(in oklab, #000 8%, transparent) 3px 4px
+    ),
+    linear-gradient(180deg, #d5ddd6 0%, #9aa59c 45%, #5c675f 100%);
   box-shadow:
-    inset 0 1px 0 #e8eee9,
-    inset 0 -2px 0 #3d4640,
-    0 2px 4px color-mix(in oklab, #000 35%, transparent);
+    inset 0 1px 0 #eef3ef,
+    inset 0 -2px 0 #3a433c,
+    0 2px 5px color-mix(in oklab, #000 38%, transparent);
+  transition: transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.floppy:hover .floppy__metal,
+.floppy--active .floppy__metal {
+  transform: translateX(42%);
 }
 
 .floppy__slot {
   position: absolute;
-  width: 46%;
-  height: 22%;
-  top: 36%;
-  left: 27%;
-  background: #070908;
+  width: 48%;
+  height: 28%;
+  top: 34%;
+  left: 14%;
+  background: #050706;
   border-radius: 1px;
-  box-shadow: inset 0 0 0 1px #2c332e;
+  box-shadow: inset 0 0 0 1px #2a322c;
+}
+
+.floppy__arrow {
+  position: absolute;
+  top: 12.5%;
+  right: 4.5%;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 8px solid #4e584f;
+  opacity: 0.85;
+  z-index: 3;
+  filter: drop-shadow(0 1px 0 #0a0d0b);
+}
+
+.floppy__write {
+  position: absolute;
+  bottom: 10%;
+  right: 0;
+  width: 8%;
+  height: 11%;
+  background: var(--void);
+  border-left: 1px solid #2c342e;
+  z-index: 3;
+  box-shadow: inset 2px 0 0 #1a221c;
 }
 
 .floppy__notch {
   position: absolute;
-  bottom: 11%;
+  bottom: 10%;
   left: 0;
-  width: 9%;
-  height: 12%;
+  width: 8%;
+  height: 11%;
   background: var(--void);
   border-right: 1px solid #2c342e;
   z-index: 3;
@@ -1049,39 +1100,53 @@ select:focus:not(:focus-visible) {
 
 .floppy__hub {
   position: absolute;
-  bottom: 7%;
+  bottom: 5.5%;
   left: 50%;
-  width: 22%;
+  width: 24%;
   aspect-ratio: 1;
   translate: -50% 0;
   border-radius: 50%;
-  border: 1px solid #4a554c;
+  border: 1px solid #556055;
   background:
-    radial-gradient(circle at 50% 50%, #050706 0 26%, transparent 27%),
-    radial-gradient(circle at 50% 50%, #1b221d 0 48%, transparent 49%),
-    radial-gradient(circle at 50% 50%, transparent 0 58%, #3a443c 59% 72%, transparent 73%);
+    radial-gradient(circle at 50% 50%, #050706 0 22%, transparent 23%),
+    radial-gradient(circle at 50% 50%, #1c241e 0 46%, transparent 47%),
+    radial-gradient(circle at 50% 50%, transparent 0 56%, #3d463e 57% 70%, transparent 71%),
+    radial-gradient(circle at 35% 30%, #2a322c, #121814);
   z-index: 2;
-  box-shadow: inset 0 0 0 1px #0a0d0b;
+  box-shadow:
+    inset 0 0 0 1px #0a0d0b,
+    0 1px 2px color-mix(in oklab, #000 40%, transparent);
+}
+
+.floppy__spindle {
+  position: absolute;
+  inset: 28%;
+  border-radius: 50%;
+  background: conic-gradient(from 20deg, #0a0d0b, #2c342e, #0a0d0b, #3a443c, #0a0d0b);
+  box-shadow: inset 0 0 0 1px #050706;
 }
 
 .floppy__label {
   position: absolute;
-  inset: 24% 10% 22% 10%;
+  inset: 23% 9% 24% 9%;
   display: grid;
-  grid-template-rows: 54% 1fr;
-  gap: 0.28rem;
-  padding: 0.32rem 0.38rem 0.36rem;
-  border: 1px solid #cfc8b4;
+  grid-template-rows: 52% 1fr;
+  gap: 0.26rem;
+  padding: 0.3rem 0.36rem 0.34rem;
+  border: 1px solid #c9c1ab;
+  border-radius: 1px;
   background:
     repeating-linear-gradient(
       to bottom,
-      transparent 0 0.72rem,
-      color-mix(in oklab, #000 5%, transparent) 0.72rem 0.73rem
+      transparent 0 0.7rem,
+      color-mix(in oklab, #000 6%, transparent) 0.7rem 0.71rem
     ),
-    linear-gradient(180deg, #f7f3e7 0%, #ebe4d2 100%);
+    linear-gradient(180deg, #f8f4e8 0%, #e8e0cc 100%);
   color: #1a1c16;
   z-index: 2;
-  box-shadow: 0 1px 0 color-mix(in oklab, #fff 50%, transparent);
+  box-shadow:
+    0 1px 0 color-mix(in oklab, #fff 55%, transparent),
+    inset 0 0 0 1px color-mix(in oklab, #fff 35%, transparent);
 }
 
 .floppy__art {

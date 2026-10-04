@@ -169,12 +169,18 @@ export function FootprintArchive({ initial }: FootprintArchiveProps) {
                 aria-label={`${title} · ${item.platformLabel}`}
               >
                 <div className="floppy__shell" aria-hidden>
+                  <div className="floppy__bevel" />
                   <div className="floppy__shutter">
-                    <span className="floppy__metal" />
-                    <span className="floppy__slot" />
+                    <span className="floppy__metal">
+                      <span className="floppy__slot" />
+                    </span>
                   </div>
+                  <div className="floppy__arrow" />
+                  <div className="floppy__write" />
                   <div className="floppy__notch" />
-                  <div className="floppy__hub" />
+                  <div className="floppy__hub">
+                    <span className="floppy__spindle" />
+                  </div>
                   <div className="floppy__label">
                     <div className="floppy__art">
                       <MediaPoster item={art} className="tile__poster" />
