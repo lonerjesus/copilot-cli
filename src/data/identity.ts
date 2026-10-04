@@ -40,6 +40,9 @@ export const ALIASES: Alias[] = [
   },
   { name: "357Itsumi", kind: "handle", note: "f/k/a Streetpolitik™ + LuxuryGuerrilla™" },
   { name: "LoveDrugVendingMachine", kind: "project" },
+  { name: "GRUNGEzhou", kind: "brand", note: "GrungeZhou" },
+  { name: "GRUNGEzhou Libellus", kind: "project" },
+  { name: "GRUNGEzhou Supply", kind: "brand" },
 ];
 
 export const PLATFORMS = [

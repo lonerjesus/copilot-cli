@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { AgeGate } from "@/components/AgeGate";
 import { BootSequence } from "@/components/BootSequence";
 import { CommandBar } from "@/components/CommandBar";
 import { Hero } from "@/components/Hero";
@@ -40,8 +41,12 @@ function ShellInner({ footprint }: { footprint: FootprintItem[] }) {
 
   return (
     <>
+      <AgeGate />
       {!booted ? <BootSequence onDone={() => setBooted(true)} /> : null}
       <div className={`shell ${booted ? "shell--ready" : "shell--booting"}`}>
+        <p className="agebanner" role="note">
+          18+ · not for people under 18 · mature content may appear
+        </p>
         <header className="topbar">
           <a className="topbar__brand" href="#top">
             <span className="topbar__mark">KN</span>
@@ -71,6 +76,9 @@ function ShellInner({ footprint }: { footprint: FootprintItem[] }) {
           <p>
             © {new Date().getFullYear()} Kendrick-Kamau Negasi LLC · BLKDTY Music LLC · All
             rights reserved.
+          </p>
+          <p className="footer__note">
+            Warning: 18+ only. This platform is not for people under 18 due to certain content.
           </p>
           <p className="footer__note">
             Creating is the Ritual, Love is the Reason. · Cloudflare edge ready.

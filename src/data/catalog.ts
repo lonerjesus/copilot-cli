@@ -258,6 +258,28 @@ export const CATALOG: CatalogItem[] = [
     tags: ["BLKDTY", "label"],
     blurb: "House label node — catalog stewardship under BLKDTY Music LLC.",
   },
+  {
+    id: "grungezhou-libellus",
+    title: "GRUNGEzhou Libellus",
+    brand: "GRUNGEzhou",
+    kind: "essay",
+    publishedAt: "2024-07-07",
+    platform: "web",
+    externalUrl: "https://www.kamaunegasi.net",
+    tags: ["GRUNGEzhou", "Libellus", "GrungeZhou"],
+    blurb: "Libellus node under GRUNGEzhou / GrungeZhou.",
+  },
+  {
+    id: "grungezhou-supply",
+    title: "GRUNGEzhou Supply",
+    brand: "GRUNGEzhou Supply",
+    kind: "still",
+    publishedAt: "2024-08-08",
+    platform: "web",
+    externalUrl: "https://www.kamaunegasi.net",
+    tags: ["GRUNGEzhou", "Supply", "GrungeZhou"],
+    blurb: "Supply drop channel for the GRUNGEzhou house.",
+  },
 ];
 
 export const STREAM_ROWS: StreamRow[] = [
@@ -309,6 +331,8 @@ export const STREAM_ROWS: StreamRow[] = [
       "ldvm-drop",
       "black-oh-my",
       "telling-stills",
+      "grungezhou-libellus",
+      "grungezhou-supply",
     ],
   },
 ];

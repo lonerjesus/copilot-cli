@@ -70,6 +70,67 @@ input {
   border: 0;
 }
 
+/* Age notice */
+.agebanner {
+  margin: 0;
+  padding: 0.45rem 1.25rem;
+  text-align: center;
+  letter-spacing: 0.12em;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  color: #1a1208;
+  background: linear-gradient(90deg, var(--amber), #ffd27a);
+  border-bottom: 1px solid color-mix(in oklab, var(--amber) 50%, #000);
+}
+
+.agegate {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  padding: 1.25rem;
+  background: color-mix(in oklab, var(--void) 88%, transparent);
+  backdrop-filter: blur(8px);
+}
+
+.agegate__panel {
+  width: min(440px, 100%);
+  border: 1px solid var(--amber);
+  background: var(--panel);
+  padding: 1.5rem 1.35rem;
+}
+
+.agegate__eyebrow {
+  margin: 0 0 0.4rem;
+  color: var(--amber);
+  letter-spacing: 0.14em;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+.agegate__panel h2 {
+  margin: 0 0 0.75rem;
+  font-family: var(--font-display);
+  letter-spacing: 0.08em;
+  font-size: 2rem;
+  color: var(--text);
+}
+
+.agegate__panel p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.55;
+  font-size: 0.92rem;
+}
+
+.agegate__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 1.25rem;
+}
+
 /* Boot */
 .boot {
   position: fixed;
