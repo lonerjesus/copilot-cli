@@ -1,7 +1,7 @@
 "use client";
 
-import { useDeferredValue, useMemo, useState } from "react";
-import { CATALOG, type CatalogItem } from "@/data/catalog";
+import { startTransition, useDeferredValue, useMemo, useState } from "react";
+import { CATALOG, type CatalogItem, type MediaKind } from "@/data/catalog";
 import {
   CATEGORIES,
   getCategory,
@@ -9,7 +9,14 @@ import {
   type CategoryId,
   type SubcategoryId,
 } from "@/data/taxonomy";
-import { filterCatalog } from "@/lib/search";
+import {
+  activeFilterCount,
+  filterCatalog,
+  uniqueBrands,
+  uniqueKinds,
+  uniquePlatforms,
+  type SortMode,
+} from "@/lib/search";
 import { kindGlyph } from "@/lib/format";
 import { usePlayer } from "@/components/player/PlayerContext";
 
@@ -28,7 +35,15 @@ export function CategoryBrowser({
   const [query, setQuery] = useState(initialQuery);
   const [category, setCategory] = useState<CategoryId | "all">(initialCategory);
   const [subcategory, setSubcategory] = useState<SubcategoryId | "all">(initialSubcategory);
+  const [kind, setKind] = useState<MediaKind | "all">("all");
+  const [platform, setPlatform] = useState<string | "all">("all");
+  const [brand, setBrand] = useState<string | "all">("all");
+  const [sort, setSort] = useState<SortMode>("newest");
+
   const deferredQuery = useDeferredValue(query);
+  const brands = useMemo(() => uniqueBrands(), []);
+  const platforms = useMemo(() => uniquePlatforms(), []);
+  const kinds = useMemo(() => uniqueKinds(), []);
 
   const activeCategory = category === "all" ? undefined : getCategory(category);
   const subOptions = activeCategory?.subcategories ?? [];
@@ -39,9 +54,23 @@ export function CategoryBrowser({
         query: deferredQuery,
         category,
         subcategory,
+        kind,
+        platform,
+        brand,
+        sort,
       }),
-    [deferredQuery, category, subcategory],
+    [deferredQuery, category, subcategory, kind, platform, brand, sort],
   );
+
+  const filterCount = activeFilterCount({
+    query: deferredQuery,
+    category,
+    subcategory,
+    kind,
+    platform,
+    brand,
+    sort,
+  });
 
   const grouped = useMemo(() => {
     const map = new Map<
@@ -70,8 +99,22 @@ export function CategoryBrowser({
   }, [results]);
 
   const selectCategory = (id: CategoryId | "all") => {
-    setCategory(id);
-    setSubcategory("all");
+    startTransition(() => {
+      setCategory(id);
+      setSubcategory("all");
+    });
+  };
+
+  const clearFilters = () => {
+    startTransition(() => {
+      setQuery("");
+      setCategory("all");
+      setSubcategory("all");
+      setKind("all");
+      setPlatform("all");
+      setBrand("all");
+      setSort("newest");
+    });
   };
 
   return (
@@ -82,8 +125,8 @@ export function CategoryBrowser({
           <h2 id="categories-title">CATEGORIES</h2>
         </div>
         <p className="section__aside">
-          Separated by category and subcategory. Search titles, brands, tags, or type a category
-          name.
+          Separated categories + stacked filters. Mix search, kind, platform, brand, and sort to
+          stay in the stream.
         </p>
       </header>
 
@@ -96,13 +139,65 @@ export function CategoryBrowser({
           className="cat-search__input"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="essays · podcast · grungezhou · streetpolitik · live…"
+          placeholder="essays · podcast · golden crow · grungezhou · live…"
           autoComplete="off"
           spellCheck={false}
         />
         <span className="cat-search__count">
           {results.length}/{CATALOG.length}
+          {filterCount ? ` · ${filterCount} filters` : ""}
         </span>
+      </div>
+
+      <div className="cat-filters" aria-label="Additional filters">
+        <label className="cat-filters__field">
+          <span>kind</span>
+          <select
+            value={kind}
+            onChange={(e) => setKind(e.target.value as MediaKind | "all")}
+          >
+            <option value="all">all kinds</option>
+            {kinds.map((k) => (
+              <option key={k} value={k}>
+                {k}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="cat-filters__field">
+          <span>platform</span>
+          <select value={platform} onChange={(e) => setPlatform(e.target.value)}>
+            <option value="all">all platforms</option>
+            {platforms.map((p) => (
+              <option key={p} value={p}>
+                {p}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="cat-filters__field">
+          <span>brand</span>
+          <select value={brand} onChange={(e) => setBrand(e.target.value)}>
+            <option value="all">all brands</option>
+            {brands.map((b) => (
+              <option key={b} value={b}>
+                {b}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="cat-filters__field">
+          <span>sort</span>
+          <select value={sort} onChange={(e) => setSort(e.target.value as SortMode)}>
+            <option value="newest">newest</option>
+            <option value="oldest">oldest</option>
+            <option value="title">title a–z</option>
+            <option value="brand">brand a–z</option>
+          </select>
+        </label>
+        <button type="button" className="cat-filters__clear" onClick={clearFilters}>
+          clear filters
+        </button>
       </div>
 
       <div className="cat-tabs" role="tablist" aria-label="Categories">
@@ -183,7 +278,7 @@ export function CategoryBrowser({
 
       <div className="cat-results">
         {grouped.length === 0 ? (
-          <p className="cat-empty">no signal for “{deferredQuery || "filters"}”</p>
+          <p className="cat-empty">no signal for current filters</p>
         ) : (
           grouped.map((group) => {
             const cat = getCategory(group.categoryId);

@@ -166,7 +166,7 @@ export const CATEGORIES: Category[] = [
       {
         id: "brands",
         label: "Brands",
-        keywords: ["brands", "gak", "grungezhou", "black oh-my"],
+        keywords: ["brands", "gak", "grungezhou", "black oh-my", "golden crow"],
       },
       {
         id: "handles",
@@ -181,7 +181,12 @@ export const CATEGORIES: Category[] = [
       {
         id: "entities",
         label: "Entities",
-        keywords: ["entity", "llc", "kendrick-kamau negasi llc"],
+        keywords: [
+          "entity",
+          "llc",
+          "kendrick-kamau negasi llc",
+          "golden crow acquisitions",
+        ],
       },
     ],
   },

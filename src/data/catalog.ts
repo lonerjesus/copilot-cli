@@ -326,6 +326,32 @@ export const CATALOG: CatalogItem[] = [
     tags: ["GRUNGEzhou", "Supply", "GrungeZhou"],
     blurb: "Supply drop channel for the GRUNGEzhou house.",
   },
+  {
+    id: "golden-crow",
+    title: "Golden Crow",
+    brand: "Golden Crow",
+    kind: "essay",
+    category: "house",
+    subcategory: "brands",
+    publishedAt: "2025-01-01",
+    platform: "web",
+    externalUrl: "https://www.kamaunegasi.net",
+    tags: ["Golden Crow", "brand", "acquisitions"],
+    blurb: "Golden Crow house node — acquisitions frequency under the Negasi portfolio.",
+  },
+  {
+    id: "golden-crow-acquisitions",
+    title: "Golden Crow Acquisitions",
+    brand: "Golden Crow Acquisitions",
+    kind: "essay",
+    category: "house",
+    subcategory: "entities",
+    publishedAt: "2025-01-01",
+    platform: "web",
+    externalUrl: "https://www.kamaunegasi.net",
+    tags: ["Golden Crow Acquisitions", "entity", "acquisitions"],
+    blurb: "Entity lane for Golden Crow Acquisitions.",
+  },
 ];
 
 export const STREAM_ROWS: StreamRow[] = [
@@ -379,6 +405,8 @@ export const STREAM_ROWS: StreamRow[] = [
       "telling-stills",
       "grungezhou-libellus",
       "grungezhou-supply",
+      "golden-crow",
+      "golden-crow-acquisitions",
     ],
   },
 ];

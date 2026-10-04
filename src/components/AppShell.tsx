@@ -7,6 +7,7 @@ import { CommandBar } from "@/components/CommandBar";
 import { Hero } from "@/components/Hero";
 import { StreamDeck } from "@/components/StreamDeck";
 import { CategoryBrowser } from "@/components/CategoryBrowser";
+import { ContinuumRail } from "@/components/ContinuumRail";
 import { FootprintFeed } from "@/components/FootprintFeed";
 import { AliasMatrix } from "@/components/AliasMatrix";
 import { PlayerDock } from "@/components/player/PlayerDock";
@@ -80,6 +81,7 @@ function ShellInner({ footprint }: { footprint: FootprintItem[] }) {
 
         <main id="top">
           <Hero />
+          <ContinuumRail />
           <div id="commands" className="cmd-wrap">
             <CommandBar onCommand={onCommand} onSearch={applySearch} />
           </div>

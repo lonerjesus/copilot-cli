@@ -1,5 +1,5 @@
 import { ALIASES } from "@/data/identity";
-import { CATALOG, type CatalogItem } from "@/data/catalog";
+import { CATALOG, type CatalogItem, type MediaKind } from "@/data/catalog";
 import {
   CATEGORIES,
   findCategoryByQuery,
@@ -8,6 +8,18 @@ import {
   type Subcategory,
   type SubcategoryId,
 } from "@/data/taxonomy";
+
+export type SortMode = "newest" | "oldest" | "title" | "brand";
+
+export type CatalogFilters = {
+  query?: string;
+  category?: CategoryId | "all";
+  subcategory?: SubcategoryId | "all";
+  kind?: MediaKind | "all";
+  platform?: string | "all";
+  brand?: string | "all";
+  sort?: SortMode;
+};
 
 export type SearchHit =
   | {
@@ -38,6 +50,22 @@ function scoreText(haystack: string, query: string): number {
   const parts = q.split(/\s+/).filter(Boolean);
   if (parts.length > 1 && parts.every((p) => h.includes(p))) return 45;
   return 0;
+}
+
+export function uniqueBrands(): string[] {
+  return Array.from(new Set(CATALOG.map((item) => item.brand))).sort((a, b) =>
+    a.localeCompare(b),
+  );
+}
+
+export function uniquePlatforms(): string[] {
+  return Array.from(new Set(CATALOG.map((item) => item.platform))).sort((a, b) =>
+    a.localeCompare(b),
+  );
+}
+
+export function uniqueKinds(): MediaKind[] {
+  return Array.from(new Set(CATALOG.map((item) => item.kind))) as MediaKind[];
 }
 
 export function searchCatalog(query: string): SearchHit[] {
@@ -116,29 +144,57 @@ export function searchCatalog(query: string): SearchHit[] {
           : hit.type === "alias"
             ? `alias:${hit.name}`
             : `cat:${hit.category.id}:${hit.subcategory?.id ?? ""}`;
-      return arr.findIndex((other) => {
-        const otherKey =
-          other.type === "item"
-            ? `item:${other.item.id}`
-            : other.type === "alias"
-              ? `alias:${other.name}`
-              : `cat:${other.category.id}:${other.subcategory?.id ?? ""}`;
-        return otherKey === key;
-      }) === index;
+      return (
+        arr.findIndex((other) => {
+          const otherKey =
+            other.type === "item"
+              ? `item:${other.item.id}`
+              : other.type === "alias"
+                ? `alias:${other.name}`
+                : `cat:${other.category.id}:${other.subcategory?.id ?? ""}`;
+          return otherKey === key;
+        }) === index
+      );
     });
 }
 
-export function filterCatalog(options: {
-  query?: string;
-  category?: CategoryId | "all";
-  subcategory?: SubcategoryId | "all";
-}): CatalogItem[] {
-  const { query = "", category = "all", subcategory = "all" } = options;
+function sortItems(items: CatalogItem[], sort: SortMode): CatalogItem[] {
+  const copy = [...items];
+  switch (sort) {
+    case "oldest":
+      return copy.sort(
+        (a, b) => new Date(a.publishedAt).getTime() - new Date(b.publishedAt).getTime(),
+      );
+    case "title":
+      return copy.sort((a, b) => a.title.localeCompare(b.title));
+    case "brand":
+      return copy.sort((a, b) => a.brand.localeCompare(b.brand) || a.title.localeCompare(b.title));
+    case "newest":
+    default:
+      return copy.sort(
+        (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime(),
+      );
+  }
+}
+
+export function filterCatalog(options: CatalogFilters): CatalogItem[] {
+  const {
+    query = "",
+    category = "all",
+    subcategory = "all",
+    kind = "all",
+    platform = "all",
+    brand = "all",
+    sort = "newest",
+  } = options;
   const q = query.trim().toLowerCase();
 
-  return CATALOG.filter((item) => {
+  const filtered = CATALOG.filter((item) => {
     if (category !== "all" && item.category !== category) return false;
     if (subcategory !== "all" && item.subcategory !== subcategory) return false;
+    if (kind !== "all" && item.kind !== kind) return false;
+    if (platform !== "all" && item.platform !== platform) return false;
+    if (brand !== "all" && item.brand !== brand) return false;
     if (!q) return true;
     const blob = [
       item.title,
@@ -156,4 +212,18 @@ export function filterCatalog(options: {
       .toLowerCase();
     return blob.includes(q) || q.split(/\s+/).every((part) => blob.includes(part));
   });
+
+  return sortItems(filtered, sort);
+}
+
+export function activeFilterCount(filters: CatalogFilters): number {
+  let count = 0;
+  if (filters.query?.trim()) count += 1;
+  if (filters.category && filters.category !== "all") count += 1;
+  if (filters.subcategory && filters.subcategory !== "all") count += 1;
+  if (filters.kind && filters.kind !== "all") count += 1;
+  if (filters.platform && filters.platform !== "all") count += 1;
+  if (filters.brand && filters.brand !== "all") count += 1;
+  if (filters.sort && filters.sort !== "newest") count += 1;
+  return count;
 }

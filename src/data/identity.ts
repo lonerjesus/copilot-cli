@@ -43,6 +43,8 @@ export const ALIASES: Alias[] = [
   { name: "GRUNGEzhou", kind: "brand", note: "GrungeZhou" },
   { name: "GRUNGEzhou Libellus", kind: "project" },
   { name: "GRUNGEzhou Supply", kind: "brand" },
+  { name: "Golden Crow", kind: "brand" },
+  { name: "Golden Crow Acquisitions", kind: "entity" },
 ];
 
 export const PLATFORMS = [
