@@ -3,11 +3,9 @@
 # Local: npm run preview
 # Deploy: npm run deploy
 # Cloudflare dashboard:
-#   Build command:  npm run build   (OpenNext — produces .open-next/)
+#   Build command:  npm run build   (→ opennextjs-cloudflare build → .open-next/)
 #   Deploy command: npx wrangler deploy
-# Do NOT use plain `next build` for Workers — wrangler needs .open-next/
-#
-# Secrets (dashboard): AUTH_SECRET, STRIPE_*, PAYMENTS_MODE
+# Inner Next build is set via open-next.config.ts buildCommand (avoids recursion).
 
 name = "kamaunegasi-net"
 main = ".open-next/worker.js"
