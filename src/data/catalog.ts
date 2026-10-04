@@ -688,6 +688,19 @@ export const CATALOG: CatalogItem[] = [
     tags: ["357Itsumi", "Facebook"],
     blurb: "Facebook profile uplink for 357Itsumi.",
   },
+  {
+    id: "rumble-357",
+    title: "357Itsumi · Rumble",
+    brand: "357Itsumi",
+    kind: "video",
+    category: "video",
+    subcategory: "archive",
+    publishedAt: "2024-01-01",
+    platform: "rumble",
+    externalUrl: "https://rumble.com/user/357Itsumi",
+    tags: ["357Itsumi", "Rumble", "video"],
+    blurb: "Rumble channel uplink for 357Itsumi.",
+  },
 ];
 
 export const STREAM_ROWS: StreamRow[] = [
@@ -765,6 +778,7 @@ export const STREAM_ROWS: StreamRow[] = [
       "vimeo-thinking-pt2",
       "streetpolitik-toneden",
       "facebook-357",
+      "rumble-357",
     ],
   },
   {

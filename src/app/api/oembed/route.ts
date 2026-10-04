@@ -25,6 +25,8 @@ const ALLOWED_HOSTS = new Set([
   "shazam.com",
   "www.facebook.com",
   "facebook.com",
+  "rumble.com",
+  "www.rumble.com",
 ]);
 
 function parseSafeUrl(raw: string | null): URL | null {

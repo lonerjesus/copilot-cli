@@ -62,7 +62,7 @@ export const COSMOGRAM = {
     { label: "Culture", line: "Street lyric · spoken word · vlog · remix" },
     {
       label: "Tech",
-      line: "Bandcamp · SoundCloud · Slushy · Shazam · MagCloud · Substack · Apple · Twitch · Vimeo",
+      line: "Bandcamp · SoundCloud · Slushy · Shazam · Rumble · MagCloud · Substack · Apple · Twitch · Vimeo",
     },
     { label: "House", line: "Streetpolitik · 357Itsumi · 30over9 · TSOL · GAK · GRUNGEzhou · Golden Crow" },
   ],

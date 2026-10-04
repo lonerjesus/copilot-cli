@@ -136,6 +136,13 @@ export const PLATFORMS = [
     kind: "web" as const,
   },
   {
+    id: "rumble",
+    label: "Rumble · 357Itsumi",
+    handle: "357Itsumi",
+    url: "https://rumble.com/user/357Itsumi",
+    kind: "video" as const,
+  },
+  {
     id: "apple-imponderabilia",
     label: "Apple · wall_carpet #235",
     handle: "imponderabilia",
