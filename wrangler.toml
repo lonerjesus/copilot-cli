@@ -25,3 +25,10 @@ SITE_DOMAIN = "www.kamaunegasi.net"
 EXACT_NAME_POLICY = "1"
 AGE_GATE_REQUIRED = "1"
 ACCOUNT_GATE = "1"
+
+# Durable auth/commerce store (required on Workers production).
+# Create: npx wrangler kv namespace create AUTH_KV
+# Uncomment and paste the id, then redeploy:
+# [[kv_namespaces]]
+# binding = "AUTH_KV"
+# id = "<paste-kv-namespace-id>"

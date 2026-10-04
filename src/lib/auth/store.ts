@@ -3,8 +3,9 @@ import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from "@/data/commerce";
 
 /**
  * Auth/commerce store.
- * - Node: persists to `.data/auth-store.json` when filesystem is writable
- * - Cloudflare Workers: in-memory per isolate until D1/KV is wired
+ * Priority: Cloudflare KV (`AUTH_KV`) → local `.data/auth-store.json` →
+ * memory only when not production (or `ALLOW_MEMORY_AUTH=1`).
+ * Production Workers without KV fail closed — never silent memory.
  */
 
 export type StoredUser = {
@@ -23,70 +24,140 @@ export type AuthStore = {
   donations: { id: string; userId: string; cents: number; at: string; mode: string }[];
 };
 
+const STORE_KEY = "auth-store-v1";
+
+/** Minimal KV surface used by the auth store (avoids hard dep on workers-types). */
+type AuthKv = {
+  get(key: string): Promise<string | null>;
+  put(key: string, value: string): Promise<void>;
+};
+
 const g = globalThis as typeof globalThis & { __knAuthStore?: AuthStore };
-let useMemory = false;
+type Backend = "kv" | "fs" | "memory";
+let backend: Backend | null = null;
+let writeQueue: Promise<void> = Promise.resolve();
+
+export class AuthStoreUnavailableError extends Error {
+  constructor(message = "Auth store unavailable — bind AUTH_KV for Workers production") {
+    super(message);
+    this.name = "AuthStoreUnavailableError";
+  }
+}
+
+function emptyStore(): AuthStore {
+  return { users: [], donations: [] };
+}
+
+function normalizeStore(parsed: AuthStore): AuthStore {
+  return {
+    users: Array.isArray(parsed.users) ? [...parsed.users] : [],
+    donations: Array.isArray(parsed.donations) ? [...parsed.donations] : [],
+  };
+}
 
 function memoryStore(): AuthStore {
-  if (!g.__knAuthStore) {
-    g.__knAuthStore = { users: [], donations: [] };
-  }
+  if (!g.__knAuthStore) g.__knAuthStore = emptyStore();
   return g.__knAuthStore;
 }
 
-let writeQueue: Promise<void> = Promise.resolve();
+function allowMemoryFallback(): boolean {
+  return (
+    process.env.ALLOW_MEMORY_AUTH === "1" || process.env.NODE_ENV !== "production"
+  );
+}
+
+async function getAuthKv(): Promise<AuthKv | null> {
+  try {
+    const { getCloudflareContext } = await import("@opennextjs/cloudflare");
+    const ctx = await getCloudflareContext({ async: true });
+    const kv = (ctx.env as { AUTH_KV?: AuthKv }).AUTH_KV;
+    return kv ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function resolveBackend(): Promise<Backend> {
+  if (backend) return backend;
+
+  const kv = await getAuthKv();
+  if (kv) {
+    backend = "kv";
+    return backend;
+  }
+
+  try {
+    const { mkdir, writeFile, access } = await import("node:fs/promises");
+    const path = await import("node:path");
+    const dataDir = path.join(process.cwd(), ".data");
+    await mkdir(dataDir, { recursive: true });
+    const probe = path.join(dataDir, ".write-test");
+    await writeFile(probe, "ok", "utf8");
+    await access(probe);
+    backend = "fs";
+    return backend;
+  } catch {
+    if (allowMemoryFallback()) {
+      backend = "memory";
+      return backend;
+    }
+    throw new AuthStoreUnavailableError();
+  }
+}
 
 async function readStore(): Promise<AuthStore> {
-  if (useMemory) return memoryStore();
+  const mode = await resolveBackend();
+
+  if (mode === "memory") return memoryStore();
+
+  if (mode === "kv") {
+    const kv = await getAuthKv();
+    if (!kv) throw new AuthStoreUnavailableError();
+    const raw = await kv.get(STORE_KEY);
+    if (!raw) return emptyStore();
+    try {
+      return normalizeStore(JSON.parse(raw) as AuthStore);
+    } catch {
+      return emptyStore();
+    }
+  }
 
   try {
     const { readFile } = await import("node:fs/promises");
     const path = await import("node:path");
     const storePath = path.join(process.cwd(), ".data", "auth-store.json");
     const raw = await readFile(storePath, "utf8");
-    const parsed = JSON.parse(raw) as AuthStore;
-    return {
-      users: Array.isArray(parsed.users) ? [...parsed.users] : [],
-      donations: Array.isArray(parsed.donations) ? [...parsed.donations] : [],
-    };
+    return normalizeStore(JSON.parse(raw) as AuthStore);
   } catch {
-    // Empty or missing file — try to ensure write works; otherwise memory mode
-    try {
-      const { mkdir, writeFile, access } = await import("node:fs/promises");
-      const path = await import("node:path");
-      const dataDir = path.join(process.cwd(), ".data");
-      await mkdir(dataDir, { recursive: true });
-      const probe = path.join(dataDir, ".write-test");
-      await writeFile(probe, "ok", "utf8");
-      await access(probe);
-      return { users: [], donations: [] };
-    } catch {
-      useMemory = true;
-      return memoryStore();
-    }
+    return emptyStore();
   }
 }
 
 async function writeStore(store: AuthStore): Promise<void> {
-  if (useMemory) {
+  const mode = await resolveBackend();
+
+  if (mode === "memory") {
     g.__knAuthStore = store;
     return;
   }
 
   writeQueue = writeQueue.then(async () => {
-    try {
-      const { mkdir, writeFile } = await import("node:fs/promises");
-      const path = await import("node:path");
-      const dataDir = path.join(process.cwd(), ".data");
-      await mkdir(dataDir, { recursive: true });
-      await writeFile(
-        path.join(dataDir, "auth-store.json"),
-        JSON.stringify(store, null, 2),
-        "utf8",
-      );
-    } catch {
-      useMemory = true;
-      g.__knAuthStore = store;
+    if (mode === "kv") {
+      const kv = await getAuthKv();
+      if (!kv) throw new AuthStoreUnavailableError();
+      await kv.put(STORE_KEY, JSON.stringify(store));
+      return;
     }
+
+    const { mkdir, writeFile } = await import("node:fs/promises");
+    const path = await import("node:path");
+    const dataDir = path.join(process.cwd(), ".data");
+    await mkdir(dataDir, { recursive: true });
+    await writeFile(
+      path.join(dataDir, "auth-store.json"),
+      JSON.stringify(store, null, 2),
+      "utf8",
+    );
   });
   await writeQueue;
 }
@@ -95,15 +166,28 @@ function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
 }
 
+function mapStoreError(err: unknown): never {
+  if (err instanceof AuthStoreUnavailableError) throw err;
+  throw err;
+}
+
 export async function findUserByEmail(email: string): Promise<StoredUser | null> {
-  const store = await readStore();
-  const key = normalizeEmail(email);
-  return store.users.find((u) => u.email === key) ?? null;
+  try {
+    const store = await readStore();
+    const key = normalizeEmail(email);
+    return store.users.find((u) => u.email === key) ?? null;
+  } catch (err) {
+    mapStoreError(err);
+  }
 }
 
 export async function findUserById(id: string): Promise<StoredUser | null> {
-  const store = await readStore();
-  return store.users.find((u) => u.id === id) ?? null;
+  try {
+    const store = await readStore();
+    return store.users.find((u) => u.id === id) ?? null;
+  } catch (err) {
+    mapStoreError(err);
+  }
 }
 
 export async function createUser(input: {

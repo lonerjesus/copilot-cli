@@ -232,8 +232,8 @@ export const CATALOG: CatalogItem[] = [
     publishedAt: "2024-01-15",
     platform: "web",
     externalUrl: "https://www.kamaunegasi.me",
-    tags: ["GAK", "Grown Ass Kids", "brand"],
-    blurb: "Grown Ass Kids brand channel — adult energy, kid curiosity.",
+    tags: ["GAK", "GrownAssKids", "brand"],
+    blurb: "GrownAssKids (GAK) brand channel — adult energy, kid curiosity.",
   },
   {
     id: "black-oh-my",
@@ -324,8 +324,8 @@ export const CATALOG: CatalogItem[] = [
     publishedAt: "2024-07-07",
     platform: "web",
     externalUrl: "https://www.kamaunegasi.me",
-    tags: ["GRUNGEzhou", "Libellus", "GrungeZhou"],
-    blurb: "Libellus node under GRUNGEzhou / GrungeZhou.",
+    tags: ["GRUNGEzhou", "Libellus"],
+    blurb: "Libellus node under GRUNGEzhou.",
   },
   {
     id: "grungezhou-supply",
@@ -337,7 +337,7 @@ export const CATALOG: CatalogItem[] = [
     publishedAt: "2024-08-08",
     platform: "web",
     externalUrl: "https://www.kamaunegasi.me",
-    tags: ["GRUNGEzhou", "Supply", "GrungeZhou"],
+    tags: ["GRUNGEzhou", "Supply"],
     blurb: "Supply drop channel for the GRUNGEzhou house.",
   },
   {

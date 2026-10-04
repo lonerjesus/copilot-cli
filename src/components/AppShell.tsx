@@ -30,19 +30,15 @@ function ShellInner({ footprint }: { footprint: FootprintItem[] }) {
   const [browseKey, setBrowseKey] = useState(0);
   const { toggle, setExpanded } = usePlayerState();
   const { openId, closeMagazine } = useMagazine();
-  const { user, logout, markOwned, refresh } = useAuth();
+  const { user, logout, refresh } = useAuth();
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const purchased = params.get("purchased");
-    if (purchased) {
-      markOwned(purchased);
+    // Ownership comes from the server after webhook/demo settle — refresh only.
+    if (params.get("purchased") || params.get("donated") === "1") {
       void refresh();
     }
-    if (params.get("donated") === "1") {
-      void refresh();
-    }
-  }, [markOwned, refresh]);
+  }, [refresh]);
 
   const applySearch = useCallback((query: string) => {
     const hit = findCategoryByQuery(query);

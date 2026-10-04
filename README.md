@@ -13,13 +13,12 @@ Futuristic terminal UI · streaming-style browse · chronic social footprint fee
 
 ## Stack
 
-- Next.js (App Router) + TypeScript
+- Next.js (App Router) + TypeScript + OpenNext on Cloudflare Workers
 - Terminal design system (CSS variables, no card-heavy chrome)
-- First-party auth (HTTP-only signed cookies · scrypt passwords · `.data/` store)
+- First-party auth (HTTP-only signed cookies · scrypt passwords · local `.data/` or Workers `AUTH_KV`)
 - `/api/feed` · `/api/oembed` · `/api/ingest` (auth-gated)
 - `/api/donate` · `/api/commerce/purchase` · `/api/commerce/download`
 - Payments: `PAYMENTS_MODE=demo` locally, or Stripe via `STRIPE_SECRET_KEY`
-- Ready for Cloudflare Pages (`wrangler.toml` · domain `www.kamaunegasi.net`)
 
 ## Develop
 
@@ -45,11 +44,21 @@ See [`agents/ROSTER.md`](./agents/ROSTER.md) and [`agents/RUNBOOK.md`](./agents/
 
 ## Deploy on Cloudflare Workers (OpenNext)
 
-1. In the Cloudflare project build settings set:
-   - **Build command:** `npx @opennextjs/cloudflare build`
-   - **Deploy command:** `npx @opennextjs/cloudflare deploy`
-2. Secrets: `AUTH_SECRET`, optional Stripe keys.
-3. Attach custom domain `www.kamaunegasi.net`.
+Dashboard settings (matches `package.json` / `wrangler.toml`):
+
+- **Build command:** `npm run build` (OpenNext → `.open-next/worker.js`)
+- **Deploy command:** `npx wrangler deploy`
+
+Before go-live:
+
+1. Secret: `npx wrangler secret put AUTH_SECRET` (≥16 chars)
+2. Durable auth KV:
+   ```bash
+   npx wrangler kv namespace create AUTH_KV
+   # paste id into wrangler.toml [[kv_namespaces]] AUTH_KV binding, then redeploy
+   ```
+3. Optional Stripe: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`
+4. Attach custom domain `www.kamaunegasi.net`
 
 Local Cloudflare preview:
 
@@ -57,11 +66,11 @@ Local Cloudflare preview:
 npm run preview
 ```
 
-For a Node host instead: `npm run build && npm run start`.
+Node host (no Workers): `npm run build:next && npm run start`.
 
 ## Identity nodes
 
-Streetpolitik · GrownAssKids (GAK) · Black Oh-My · BLKDTY Music LLC · Kendrick-Kamau Negasi LLC · Thelonious1 (TL1) · Telling Show Of Love (TSOL) · Telling Stills Of Love · Imponderabilia: Wall_Carpet 235 · 357Itsumi · Faust Fakeway · LoveDrugVendingMachine · Kamau Salaam Nasser · GRUNGEzhou · Golden Crow · 30over9
+Streetpolitik · GrownAssKids (GAK) · Black Oh-My · BLKDTY Music LLC · Kendrick-Kamau Negasi LLC · Thelonious1 (TL1) · Telling Show Of Love (TSOL) · Telling Stills Of Love · Imponderabilia: Wall_Carpet 235 · 357Itsumi · Faust Fakeway · LoveDrugVendingMachine · Kamau Salaam Nasser · GRUNGEzhou · GRUNGEzhou Libellus · GRUNGEzhou Supply · Golden Crow · Golden Crow Acquisitions · 30over9 · Good;Sloppy. · STPK's Smoker's Lounge Music · QUARANTINED THOUGHTS OF A STREET STATISTIC
 
 ## Keyboard
 

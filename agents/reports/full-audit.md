@@ -1,39 +1,44 @@
-# full-audit
+# Full audit — 2026-10-04
 
-**Agent:** verifier + security + catalog-names + qa-browser  
-**Date:** 2026-10-04  
-**Branch:** `cursor/auth-paywall-donations-560e`  
-**Verdict:** MERGE_OK (with production follow-ups noted)
+Scope: entire repo after OpenNext merge + auth/paywall. Waves: security ∥ catalog-names ∥ cloudflare-deploy → verifier.
 
-## Fixed this pass
+## Wave summary
 
-| ID | Finding | Status |
-|----|---------|--------|
-| B1 | Webhook unauthenticated grants | Fixed — requires `STRIPE_WEBHOOK_SECRET` via `x-kn-webhook-secret`; else 503 |
-| B2 | Production demo free-grants | Fixed — demo only when `ALLOW_DEMO_PAYMENTS=1` or non-production; removed from wrangler vars |
-| H1 | AccessGate open redirect (`//evil`) | Fixed — `safeInternalPath` |
-| H2 | Weak webhook signature | Fixed — shared-secret equality only; no body grants without secret |
-| H4 | Optimistic `markOwned` before Stripe | Fixed — demo refreshes from server; Stripe waits for settlement |
-| H5 | `/api/*` public cache in `_headers` | Fixed — `private, no-store` |
-| M2 | Unbounded password | Fixed — max 128 |
-| M3 | Unbounded donation | Fixed — max $1,000 |
-| M4 | `/api/auth/*` blanket public | Fixed — explicit path allowlist |
-| Names | Kamau "357Itsumi" Negasi / STPK hint / bandcamp-30over9 platform | Fixed |
-| Web URLs | brand stubs → `kamaunegasi.me` | Fixed |
+| Agent | Verdict |
+|-------|---------|
+| security | PASS (after AUTH_KV fail-closed fix) |
+| catalog-names | PASS (tag/blurb drift cleaned) |
+| cloudflare-deploy | PASS (OpenNext build path); OPS: AUTH_SECRET + AUTH_KV required go-live |
+| commerce/paywall | PASS |
+| verifier | MERGE_OK for code; go-live checklist remaining |
 
-## Remaining production follow-ups (not blockers for this PR)
+## Fixed in this audit branch
 
-| ID | Item | Note |
-|----|------|------|
-| B3 | Durable auth store | `.data/` JSON is Node-local; migrate to D1/KV before Cloudflare production accounts |
-| H3 | Catalog in client JS | Account gate blocks HTML/API; JS chunks still contain catalog copy by design for stream UX |
-| M1 | Distributed rate limits | In-memory per isolate; prefer Cloudflare WAF/rate limiting at the edge |
-| Content | Some TSOL/Vimeo/MagCloud rows use platform-root URLs | Exact deep links need house source URLs when available |
+1. **Auth store** — Workers no longer silently use memory. Priority: `AUTH_KV` → FS → memory only in non-production / `ALLOW_MEMORY_AUTH=1`. Production without KV throws `AuthStoreUnavailableError` (API → 503).
+2. **Catalog exact-name** — GrownAssKids / GRUNGEzhou tags & blurbs use canonical spellings only.
+3. **AppShell** — removed optimistic `markOwned` on `?purchased=`; refresh from server only.
+4. **ESLint** — ignore `.open-next/**` / `.wrangler/**`.
+5. **Docs** — README Workers/OpenNext build commands + AUTH_KV setup; `.env.example` memory flag note.
 
-## Verification
+## Go-live checklist (ops, not code)
 
-- lint: PASS
-- tsc: PASS  
-- qa-smoke: expected 21/21 including webhook-fail-closed
-- exact-name forbidden scan: PASS
-- robots disallow-all + account gate: PASS
+- [ ] `wrangler secret put AUTH_SECRET`
+- [ ] `wrangler kv namespace create AUTH_KV` → uncomment binding in `wrangler.toml` → redeploy
+- [ ] Optional Stripe secrets
+- [ ] Cloudflare Build = `npm run build`, Deploy = `npx wrangler deploy`
+- [ ] Confirm custom domain `www.kamaunegasi.net`
+
+## Residual WARNs (non-blocking)
+
+- In-memory rate limits (per-isolate on Workers)
+- Header sets duplicated across middleware / next.config / `_headers`
+- Webhook uses shared header secret (not Stripe body signature)
+- OpenNext compatibility_date 2025-10-01 (upgrade when ready)
+- Default OpenNext caches are dummy (no R2/KV incremental cache)
+- YouTube hosts allowlisted in oembed/CSP without catalog YouTube URLs
+- `SaveGuard` is client friction only (server download gate is authoritative)
+- `agents/reports/*` and `squad.json` ponytail YAGNI candidates
+
+## Verifier
+
+`MERGE_OK` — no open FAIL/BLOCKER in code. Production durability depends on AUTH_KV + AUTH_SECRET ops steps above.

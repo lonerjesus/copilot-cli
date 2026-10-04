@@ -1,5 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { createUser, publicUser } from "@/lib/auth/store";
+import {
+  AuthStoreUnavailableError,
+  createUser,
+  publicUser,
+} from "@/lib/auth/store";
 import { attachSession } from "@/lib/auth/session";
 import { jsonError } from "@/lib/commerce/checkout";
 
@@ -40,6 +44,9 @@ export async function POST(request: NextRequest) {
     );
     return await attachSession(response, user.id);
   } catch (err) {
+    if (err instanceof AuthStoreUnavailableError) {
+      return jsonError(err.message, 503);
+    }
     const message = err instanceof Error ? err.message : "Registration failed";
     const status = message.includes("already exists") ? 409 : 400;
     return jsonError(message, status);

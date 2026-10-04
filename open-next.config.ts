@@ -5,7 +5,9 @@ import { defineCloudflareConfig } from "@opennextjs/cloudflare";
 // recurse forever. Pin the inner Next build explicitly.
 const cloudflare = defineCloudflareConfig();
 
-export default {
+const config = {
   ...cloudflare,
   buildCommand: "npx next build",
 };
+
+export default config;

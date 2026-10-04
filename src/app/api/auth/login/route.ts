@@ -1,5 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { authenticateUser, publicUser } from "@/lib/auth/store";
+import {
+  AuthStoreUnavailableError,
+  authenticateUser,
+  publicUser,
+} from "@/lib/auth/store";
 import { attachSession } from "@/lib/auth/session";
 import { jsonError } from "@/lib/commerce/checkout";
 
@@ -15,12 +19,19 @@ export async function POST(request: NextRequest) {
     return jsonError("Email and password required", 400);
   }
 
-  const user = await authenticateUser(body.email, body.password);
-  if (!user) return jsonError("Invalid credentials", 401);
+  try {
+    const user = await authenticateUser(body.email, body.password);
+    if (!user) return jsonError("Invalid credentials", 401);
 
-  const response = NextResponse.json(
-    { user: publicUser(user) },
-    { headers: { "Cache-Control": "no-store" } },
-  );
-  return await attachSession(response, user.id);
+    const response = NextResponse.json(
+      { user: publicUser(user) },
+      { headers: { "Cache-Control": "no-store" } },
+    );
+    return await attachSession(response, user.id);
+  } catch (err) {
+    if (err instanceof AuthStoreUnavailableError) {
+      return jsonError(err.message, 503);
+    }
+    throw err;
+  }
 }
