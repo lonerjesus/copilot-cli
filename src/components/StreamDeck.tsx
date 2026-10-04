@@ -39,7 +39,6 @@ function Tile({
           <p className="tile__sub">
             {item.kind}
             {item.duration ? ` · ${item.duration}` : ""}
-            {paid ? " · upload" : " · live source"}
           </p>
         </div>
       </button>
@@ -60,12 +59,8 @@ export function StreamDeck() {
     <section id="stream" className="section stream" aria-labelledby="stream-title">
       <header className="section__head">
         <div>
-          <p className="section__eyebrow">channel://stream</p>
           <h2 id="stream-title">STREAM</h2>
         </div>
-        <p className="section__aside">
-          Play in-app. Fetched sources keep original art. House uploads stay behind the paywall.
-        </p>
       </header>
 
       {STREAM_ROWS.map((row) => {

@@ -364,16 +364,12 @@ select:focus:not(:focus-visible) {
   z-index: 1;
   width: min(100%, var(--max));
   margin: 0 auto;
+  display: grid;
+  gap: 0.85rem;
 }
 
 .hero__status {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.55rem;
-  margin: 0 0 1rem;
-  color: var(--amber);
-  letter-spacing: 0.14em;
-  font-size: 0.72rem;
+  display: none;
 }
 
 .hero__live {
@@ -397,7 +393,7 @@ select:focus:not(:focus-visible) {
 }
 
 .hero__name {
-  margin: 0.85rem 0 0.35rem;
+  margin: 0;
   color: var(--phosphor);
   letter-spacing: 0.16em;
   font-size: 0.85rem;
@@ -405,18 +401,14 @@ select:focus:not(:focus-visible) {
 }
 
 .hero__tag {
-  margin: 0;
-  max-width: 28rem;
-  color: var(--muted);
-  font-size: 1rem;
-  line-height: 1.55;
+  display: none;
 }
 
 .hero__cta {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
-  margin-top: 1.75rem;
+  margin-top: 1.1rem;
 }
 
 .btn {
@@ -1057,9 +1049,9 @@ select:focus:not(:focus-visible) {
   position: absolute;
   inset: 22% 9% 18% 9%;
   display: grid;
-  grid-template-rows: 38% 1fr;
-  gap: 0.35rem;
-  padding: 0.4rem 0.45rem 0.5rem;
+  grid-template-rows: 52% 1fr;
+  gap: 0.3rem;
+  padding: 0.35rem 0.4rem 0.4rem;
   border: 1px solid color-mix(in oklab, var(--line) 85%, transparent);
   background:
     linear-gradient(180deg, #f2efe4 0%, #e7e2d2 100%);
@@ -1116,14 +1108,7 @@ select:focus:not(:focus-visible) {
 }
 
 .floppy__summary {
-  margin: 0.1rem 0 0;
-  font-size: 0.58rem;
-  line-height: 1.35;
-  color: #3f463a;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  display: none;
 }
 
 .footprint__empty {

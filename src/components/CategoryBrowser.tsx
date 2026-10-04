@@ -127,12 +127,8 @@ export function CategoryBrowser({
     <section id="categories" className="section categories" aria-labelledby="categories-title">
       <header className="section__head">
         <div>
-          <p className="section__eyebrow">index://taxonomy</p>
           <h2 id="categories-title">CATEGORIES</h2>
         </div>
-        <p className="section__aside">
-          Filter the stream. Original platform artwork loads with each title.
-        </p>
       </header>
 
       <div className="cat-search">
@@ -144,7 +140,7 @@ export function CategoryBrowser({
           className="cat-search__input"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="essays · podcast · golden crow · grungezhou · live…"
+          placeholder="search"
           autoComplete="off"
           spellCheck={false}
         />

@@ -69,14 +69,11 @@ export function AccessGate() {
         <div className="access__grid" />
       </div>
       <section className="access__panel" aria-labelledby="access-title">
-        <p className="access__eyebrow">account required · anti-scrape gate</p>
+        <p className="access__eyebrow">18+</p>
         <h1 id="access-title" className="access__brand">
           {SITE.title}
         </h1>
-        <p className="access__copy">
-          Create an account to enter the stream. Bots and automated fetchers are blocked. Downloads
-          and saves require a paid license per piece. Donations keep {SITE.domain} online.
-        </p>
+        <p className="access__copy">Account required.</p>
 
         <div className="access__tabs" role="tablist" aria-label="Account mode">
           <button

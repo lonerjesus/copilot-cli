@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { CATALOG, type CatalogItem, type MediaKind } from "@/data/catalog";
 import type { FootprintItem } from "@/lib/feed";
-import { decodeEntities, formatStamp, kindGlyph, relativePulse } from "@/lib/format";
+import { decodeEntities, relativePulse } from "@/lib/format";
 import { usePlayerState } from "@/components/player/PlayerContext";
 import { useMagazine } from "@/components/MagazineContext";
 import { MediaPoster } from "@/components/MediaPoster";
@@ -124,12 +124,10 @@ export function FootprintArchive({ initial }: FootprintArchiveProps) {
     <section className="section footprint footprint--archive" aria-labelledby="footprint-title">
       <header className="section__head">
         <div>
-          <p className="section__eyebrow">signal://footprint</p>
           <h1 id="footprint-title" className="footprint__page-title">
-            WATCH FOOTPRINT
+            FOOTPRINT
           </h1>
         </div>
-        <p className="section__aside">Archive of every post and media signal.</p>
       </header>
 
       <div className="footprint__toolbar">
@@ -158,7 +156,6 @@ export function FootprintArchive({ initial }: FootprintArchiveProps) {
           const active = catalog ? current?.id === catalog.id : false;
           const art = posterItem(item, liveCatalog);
           const title = decodeEntities(item.title);
-          const summary = decodeEntities(item.summary);
           return (
             <article
               key={item.id}
@@ -185,11 +182,7 @@ export function FootprintArchive({ initial }: FootprintArchiveProps) {
                     <div className="floppy__ink">
                       <span className="floppy__platform">{item.platformLabel}</span>
                       <h2 className="floppy__title">{title}</h2>
-                      <p className="floppy__meta">
-                        {kindGlyph(item.kind)} {item.kind} · {relativePulse(item.publishedAt)} ·{" "}
-                        {formatStamp(item.publishedAt)}
-                      </p>
-                      <p className="floppy__summary">{summary}</p>
+                      <p className="floppy__meta">{relativePulse(item.publishedAt)}</p>
                     </div>
                   </div>
                 </div>
@@ -199,9 +192,7 @@ export function FootprintArchive({ initial }: FootprintArchiveProps) {
         })}
       </div>
 
-      {visible.length === 0 ? (
-        <p className="footprint__empty">No signals match.</p>
-      ) : null}
+      {visible.length === 0 ? <p className="footprint__empty">—</p> : null}
     </section>
   );
 }

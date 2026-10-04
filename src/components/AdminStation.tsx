@@ -135,12 +135,7 @@ export function AdminStation() {
   return (
     <section className="admin" aria-labelledby="admin-title">
       <header className="admin__head">
-        <p className="section__eyebrow">station://admin</p>
-        <h1 id="admin-title">ADMIN STATION</h1>
-        <p className="admin__aside">
-          Publish vlog, blog, audio, video, stills. House uploads stay paywalled unless you open
-          them. Only your account reaches this desk.
-        </p>
+        <h1 id="admin-title">ADMIN</h1>
       </header>
 
       <div className="admin__layout">

@@ -40,19 +40,12 @@ export function AgeGate() {
   return (
     <div className="agegate" role="alertdialog" aria-modal="true" aria-labelledby="agegate-title">
       <div className="agegate__panel">
-        <p className="agegate__eyebrow">content notice</p>
-        <h2 id="agegate-title">18+ ONLY</h2>
-        <p>
-          Warning: this site is not for people under 18. Certain content may include mature language,
-          adult themes, and material intended only for adults. Enter only if you are 18 or older.
-        </p>
+        <h2 id="agegate-title">18+</h2>
+        <p>Adults only.</p>
         <div className="agegate__actions">
           <button type="button" className="btn btn--primary" onClick={accept}>
-            I am 18 or older
+            enter
           </button>
-          <a className="btn btn--ghost" href="https://www.google.com">
-            exit
-          </a>
         </div>
       </div>
     </div>

@@ -6,15 +6,15 @@ import { findCategoryByQuery } from "@/data/taxonomy";
 import { track } from "@/lib/analytics";
 
 const COMMANDS = [
-  { cmd: "stream", hint: "focus the streaming deck" },
-  { cmd: "categories", hint: "browse separated categories" },
-  { cmd: "magazine", hint: "jump to stream for magazine chapbooks" },
-  { cmd: "cosmogram", hint: "open birthday cosmogram" },
-  { cmd: "footprint", hint: "open the full footprint archive" },
-  { cmd: "support", hint: "donate to keep the site online" },
-  { cmd: "play", hint: "toggle media deck" },
-  { cmd: "brands", hint: "open alias matrix" },
-  { cmd: "help", hint: "list commands" },
+  { cmd: "stream", hint: "stream" },
+  { cmd: "categories", hint: "browse" },
+  { cmd: "magazine", hint: "magazine" },
+  { cmd: "cosmogram", hint: "chart" },
+  { cmd: "footprint", hint: "footprint" },
+  { cmd: "support", hint: "support" },
+  { cmd: "play", hint: "play" },
+  { cmd: "brands", hint: "names" },
+  { cmd: "help", hint: "help" },
 ] as const;
 
 type CommandBarProps = {
@@ -92,7 +92,7 @@ export function CommandBar({ onCommand, onSearch }: CommandBarProps) {
         className="cmd__input"
         value={value}
         onChange={(e) => setValue(e.target.value)}
-        placeholder="search your names · quarantine · wall_carpet · cosmogram  (press /)"
+        placeholder="search  (/)"
         autoComplete="off"
         spellCheck={false}
       />

@@ -39,6 +39,7 @@ const SAFE_KEYS = new Set([
   "author_name",
   "width",
   "height",
+  "html",
 ]);
 
 function parseSafeUrl(raw: string | null): URL | null {
@@ -103,6 +104,11 @@ async function resolveOEmbed(url: URL): Promise<Record<string, unknown> | null> 
     }
     if (typeof out.thumbnail_url === "string" && !out.thumbnail_url.startsWith("https://")) {
       delete out.thumbnail_url;
+    }
+    // Only keep embed html long enough to extract provider ids — never render it.
+    if (typeof out.html === "string") {
+      const html = out.html.slice(0, 4096);
+      out.html = html;
     }
     return out;
   } catch {

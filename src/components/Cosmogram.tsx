@@ -69,14 +69,8 @@ export function CosmogramPanel() {
     <section id="cosmogram" className="section cosmogram" aria-labelledby="cosmo-title">
       <header className="section__head">
         <div>
-          <p className="section__eyebrow">chart://you</p>
           <h2 id="cosmo-title">{CHART_COPY.title}</h2>
         </div>
-        <p className="section__aside">
-          {chart
-            ? CHART_COPY.blurbFor(chart.sunSign, chart.lifePath, chart.birthdayNumber)
-            : "Add your birth date once — the chart is private to your account."}
-        </p>
       </header>
 
       {!chart ? (

@@ -24,9 +24,9 @@ export function ContinuumRail() {
       <div className="continuum__head">
         <p>
           <span className="continuum__pulse" data-live={playing ? "1" : "0"} />
-          {playing ? "in flow" : "press play · stay in the continuum"}
+          {playing ? "live" : "next"}
         </p>
-        <a href="#categories">browse all →</a>
+        <a href="#categories">browse</a>
       </div>
       <div className="continuum__track">
         {picks.map((item, index) => (

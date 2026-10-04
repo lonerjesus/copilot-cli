@@ -57,12 +57,8 @@ export function DonatePanel() {
     <section id="support" className="section donate" aria-labelledby="donate-title">
       <header className="section__head">
         <div>
-          <p className="section__eyebrow">signal://support</p>
-          <h2 id="donate-title">SUPPORT THE SITE</h2>
+          <h2 id="donate-title">SUPPORT</h2>
         </div>
-        <p className="section__aside">
-          Donations keep www.kamaunegasi.net autonomous. Separate from per-piece download licenses.
-        </p>
       </header>
 
       <div className="donate__row">

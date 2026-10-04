@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { ALIASES, PLATFORMS, PRIMARY_NAME } from "@/data/identity";
+import { ALIASES, PLATFORMS } from "@/data/identity";
 
 const KIND_ORDER = ["entity", "artist", "brand", "project", "handle"] as const;
 
@@ -17,12 +17,8 @@ export function AliasMatrix() {
     <section id="brands" className="section brands" aria-labelledby="brands-title">
       <header className="section__head">
         <div>
-          <p className="section__eyebrow">identity://matrix</p>
-          <h2 id="brands-title">NAMES · BRANDS · HANDLES</h2>
+          <h2 id="brands-title">NAMES</h2>
         </div>
-        <p className="section__aside">
-          {PRIMARY_NAME} — spelled as logged. Separated by identity class.
-        </p>
       </header>
 
       <div className="alias-groups">

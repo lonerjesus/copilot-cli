@@ -20,7 +20,7 @@ function FootprintInner({ footprint }: { footprint: FootprintItem[] }) {
       </a>
       <div className="shell shell--ready">
         <p className="agebanner" role="note">
-          18+ · not for people under 18 · mature content may appear · pro-Black excellence only
+          18+
         </p>
         <header className="topbar">
           <a className="topbar__brand" href="/">
@@ -56,11 +56,7 @@ function FootprintInner({ footprint }: { footprint: FootprintItem[] }) {
 
         <footer className="footer">
           <p>
-            © {new Date().getFullYear()} {PRIMARY_NAME} · Kendrick-Kamau Negasi LLC · BLKDTY Music
-            LLC · All rights reserved.
-          </p>
-          <p className="footer__note">
-            Watch footprint holds the full archive of posts and media signals.
+            © {new Date().getFullYear()} {PRIMARY_NAME}
           </p>
         </footer>
 

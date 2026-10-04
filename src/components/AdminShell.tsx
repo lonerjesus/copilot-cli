@@ -18,11 +18,10 @@ function AdminInner() {
   if (!user?.isAdmin) {
     return (
       <main className="admin-gate">
-        <p className="section__eyebrow">station://denied</p>
+        <p className="section__eyebrow">denied</p>
         <h1>NO CLEARANCE</h1>
-        <p>This desk is owner-only.</p>
         <a className="btn btn--ghost" href="/">
-          return home
+          home
         </a>
       </main>
     );

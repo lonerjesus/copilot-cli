@@ -88,7 +88,7 @@ echo "$home" | grep -qi '18+' && echo "PASS  compliance-18plus-marker" && pass=$
 echo "$home" | grep -q '/footprint' && echo "PASS  home-watch-footprint-link" && pass=$((pass+1)) || { echo "FAIL  home-watch-footprint-link"; fail=$((fail+1)); }
 
 fp="$(curl -s -A "$UA" -b "$JAR" "$BASE/footprint")"
-echo "$fp" | grep -qi 'WATCH FOOTPRINT' && echo "PASS  footprint-page-title" && pass=$((pass+1)) || { echo "FAIL  footprint-page-title"; fail=$((fail+1)); }
+echo "$fp" | grep -qi 'FOOTPRINT' && echo "PASS  footprint-page-title" && pass=$((pass+1)) || { echo "FAIL  footprint-page-title"; fail=$((fail+1)); }
 echo "$fp" | grep -q 'floppy' && echo "PASS  footprint-floppy-cards" && pass=$((pass+1)) || { echo "FAIL  footprint-floppy-cards"; fail=$((fail+1)); }
 
 # Admin station — non-admin forbidden; admin can publish

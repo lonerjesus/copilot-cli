@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { usePlayer } from "@/components/player/PlayerContext";
 import { useMagazine } from "@/components/MagazineContext";
 import { kindGlyph } from "@/lib/format";
@@ -11,9 +11,16 @@ function youtubeId(raw?: string): string | null {
   if (!raw) return null;
   try {
     const u = new URL(raw);
-    if (u.hostname.includes("youtu.be")) return u.pathname.slice(1) || null;
+    if (u.hostname.includes("youtu.be")) {
+      return u.pathname.replace(/^\//, "").split(/[/?#]/)[0] || null;
+    }
     if (u.hostname.includes("youtube.com")) {
-      return u.searchParams.get("v") || u.pathname.split("/embed/")[1] || null;
+      return (
+        u.searchParams.get("v") ||
+        u.pathname.split("/embed/")[1]?.split(/[/?#]/)[0] ||
+        u.pathname.split("/shorts/")[1]?.split(/[/?#]/)[0] ||
+        null
+      );
     }
   } catch {
     return null;
@@ -27,6 +34,87 @@ function vimeoId(raw?: string): string | null {
   return m?.[1] ?? null;
 }
 
+function twitchChannel(raw?: string, id?: string): string | null {
+  if (id) return id;
+  if (!raw) return null;
+  try {
+    const u = new URL(raw);
+    if (!u.hostname.includes("twitch.tv")) return null;
+    const part = u.pathname.replace(/^\//, "").split(/[/?#]/)[0];
+    if (!part || part === "videos" || part === "directory") return null;
+    return part;
+  } catch {
+    return null;
+  }
+}
+
+function bandcampAlbumFromPoster(poster?: string): string | null {
+  if (!poster) return null;
+  const m = /\/a(\d+)_/i.exec(poster);
+  return m?.[1] ?? null;
+}
+
+function albumIdFromOEmbedHtml(html?: string): string | null {
+  if (!html) return null;
+  const album = /album[=/](\d+)/i.exec(html);
+  if (album?.[1]) return album[1];
+  const track = /track[=/](\d+)/i.exec(html);
+  return track?.[1] ?? null;
+}
+
+function NativeMedia({
+  kind,
+  src,
+  title,
+  playing,
+}: {
+  kind: "audio" | "video";
+  src: string;
+  title: string;
+  playing: boolean;
+}) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  useEffect(() => {
+    const node = kind === "video" ? videoRef.current : audioRef.current;
+    if (!node) return;
+    if (playing) {
+      const p = node.play();
+      if (p && typeof p.catch === "function") p.catch(() => undefined);
+    } else {
+      node.pause();
+    }
+  }, [playing, kind, src]);
+
+  if (kind === "video") {
+    return (
+      <video
+        ref={videoRef}
+        className="deck__frame deck__frame--native"
+        src={src}
+        controls
+        playsInline
+        title={title}
+      />
+    );
+  }
+
+  return (
+    <div className="deck__native-audio">
+      <audio ref={audioRef} src={src} controls title={title} />
+      <div className={`deck__visual deck__visual--mini ${playing ? "is-playing" : ""}`} aria-hidden>
+        <div className="deck__orb" />
+        <div className="deck__bars">
+          {Array.from({ length: 12 }).map((_, i) => (
+            <span key={i} style={{ animationDelay: `${i * 0.08}s` }} />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function EmbedStage({
   provider,
   id,
@@ -34,6 +122,7 @@ function EmbedStage({
   title,
   kind,
   src,
+  poster,
   playing,
 }: {
   provider?: string;
@@ -42,112 +131,132 @@ function EmbedStage({
   title: string;
   kind?: string;
   src?: string;
+  poster?: string;
   playing: boolean;
 }) {
-  const yt = provider === "youtube" ? id || youtubeId(url) : youtubeId(url);
-  const vim = provider === "vimeo" ? id || vimeoId(url) : vimeoId(url);
+  const [resolvedBandcampId, setResolvedBandcampId] = useState<string | null>(null);
+  const isBandcamp = provider === "bandcamp" || Boolean(url && /bandcamp\.com/i.test(url));
+  const isSoundcloud =
+    provider === "soundcloud" || Boolean(url && /soundcloud\.com/i.test(url));
+  const bandcampId =
+    (provider === "bandcamp" ? id : undefined) ||
+    resolvedBandcampId ||
+    bandcampAlbumFromPoster(poster);
+
+  useEffect(() => {
+    if (!isBandcamp || bandcampId || !url) return;
+    let alive = true;
+    const run = async () => {
+      try {
+        const res = await fetch(`/api/oembed?url=${encodeURIComponent(url)}`);
+        if (!res.ok) return;
+        const data = (await res.json()) as { html?: string; thumbnail_url?: string };
+        const fromHtml = albumIdFromOEmbedHtml(data.html);
+        const fromThumb = bandcampAlbumFromPoster(data.thumbnail_url);
+        const next = fromHtml || fromThumb;
+        if (alive && next) setResolvedBandcampId(next);
+      } catch {
+        /* keep fallback */
+      }
+    };
+    void run();
+    return () => {
+      alive = false;
+    };
+  }, [isBandcamp, bandcampId, url]);
 
   if (src && (kind === "audio" || kind === "video")) {
-    if (kind === "video") {
-      return (
-        <video
-          className="deck__frame deck__frame--native"
-          src={src}
-          controls
-          playsInline
-          autoPlay={playing}
-          title={title}
-        />
-      );
-    }
+    return <NativeMedia kind={kind} src={src} title={title} playing={playing} />;
+  }
+
+  const channel = twitchChannel(url, provider === "twitch" ? id : undefined);
+  if (channel && (provider === "twitch" || url?.includes("twitch.tv"))) {
+    const parents = ["www.kamaunegasi.net", "kamaunegasi.net", "localhost"];
+    const srcTw =
+      `https://player.twitch.tv/?channel=${encodeURIComponent(channel)}` +
+      parents.map((p) => `&parent=${p}`).join("") +
+      `&autoplay=${playing ? "true" : "false"}&muted=false`;
     return (
-      <div className="deck__native-audio">
-        <audio src={src} controls autoPlay={playing} title={title} />
-        <div className="deck__visual deck__visual--mini" aria-hidden>
-          <div className="deck__orb" />
-          <div className="deck__bars">
-            {Array.from({ length: 12 }).map((_, i) => (
-              <span key={i} style={{ animationDelay: `${i * 0.08}s` }} />
-            ))}
-          </div>
-        </div>
-      </div>
+      <iframe
+        key={`twitch-${channel}-${playing ? "on" : "off"}`}
+        title={title}
+        src={srcTw}
+        allowFullScreen
+        className="deck__frame"
+        allow="autoplay; encrypted-media; fullscreen"
+      />
     );
   }
 
-  if ((provider === "twitch" || (!provider && url?.includes("twitch.tv"))) && (id || url)) {
-    const channel = id || url?.split("twitch.tv/")[1]?.split(/[/?#]/)[0];
-    if (channel) {
-      const srcTw =
-        `https://player.twitch.tv/?channel=${channel}` +
-        `&parent=www.kamaunegasi.net&parent=kamaunegasi.net&parent=localhost&muted=false`;
-      return (
-        <iframe
-          title={title}
-          src={srcTw}
-          allowFullScreen
-          className="deck__frame"
-          allow="autoplay; encrypted-media; fullscreen"
-        />
-      );
-    }
-  }
-
+  const yt = provider === "youtube" ? id || youtubeId(url) : youtubeId(url);
   if (yt) {
+    const srcYt =
+      `https://www.youtube.com/embed/${yt}` +
+      `?rel=0&modestbranding=1&playsinline=1&enablejsapi=1` +
+      `&autoplay=${playing ? 1 : 0}`;
     return (
       <iframe
+        key={`yt-${yt}-${playing ? "on" : "off"}`}
         title={title}
         className="deck__frame"
-        src={`https://www.youtube.com/embed/${yt}?rel=0&modestbranding=1&playsinline=1`}
+        src={srcYt}
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
         allowFullScreen
       />
     );
   }
 
+  const vim = provider === "vimeo" ? id || vimeoId(url) : vimeoId(url);
   if (vim) {
+    const srcVim =
+      `https://player.vimeo.com/video/${vim}?title=0&byline=0&portrait=0` +
+      `&autoplay=${playing ? 1 : 0}`;
     return (
       <iframe
+        key={`vim-${vim}-${playing ? "on" : "off"}`}
         title={title}
         className="deck__frame"
-        src={`https://player.vimeo.com/video/${vim}?title=0&byline=0&portrait=0`}
+        src={srcVim}
         allow="autoplay; fullscreen; picture-in-picture"
         allowFullScreen
       />
     );
   }
 
-  if (provider === "bandcamp" && id) {
+  if (isBandcamp && bandcampId) {
     const srcBc =
-      `https://bandcamp.com/EmbeddedPlayer/album=${encodeURIComponent(id)}` +
-      `/size=large/bgcol=0a0c0a/linkcol=b8ff3c/artwork=small/transparent=true/`;
+      `https://bandcamp.com/EmbeddedPlayer/album=${encodeURIComponent(bandcampId)}` +
+      `/size=large/bgcol=0a0c0a/linkcol=b8ff3c/artwork=small/transparent=true/` +
+      (playing ? "tracklist=false/" : "");
     return (
       <iframe
+        key={`bc-${bandcampId}`}
         title={title}
         src={srcBc}
         className="deck__frame deck__frame--audio"
         allow="autoplay; encrypted-media; clipboard-write"
-        loading="lazy"
       />
     );
   }
 
-  if (provider === "soundcloud" && url) {
+  if (isSoundcloud && url) {
+    const scUrl = url.replace("m.soundcloud.com", "soundcloud.com");
     const srcSc =
-      `https://w.soundcloud.com/player/?url=${encodeURIComponent(url)}` +
-      `&color=%23b8ff3c&auto_play=${playing ? "true" : "false"}&hide_related=true&show_comments=false&show_user=true&show_reposts=false&show_teaser=false`;
+      `https://w.soundcloud.com/player/?url=${encodeURIComponent(scUrl)}` +
+      `&color=%23b8ff3c&auto_play=${playing ? "true" : "false"}` +
+      `&hide_related=true&show_comments=false&show_user=true&show_reposts=false&show_teaser=false&visual=true`;
     return (
       <iframe
+        key={`sc-${scUrl}-${playing ? "on" : "off"}`}
         title={title}
         src={srcSc}
         className="deck__frame deck__frame--audio"
         allow="autoplay; encrypted-media"
-        loading="lazy"
       />
     );
   }
 
-  if (url && /bandcamp\.com/i.test(url)) {
+  if (isBandcamp && url) {
     return (
       <div className="deck__fallback">
         <p>BANDCAMP</p>
@@ -161,16 +270,16 @@ function EmbedStage({
   if (url && /vimeo\.com/i.test(url)) {
     return (
       <div className="deck__fallback">
-        <p>VIMEO CHANNEL</p>
+        <p>VIMEO</p>
         <a href={url} target="_blank" rel="noopener noreferrer">
-          open archive →
+          open on Vimeo →
         </a>
       </div>
     );
   }
 
   return (
-    <div className="deck__visual" aria-hidden>
+    <div className={`deck__visual ${playing ? "is-playing" : ""}`} aria-hidden>
       <div className="deck__orb" />
       <div className="deck__bars">
         {Array.from({ length: 16 }).map((_, i) => (
@@ -241,12 +350,14 @@ export function PlayerDock() {
       <div className="deck__stage">
         {current ? (
           <EmbedStage
+            key={current.id}
             provider={current.embed?.provider}
             id={current.embed?.id}
             url={current.embed?.url ?? current.externalUrl}
             title={current.title}
             kind={current.kind}
             src={current.src}
+            poster={current.poster}
             playing={playing}
           />
         ) : (
@@ -279,7 +390,7 @@ export function PlayerDock() {
             <>
               <p className="deck__eyebrow">DECK IDLE</p>
               <h2>NO SIGNAL</h2>
-              <p className="deck__blurb">Pick a title from the stream to play in-app.</p>
+              <p className="deck__blurb">Pick a title.</p>
             </>
           )}
         </div>

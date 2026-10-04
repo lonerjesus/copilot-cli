@@ -17,13 +17,8 @@ export function Hero() {
       </div>
 
       <div className="hero__content">
-        <p className="hero__status">
-          <span className="hero__live" />
-          SYS.ONLINE · PORTFOLIO/VLOG STREAM
-        </p>
         <h1 className="hero__brand">{SITE.title}</h1>
         <p className="hero__name">{PRIMARY_NAME}</p>
-        <p className="hero__tag">{SITE.tagline}</p>
         <div className="hero__cta">
           <button
             type="button"
@@ -35,10 +30,10 @@ export function Hero() {
               playItem(item, queue);
             }}
           >
-            {playing ? "resume deck" : "enter stream"}
+            {playing ? "resume" : "stream"}
           </button>
           <a className="btn btn--ghost" href="/footprint">
-            watch footprint
+            footprint
           </a>
         </div>
       </div>
