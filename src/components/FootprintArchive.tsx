@@ -132,7 +132,7 @@ export function FootprintArchive({ initial }: FootprintArchiveProps) {
       <header className="section__head">
         <div>
           <h1 id="footprint-title" className="footprint__page-title">
-            FOOTPRINT
+            F: FOOTPRINT
           </h1>
         </div>
       </header>

@@ -5,7 +5,7 @@ import { DONATION_PRESETS_CENTS, formatUsd, MIN_DONATION_CENTS, MAX_DONATION_CEN
 import { useAuth } from "@/components/AuthContext";
 import { track } from "@/lib/analytics";
 
-export function DonatePanel() {
+export function DonatePanel({ compact = false }: { compact?: boolean }) {
   const { user, refresh } = useAuth();
   const [cents, setCents] = useState<number>(DONATION_PRESETS_CENTS[1]);
   const [custom, setCustom] = useState("");
@@ -23,11 +23,11 @@ export function DonatePanel() {
           ? Math.round(Number(custom) * 100)
           : cents;
       if (!Number.isFinite(amount) || amount < MIN_DONATION_CENTS) {
-        setMessage(`Minimum ${formatUsd(MIN_DONATION_CENTS)}`);
+        setMessage(`min ${formatUsd(MIN_DONATION_CENTS)}`);
         return;
       }
       if (amount > MAX_DONATION_CENTS) {
-        setMessage(`Maximum ${formatUsd(MAX_DONATION_CENTS)}`);
+        setMessage(`max ${formatUsd(MAX_DONATION_CENTS)}`);
         return;
       }
       const res = await fetch("/api/donate", {
@@ -38,7 +38,7 @@ export function DonatePanel() {
       });
       const data = (await res.json()) as { url?: string; error?: string; mode?: string };
       if (!res.ok) {
-        setMessage(data.error ?? "Donation failed");
+        setMessage(data.error ?? "fail");
         return;
       }
       track("command", { cmd: "donate", cents: amount });
@@ -47,19 +47,24 @@ export function DonatePanel() {
         window.location.href = data.url;
       }
     } catch {
-      setMessage("Network error");
+      setMessage("network");
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <section id="support" className="section donate" aria-labelledby="donate-title">
-      <header className="section__head">
-        <div>
-          <h2 id="donate-title">SUPPORT</h2>
-        </div>
-      </header>
+    <section
+      className={`section donate ${compact ? "section--compact" : ""}`}
+      aria-label="Support"
+    >
+      {!compact ? (
+        <header className="section__head">
+          <div>
+            <h2 id="donate-title">SUPPORT</h2>
+          </div>
+        </header>
+      ) : null}
 
       <div className="donate__row">
         {DONATION_PRESETS_CENTS.map((preset) => (
@@ -76,22 +81,20 @@ export function DonatePanel() {
           </button>
         ))}
         <label className="donate__custom">
-          <span>custom $</span>
+          <span>$</span>
           <input
             inputMode="decimal"
-            placeholder="12.00"
+            placeholder="12"
             value={custom}
             onChange={(e) => setCustom(e.target.value)}
           />
         </label>
         <button type="button" className="btn btn--primary" disabled={busy} onClick={submit}>
-          {busy ? "opening…" : "donate"}
+          {busy ? "…" : "give"}
         </button>
       </div>
       {user.donatedCentsTotal > 0 ? (
-        <p className="donate__thanks">
-          Lifetime support logged: {formatUsd(user.donatedCentsTotal)}
-        </p>
+        <p className="donate__thanks">{formatUsd(user.donatedCentsTotal)}</p>
       ) : null}
       {message ? (
         <p className="donate__msg" role="status">

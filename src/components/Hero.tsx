@@ -1,6 +1,6 @@
 "use client";
 
-import { SITE, PRIMARY_NAME } from "@/data/identity";
+import { SITE } from "@/data/identity";
 import { usePlayerState } from "@/components/player/PlayerContext";
 import { getQueue } from "@/data/catalog";
 import { track } from "@/lib/analytics";
@@ -9,16 +9,14 @@ export function Hero() {
   const { playItem, playing, current } = usePlayerState();
 
   return (
-    <section className="hero" aria-label="Hero">
+    <section className="hero hero--compact" aria-label="Hero">
       <div className="hero__atmosphere" aria-hidden>
         <div className="hero__grid" />
-        <div className="hero__beam" />
         <div className="hero__noise" />
       </div>
 
       <div className="hero__content">
         <h1 className="hero__brand">{SITE.title}</h1>
-        <p className="hero__name">{PRIMARY_NAME}</p>
         <div className="hero__cta">
           <button
             type="button"
@@ -30,10 +28,10 @@ export function Hero() {
               playItem(item, queue);
             }}
           >
-            {playing ? "resume" : "stream"}
+            {playing ? "▶" : "stream"}
           </button>
           <a className="btn btn--ghost" href="/footprint">
-            footprint
+            F:
           </a>
         </div>
       </div>

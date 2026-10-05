@@ -7,9 +7,9 @@ import { CommandBar } from "@/components/CommandBar";
 import { Hero } from "@/components/Hero";
 import { StreamDeck } from "@/components/StreamDeck";
 import { CategoryBrowser } from "@/components/CategoryBrowser";
-import { ContinuumRail } from "@/components/ContinuumRail";
 import { AliasMatrix } from "@/components/AliasMatrix";
 import { CosmogramPanel } from "@/components/Cosmogram";
+import { DriveBay } from "@/components/DriveBay";
 import { MagazineReader } from "@/components/MagazineReader";
 import { MagazineProvider, useMagazine } from "@/components/MagazineContext";
 import { PlayerDock } from "@/components/player/PlayerDock";
@@ -19,8 +19,11 @@ import { DonatePanel } from "@/components/DonatePanel";
 import { PRIMARY_NAME, SITE } from "@/data/identity";
 import { findCategoryByQuery, type CategoryId, type SubcategoryId } from "@/data/taxonomy";
 
+type BayId = "stream" | "browse" | "chart" | "names" | "support";
+
 function ShellInner() {
   const [booted, setBooted] = useState(false);
+  const [openBay, setOpenBay] = useState<BayId | null>("stream");
   const [searchQuery, setSearchQuery] = useState("");
   const [searchCategory, setSearchCategory] = useState<CategoryId | "all">("all");
   const [searchSubcategory, setSearchSubcategory] = useState<SubcategoryId | "all">("all");
@@ -31,26 +34,36 @@ function ShellInner() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    // Ownership comes from the server after webhook/demo settle — refresh only.
     if (params.get("purchased") || params.get("donated") === "1") {
       void refresh();
     }
   }, [refresh]);
 
-  const applySearch = useCallback((query: string) => {
-    const hit = findCategoryByQuery(query);
-    setSearchQuery(query);
-    setSearchCategory(hit.category?.id ?? "all");
-    setSearchSubcategory(hit.subcategory?.id ?? "all");
-    setBrowseKey((k) => k + 1);
+  const toggleBay = useCallback((id: BayId) => {
+    setOpenBay((cur) => (cur === id ? null : id));
   }, []);
+
+  const openBayTo = useCallback((id: BayId) => {
+    setOpenBay(id);
+    window.requestAnimationFrame(() => {
+      document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }, []);
+
+  const applySearch = useCallback(
+    (query: string) => {
+      const hit = findCategoryByQuery(query);
+      setSearchQuery(query);
+      setSearchCategory(hit.category?.id ?? "all");
+      setSearchSubcategory(hit.subcategory?.id ?? "all");
+      setBrowseKey((k) => k + 1);
+      openBayTo("browse");
+    },
+    [openBayTo],
+  );
 
   const onCommand = useCallback(
     (cmd: string) => {
-      if (cmd === "help") {
-        document.getElementById("commands")?.scrollIntoView({ behavior: "smooth" });
-        return;
-      }
       if (cmd === "play") {
         setExpanded(true);
         toggle();
@@ -60,19 +73,19 @@ function ShellInner() {
         window.location.href = "/footprint";
         return;
       }
-      const map: Record<string, string> = {
+      const map: Record<string, BayId> = {
         stream: "stream",
-        categories: "categories",
+        categories: "browse",
         magazine: "stream",
-        cosmogram: "cosmogram",
-        brands: "brands",
+        cosmogram: "chart",
+        brands: "names",
         support: "support",
         donate: "support",
       };
       const id = map[cmd];
-      if (id) document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+      if (id) openBayTo(id);
     },
-    [setExpanded, toggle],
+    [openBayTo, setExpanded, toggle],
   );
 
   return (
@@ -82,7 +95,7 @@ function ShellInner() {
       </a>
       <AgeGate />
       {!booted ? <BootSequence onDone={() => setBooted(true)} /> : null}
-      <div className="shell shell--ready">
+      <div className="shell shell--ready shell--rack">
         <p className="agebanner" role="note">
           18+
         </p>
@@ -95,11 +108,16 @@ function ShellInner() {
             </span>
           </a>
           <nav className="topbar__nav" aria-label="Primary">
-            <a href="#stream">stream</a>
-            <a href="#categories">browse</a>
+            <button type="button" onClick={() => openBayTo("stream")}>
+              stream
+            </button>
+            <button type="button" onClick={() => openBayTo("browse")}>
+              browse
+            </button>
             <a href="/footprint">footprint</a>
-            <a href="#cosmogram">chart</a>
-            <a href="#support">support</a>
+            <button type="button" onClick={() => openBayTo("support")}>
+              support
+            </button>
             {user?.isAdmin ? <a href="/admin">admin</a> : null}
           </nav>
           <div className="topbar__account">
@@ -107,27 +125,84 @@ function ShellInner() {
               {user?.displayName ?? "member"}
             </span>
             <button type="button" className="topbar__logout" onClick={() => void logout()}>
-              sign out
+              out
             </button>
           </div>
         </header>
 
-        <main id="top" tabIndex={-1}>
+        <main id="top" tabIndex={-1} className="rack">
           <Hero />
-          <ContinuumRail />
-          <div id="commands" className="cmd-wrap">
+          <div className="cmd-wrap">
             <CommandBar onCommand={onCommand} onSearch={applySearch} />
           </div>
-          <StreamDeck />
-          <CategoryBrowser
-            key={browseKey}
-            initialQuery={searchQuery}
-            initialCategory={searchCategory}
-            initialSubcategory={searchSubcategory}
-          />
-          <CosmogramPanel />
-          <DonatePanel />
-          <AliasMatrix />
+
+          <div className="rack__bays" role="list">
+            <DriveBay
+              id="stream"
+              drive="A"
+              label="STREAM"
+              open={openBay === "stream"}
+              onToggle={() => toggleBay("stream")}
+            >
+              <StreamDeck compact />
+            </DriveBay>
+
+            <DriveBay
+              id="browse"
+              drive="B"
+              label="BROWSE"
+              open={openBay === "browse"}
+              onToggle={() => toggleBay("browse")}
+            >
+              <CategoryBrowser
+                key={browseKey}
+                compact
+                initialQuery={searchQuery}
+                initialCategory={searchCategory}
+                initialSubcategory={searchSubcategory}
+              />
+            </DriveBay>
+
+            <DriveBay
+              id="chart"
+              drive="C"
+              label="CHART"
+              open={openBay === "chart"}
+              onToggle={() => toggleBay("chart")}
+            >
+              <CosmogramPanel compact />
+            </DriveBay>
+
+            <DriveBay
+              id="names"
+              drive="D"
+              label="NAMES"
+              open={openBay === "names"}
+              onToggle={() => toggleBay("names")}
+            >
+              <AliasMatrix compact />
+            </DriveBay>
+
+            <DriveBay
+              id="support"
+              drive="E"
+              label="SUPPORT"
+              open={openBay === "support"}
+              onToggle={() => toggleBay("support")}
+            >
+              <DonatePanel compact />
+            </DriveBay>
+
+            <DriveBay
+              id="footprint-bay"
+              drive="F"
+              label="FOOTPRINT"
+              open={false}
+              onToggle={() => undefined}
+              href="/footprint"
+              meta="archive"
+            />
+          </div>
         </main>
 
         <footer className="footer">

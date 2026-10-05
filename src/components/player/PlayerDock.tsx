@@ -388,9 +388,9 @@ export function PlayerDock() {
             </>
           ) : (
             <>
-              <p className="deck__eyebrow">DECK IDLE</p>
-              <h2>NO SIGNAL</h2>
-              <p className="deck__blurb">Pick a title.</p>
+              <p className="deck__eyebrow">DECK</p>
+              <h2>—</h2>
+              <p className="deck__blurb">idle</p>
             </>
           )}
         </div>

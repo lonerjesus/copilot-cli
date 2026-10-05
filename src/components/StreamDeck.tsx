@@ -51,17 +51,22 @@ function Tile({
   );
 }
 
-export function StreamDeck() {
+export function StreamDeck({ compact = false }: { compact?: boolean }) {
   const { current, playItem } = usePlayerState();
   const { openMagazine, hasMagazine } = useMagazine();
 
   return (
-    <section id="stream" className="section stream" aria-labelledby="stream-title">
-      <header className="section__head">
-        <div>
-          <h2 id="stream-title">STREAM</h2>
-        </div>
-      </header>
+    <section
+      className={`section stream ${compact ? "section--compact" : ""}`}
+      aria-label="Stream"
+    >
+      {!compact ? (
+        <header className="section__head">
+          <div>
+            <h2 id="stream-title">STREAM</h2>
+          </div>
+        </header>
+      ) : null}
 
       {STREAM_ROWS.map((row) => {
         const items = row.itemIds
@@ -71,7 +76,6 @@ export function StreamDeck() {
           <div key={row.id} className="row">
             <div className="row__head">
               <h3>{row.title}</h3>
-              <span>{row.hint}</span>
             </div>
             <div className="row__track" tabIndex={0}>
               {items.map((item) => (

@@ -10,7 +10,6 @@ import {
   type SubcategoryId,
 } from "@/data/taxonomy";
 import {
-  activeFilterCount,
   filterCatalog,
   uniqueBrands,
   uniqueKinds,
@@ -33,7 +32,8 @@ export function CategoryBrowser({
   initialQuery = "",
   initialCategory = "all",
   initialSubcategory = "all",
-}: CategoryBrowserProps) {
+  compact = false,
+}: CategoryBrowserProps & { compact?: boolean }) {
   const { current, playItem } = usePlayerState();
   const { openMagazine, hasMagazine } = useMagazine();
   const [query, setQuery] = useState(initialQuery);
@@ -65,16 +65,6 @@ export function CategoryBrowser({
       }),
     [deferredQuery, category, subcategory, kind, platform, brand, sort],
   );
-
-  const filterCount = activeFilterCount({
-    query: deferredQuery,
-    category,
-    subcategory,
-    kind,
-    platform,
-    brand,
-    sort,
-  });
 
   const grouped = useMemo(() => {
     const map = new Map<
@@ -124,16 +114,21 @@ export function CategoryBrowser({
   };
 
   return (
-    <section id="categories" className="section categories" aria-labelledby="categories-title">
-      <header className="section__head">
-        <div>
-          <h2 id="categories-title">CATEGORIES</h2>
-        </div>
-      </header>
+    <section
+      className={`section categories ${compact ? "section--compact" : ""}`}
+      aria-label="Browse"
+    >
+      {!compact ? (
+        <header className="section__head">
+          <div>
+            <h2 id="categories-title">CATEGORIES</h2>
+          </div>
+        </header>
+      ) : null}
 
       <div className="cat-search">
         <label className="cat-search__label" htmlFor="category-search">
-          search_
+          /
         </label>
         <input
           id="category-search"
@@ -146,7 +141,6 @@ export function CategoryBrowser({
         />
         <span className="cat-search__count">
           {results.length}/{CATALOG.length}
-          {filterCount ? ` · ${filterCount} filters` : ""}
         </span>
       </div>
 
