@@ -11,6 +11,14 @@ name = "kamaunegasi-net"
 main = ".open-next/worker.js"
 compatibility_date = "2025-10-01"
 compatibility_flags = ["nodejs_compat", "global_fetch_strictly_public"]
+workers_dev = true
+
+# Custom domains — without these, the zone can resolve on Cloudflare while
+# www/apex serve the Workers empty placeholder ("There is nothing here yet").
+routes = [
+  { pattern = "www.kamaunegasi.net", custom_domain = true },
+  { pattern = "kamaunegasi.net", custom_domain = true },
+]
 
 [assets]
 directory = ".open-next/assets"
