@@ -46,6 +46,7 @@ export function FootprintArchive({ initial }: FootprintArchiveProps) {
   const [items, setItems] = useState(initial);
   const [liveCatalog, setLiveCatalog] = useState<CatalogItem[]>(CATALOG);
   const [filter, setFilter] = useState<string>("all");
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -85,14 +86,20 @@ export function FootprintArchive({ initial }: FootprintArchiveProps) {
   };
 
   const platforms = useMemo(() => {
-    const set = new Set(items.map((i) => i.platform));
-    return ["all", ...Array.from(set)];
+    return Array.from(new Set(items.map((i) => i.platform))).sort((a, b) =>
+      a.localeCompare(b),
+    );
   }, [items]);
 
   const visible = useMemo(() => {
     if (filter === "all") return items;
     return items.filter((item) => item.platform === filter);
   }, [items, filter]);
+
+  const selectFilter = (next: string) => {
+    setFilter(next);
+    track("footprint_filter", { platform: next });
+  };
 
   const openItem = (item: FootprintItem) => {
     track("footprint_open", { id: item.id, platform: item.platform });
@@ -131,19 +138,49 @@ export function FootprintArchive({ initial }: FootprintArchiveProps) {
       </header>
 
       <div className="footprint__toolbar">
-        <div className="footprint__filters" role="tablist" aria-label="Filter platforms">
-          {platforms.map((p) => (
+        <div className={`footprint__filters ${filtersOpen ? "is-open" : ""}`}>
+          <button
+            type="button"
+            className={`footprint__filter footprint__menu ${filtersOpen ? "is-open" : ""} ${!filtersOpen ? "is-on" : ""}`}
+            aria-expanded={filtersOpen}
+            aria-controls="footprint-filter-menu"
+            onClick={() => setFiltersOpen((open) => !open)}
+          >
+            <span>{filter}</span>
+            <span className="footprint__menu-caret" aria-hidden />
+          </button>
+
+          <div
+            id="footprint-filter-menu"
+            className="footprint__filter-menu"
+            role="tablist"
+            aria-label="Filter platforms"
+            aria-hidden={!filtersOpen}
+          >
             <button
-              key={p}
               type="button"
               role="tab"
-              aria-selected={filter === p}
-              className={`footprint__filter ${filter === p ? "is-on" : ""}`}
-              onClick={() => setFilter(p)}
+              aria-selected={filter === "all"}
+              tabIndex={filtersOpen ? 0 : -1}
+              className={`footprint__filter ${filter === "all" ? "is-on" : ""}`}
+              onClick={() => selectFilter("all")}
             >
-              {p}
+              all
             </button>
-          ))}
+            {platforms.map((p) => (
+              <button
+                key={p}
+                type="button"
+                role="tab"
+                aria-selected={filter === p}
+                tabIndex={filtersOpen ? 0 : -1}
+                className={`footprint__filter ${filter === p ? "is-on" : ""}`}
+                onClick={() => selectFilter(p)}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
         </div>
         <p className="footprint__count" aria-live="polite">
           {visible.length}
