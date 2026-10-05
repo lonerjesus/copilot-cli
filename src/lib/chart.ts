@@ -103,34 +103,3 @@ export function buildPersonalChart(displayName: string, birthDate: string): Pers
     birthdayNumber,
   };
 }
-
-export const CHART_COPY = {
-  title: "YOUR COSMOGRAM",
-  blurbFor: (sign: string, life: number, day: number) =>
-    `${sign} fire with Life Path ${life} and Birthday ${day} — a personal signal chart for your stream session. Affirmations stay sovereign and pro-Black.`,
-  pillars: (sign: string, life: number, day: number) => [
-    {
-      label: `${sign} Current`,
-      line: "Your solar tone — lead with the courage and clarity that date already coded in.",
-    },
-    {
-      label: `Life Path ${life}`,
-      line: "The long arc of your craft: study, insight, and creative power without apology.",
-    },
-    {
-      label: `Birthday ${day}`,
-      line: "Day-number motion — how you remix freedom into form on the stream.",
-    },
-    {
-      label: "House Rule",
-      line: "This chart is yours alone. Legal names stay off the glass.",
-    },
-  ],
-  affirmations: [
-    "I lead with light and leave a path others can walk.",
-    "My mind is a sanctuary of genius and grace.",
-    "I move free, create bold, and stay sovereign.",
-    "My excellence uplifts the whole circle.",
-    "I am future-facing Black brilliance in motion.",
-  ],
-} as const;

@@ -32,12 +32,33 @@ function ShellInner() {
   const { openId, closeMagazine } = useMagazine();
   const { user, logout, refresh } = useAuth();
 
+  const bayFromHash = useCallback((hash: string): BayId | null => {
+    const id = hash.replace(/^#/, "").toLowerCase();
+    if (id === "stream" || id === "browse" || id === "chart" || id === "names" || id === "support") {
+      return id;
+    }
+    if (id === "categories") return "browse";
+    if (id === "cosmogram") return "chart";
+    if (id === "brands" || id === "donate") return id === "brands" ? "names" : "support";
+    return null;
+  }, []);
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("purchased") || params.get("donated") === "1") {
       void refresh();
     }
   }, [refresh]);
+
+  useEffect(() => {
+    const applyHash = () => {
+      const bay = bayFromHash(window.location.hash);
+      if (bay) setOpenBay(bay);
+    };
+    applyHash();
+    window.addEventListener("hashchange", applyHash);
+    return () => window.removeEventListener("hashchange", applyHash);
+  }, [bayFromHash]);
 
   const toggleBay = useCallback((id: BayId) => {
     setOpenBay((cur) => (cur === id ? null : id));
@@ -136,7 +157,7 @@ function ShellInner() {
             <CommandBar onCommand={onCommand} onSearch={applySearch} />
           </div>
 
-          <div className="rack__bays" role="list">
+          <div className="rack__bays">
             <DriveBay
               id="stream"
               drive="A"

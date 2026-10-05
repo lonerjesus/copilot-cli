@@ -19,6 +19,7 @@ export type CatalogFilters = {
   platform?: string | "all";
   brand?: string | "all";
   sort?: SortMode;
+  items?: CatalogItem[];
 };
 
 export type SearchHit =
@@ -52,20 +53,20 @@ function scoreText(haystack: string, query: string): number {
   return 0;
 }
 
-export function uniqueBrands(): string[] {
-  return Array.from(new Set(CATALOG.map((item) => item.brand))).sort((a, b) =>
+export function uniqueBrands(items: CatalogItem[] = CATALOG): string[] {
+  return Array.from(new Set(items.map((item) => item.brand))).sort((a, b) =>
     a.localeCompare(b),
   );
 }
 
-export function uniquePlatforms(): string[] {
-  return Array.from(new Set(CATALOG.map((item) => item.platform))).sort((a, b) =>
+export function uniquePlatforms(items: CatalogItem[] = CATALOG): string[] {
+  return Array.from(new Set(items.map((item) => item.platform))).sort((a, b) =>
     a.localeCompare(b),
   );
 }
 
-export function uniqueKinds(): MediaKind[] {
-  return Array.from(new Set(CATALOG.map((item) => item.kind))) as MediaKind[];
+export function uniqueKinds(items: CatalogItem[] = CATALOG): MediaKind[] {
+  return Array.from(new Set(items.map((item) => item.kind))) as MediaKind[];
 }
 
 export function searchCatalog(query: string): SearchHit[] {
@@ -186,10 +187,11 @@ export function filterCatalog(options: CatalogFilters): CatalogItem[] {
     platform = "all",
     brand = "all",
     sort = "newest",
+    items = CATALOG,
   } = options;
   const q = query.trim().toLowerCase();
 
-  const filtered = CATALOG.filter((item) => {
+  const filtered = items.filter((item) => {
     if (category !== "all" && item.category !== category) return false;
     if (subcategory !== "all" && item.subcategory !== subcategory) return false;
     if (kind !== "all" && item.kind !== kind) return false;

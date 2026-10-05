@@ -1,5 +1,6 @@
 "use client";
 
+import { AgeGate } from "@/components/AgeGate";
 import { AuthProvider, useAuth } from "@/components/AuthContext";
 import { MagazineProvider, useMagazine } from "@/components/MagazineContext";
 import { MagazineReader } from "@/components/MagazineReader";
@@ -18,6 +19,7 @@ function FootprintInner({ footprint }: { footprint: FootprintItem[] }) {
       <a className="skip-link" href="#footprint-main">
         Skip to content
       </a>
+      <AgeGate />
       <div className="shell shell--ready">
         <p className="agebanner" role="note">
           18+
@@ -33,7 +35,7 @@ function FootprintInner({ footprint }: { footprint: FootprintItem[] }) {
           <nav className="topbar__nav" aria-label="Primary">
             <a href="/">home</a>
             <a href="/#stream">stream</a>
-            <a href="/#categories">browse</a>
+            <a href="/#browse">browse</a>
             <a href="/footprint" aria-current="page">
               footprint
             </a>
@@ -45,7 +47,7 @@ function FootprintInner({ footprint }: { footprint: FootprintItem[] }) {
               {user?.displayName ?? "member"}
             </span>
             <button type="button" className="topbar__logout" onClick={() => void logout()}>
-              sign out
+              out
             </button>
           </div>
         </header>

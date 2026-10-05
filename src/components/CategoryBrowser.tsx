@@ -1,6 +1,6 @@
 "use client";
 
-import { startTransition, useDeferredValue, useMemo, useState } from "react";
+import { startTransition, useDeferredValue, useEffect, useMemo, useState } from "react";
 import { CATALOG, isPaywalled, type CatalogItem, type MediaKind } from "@/data/catalog";
 import {
   CATEGORIES,
@@ -43,11 +43,30 @@ export function CategoryBrowser({
   const [platform, setPlatform] = useState<string | "all">("all");
   const [brand, setBrand] = useState<string | "all">("all");
   const [sort, setSort] = useState<SortMode>("newest");
+  const [live, setLive] = useState<CatalogItem[]>(CATALOG);
+
+  useEffect(() => {
+    let alive = true;
+    const load = async () => {
+      try {
+        const res = await fetch("/api/catalog");
+        if (!res.ok) return;
+        const data = (await res.json()) as { items?: CatalogItem[] };
+        if (alive && data.items?.length) setLive(data.items);
+      } catch {
+        /* seed */
+      }
+    };
+    void load();
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   const deferredQuery = useDeferredValue(query);
-  const brands = useMemo(() => uniqueBrands(), []);
-  const platforms = useMemo(() => uniquePlatforms(), []);
-  const kinds = useMemo(() => uniqueKinds(), []);
+  const brands = useMemo(() => uniqueBrands(live), [live]);
+  const platforms = useMemo(() => uniquePlatforms(live), [live]);
+  const kinds = useMemo(() => uniqueKinds(live), [live]);
 
   const activeCategory = category === "all" ? undefined : getCategory(category);
   const subOptions = activeCategory?.subcategories ?? [];
@@ -62,8 +81,9 @@ export function CategoryBrowser({
         platform,
         brand,
         sort,
+        items: live,
       }),
-    [deferredQuery, category, subcategory, kind, platform, brand, sort],
+    [deferredQuery, category, subcategory, kind, platform, brand, sort, live],
   );
 
   const grouped = useMemo(() => {
@@ -140,7 +160,7 @@ export function CategoryBrowser({
           spellCheck={false}
         />
         <span className="cat-search__count">
-          {results.length}/{CATALOG.length}
+          {results.length}/{live.length}
         </span>
       </div>
 

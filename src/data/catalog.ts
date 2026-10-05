@@ -280,7 +280,7 @@ export const CATALOG: CatalogItem[] = [
     source: "fetched",
     externalUrl: "https://www.kamaunegasi.me",
     tags: ["Black Oh-My", "visual"],
-    blurb: "Visual brand frequency under the Negasi house.",
+    blurb: "Visual brand frequency under the Kendrick-Kamau Negasi house.",
   },
   {
     id: "faust-fakeway",
@@ -531,7 +531,7 @@ export const CATALOG: CatalogItem[] = [
     source: "fetched",
     externalUrl: "https://tellingshowoflove.substack.com",
     tags: ["TSOL", "stills", "Meta"],
-    blurb: "Photo dump via Meta glasses — Telling Stills energy.",
+    blurb: "Photo dump via Meta glasses — Telling Stills Of Love.",
   },
   {
     id: "tsol-yall-funny",
@@ -868,7 +868,7 @@ export const STREAM_ROWS: StreamRow[] = [
   {
     id: "house",
     title: "HOUSE LABELS & ALIASES",
-    hint: "GAK · BLKDTY · Faust · TL1 · LDVM · GRUNGEzhou · Golden Crow",
+    hint: "GAK · BLKDTY · Faust Fakeway · TL1 · LoveDrugVendingMachine · GRUNGEzhou · Golden Crow",
     itemIds: [
       "gak-manifest",
       "blkdty-house",

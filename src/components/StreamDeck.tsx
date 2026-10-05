@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { CATALOG, STREAM_ROWS, isPaywalled, type CatalogItem } from "@/data/catalog";
 import { kindGlyph } from "@/lib/format";
 import { usePlayerState } from "@/components/player/PlayerContext";
@@ -44,7 +45,7 @@ function Tile({
       </button>
       {canMagazine && onMagazine ? (
         <button type="button" className="tile__mag" onClick={onMagazine}>
-          magazine
+          mag
         </button>
       ) : null}
     </div>
@@ -54,6 +55,27 @@ function Tile({
 export function StreamDeck({ compact = false }: { compact?: boolean }) {
   const { current, playItem } = usePlayerState();
   const { openMagazine, hasMagazine } = useMagazine();
+  const [live, setLive] = useState<CatalogItem[]>(CATALOG);
+
+  useEffect(() => {
+    let alive = true;
+    const load = async () => {
+      try {
+        const res = await fetch("/api/catalog");
+        if (!res.ok) return;
+        const data = (await res.json()) as { items?: CatalogItem[] };
+        if (alive && data.items?.length) setLive(data.items);
+      } catch {
+        /* seed */
+      }
+    };
+    void load();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const byId = (id: string) => live.find((c) => c.id === id) ?? CATALOG.find((c) => c.id === id);
 
   return (
     <section
@@ -70,20 +92,28 @@ export function StreamDeck({ compact = false }: { compact?: boolean }) {
 
       {STREAM_ROWS.map((row) => {
         const items = row.itemIds
-          .map((id) => CATALOG.find((c) => c.id === id))
+          .map((id) => byId(id))
           .filter((item): item is CatalogItem => Boolean(item));
+        const uploads =
+          row.id === "house"
+            ? live.filter(
+                (item) =>
+                  item.source === "uploaded" && !items.some((i) => i.id === item.id),
+              )
+            : [];
+        const rowItems = [...items, ...uploads];
         return (
           <div key={row.id} className="row">
             <div className="row__head">
               <h3>{row.title}</h3>
             </div>
             <div className="row__track" tabIndex={0}>
-              {items.map((item) => (
+              {rowItems.map((item) => (
                 <Tile
                   key={item.id}
                   item={item}
                   active={current?.id === item.id}
-                  onPlay={() => playItem(item, items)}
+                  onPlay={() => playItem(item, rowItems)}
                   canMagazine={hasMagazine(item.id)}
                   onMagazine={() => openMagazine(item.id)}
                 />

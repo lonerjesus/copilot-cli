@@ -246,8 +246,9 @@ export async function listUploads(): Promise<UploadedContent[]> {
     return [...items].sort(
       (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime(),
     );
-  } catch {
-    // Build / edge without store — seed catalog only
+  } catch (err) {
+    // Propagate real store outages so admin/API can 503.
+    if (err instanceof AuthStoreUnavailableError) throw err;
     return [];
   }
 }

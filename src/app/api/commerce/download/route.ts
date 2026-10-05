@@ -70,11 +70,12 @@ export async function GET(request: NextRequest) {
   };
 
   const body = JSON.stringify(payload, null, 2);
+  const safeName = catalogId.replace(/[^A-Za-z0-9._-]+/g, "_").slice(0, 80) || "item";
   return new NextResponse(body, {
     status: 200,
     headers: {
       "Content-Type": "application/json; charset=utf-8",
-      "Content-Disposition": `attachment; filename="${catalogId}.kn.json"`,
+      "Content-Disposition": `attachment; filename="${safeName}.kn.json"`,
       "Cache-Control": "private, no-store",
       "X-Content-Type-Options": "nosniff",
       "X-Download-Options": "noopen",
