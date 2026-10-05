@@ -48,7 +48,7 @@ Account gate, register/login, bot 403, feed/ingest/catalog auth, paywall 402 / o
 2. Confirm dashboards: `www.kamaunegasi.net` + `kamaunegasi.net` listed under Worker **Custom Domains** for `kamaunegasi-net`.
 3. **AUTH_SECRET** — Workers secret ≥16 chars.
 4. **ADMIN_EMAIL** (or `ADMIN_EMAILS`) — so `/admin` publish works.
-5. Optional Stripe secrets; optional KV `preview_id` for PR Preview Builds.
+5. Optional: isolate Preview KV (`wrangler kv namespace create AUTH_KV --preview`) — `preview_id` currently equals production id so PR Builds can green.
 6. Re-check live browser: expect `/` → `/access` gate (not CF empty page).
 
 ## Non-blocking WARNs

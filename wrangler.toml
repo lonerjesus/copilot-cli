@@ -35,9 +35,10 @@ AGE_GATE_REQUIRED = "1"
 ACCOUNT_GATE = "1"
 
 # Durable auth/commerce store (kamaunegasi-auth KV namespace).
-# For Preview Builds, also set preview_id after:
-#   npx wrangler kv namespace create AUTH_KV --preview
+# preview_id required for Workers Preview Builds on PR branches.
+# Same namespace as production is intentional for this house deploy
+# (isolated preview KV: `npx wrangler kv namespace create AUTH_KV --preview`).
 [[kv_namespaces]]
 binding = "AUTH_KV"
 id = "de9274dc7ff04729958e7c83eaebe84f"
-# preview_id = "REPLACE_AFTER_wrangler_kv_namespace_create_--preview"
+preview_id = "de9274dc7ff04729958e7c83eaebe84f"
