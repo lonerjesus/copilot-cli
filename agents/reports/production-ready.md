@@ -11,12 +11,13 @@ Probe / fix branch: `cursor/prod-ready-verdict-560e`
 | **Workers Builds (main → worker script)** | **READY** (Version `102e32d2-…` success) |
 | **Worker config bindings (`AUTH_KV`, gates)** | **READY** |
 | **Local prod smoke (38 vectors)** | **READY** (38/38) |
-| **Live custom domain** | **NOT READY — BLOCKER** |
+| **Live custom domain** | **NOT READY — BLOCKER** (fix: custom_domain routes + merge) |
+| **PR Preview Builds** | **Fixing** — Wrangler 4 needs `[previews]` + `preview_urls` (not only `preview_id`) |
 | **Ops secrets (`AUTH_SECRET`, `ADMIN_EMAIL`)** | **UNVERIFIED** (no Wrangler API token here) |
 
 **Overall:** Application code is deployable and locally green. **Live `www.kamaunegasi.net` is not production-ready** — after Cloudflare challenge clears, the hostname returns HTTP **404** Workers placeholder *“There is nothing here yet / Powered by Cloudflare”* (not the Access gate). Worker Builds succeeded, so the gap is **domain → worker routing**, not the OpenNext bundle.
 
-This branch adds `routes` custom domains + `workers_dev = true` in `wrangler.toml` so the next production deploy attaches apex/`www` to `kamaunegasi-net`.
+This branch adds production `custom_domain` routes, `preview_urls`, and a Wrangler 4 `[previews]` block so Preview Builds can pass and the next production deploy attaches apex/`www` to `kamaunegasi-net`.
 
 ## Verified this pass
 
