@@ -98,7 +98,7 @@ export function FootprintArchive({ initial }: FootprintArchiveProps) {
 
   const selectFilter = (next: string) => {
     setFilter(next);
-    track("footprint_filter", { platform: next });
+    track("category_filter", { platform: next });
   };
 
   const openItem = (item: FootprintItem) => {
