@@ -4,10 +4,32 @@ import {
   MIN_DONATION_CENTS,
   MAX_DONATION_CENTS,
 } from "@/data/commerce";
+import { SITE } from "@/data/identity";
 import { grantPurchase, recordDonation } from "@/lib/auth/store";
 import { randomToken } from "@/lib/auth/crypto";
 
 export type PaymentsMode = "demo" | "stripe";
+
+/**
+ * Prefer configured site origin for Stripe return URLs.
+ * Localhost / preview origins stay as-is for demo flows.
+ */
+export function checkoutOrigin(requestOrigin: string): string {
+  const raw = (process.env.SITE_URL || process.env.SITE_DOMAIN || SITE.url).trim();
+  const configured = raw.startsWith("http")
+    ? raw.replace(/\/$/, "")
+    : `https://${raw.replace(/^https?:\/\//, "").replace(/\/$/, "")}`;
+  try {
+    const req = new URL(requestOrigin);
+    const host = req.hostname.toLowerCase();
+    if (host === "localhost" || host === "127.0.0.1" || host.endsWith(".workers.dev")) {
+      return requestOrigin.replace(/\/$/, "");
+    }
+  } catch {
+    /* use configured */
+  }
+  return configured;
+}
 
 /** Demo grants only when explicitly allowed (local/staging). Production never free-grants. */
 export function paymentsMode(): PaymentsMode {
@@ -71,7 +93,7 @@ export async function createDonationCheckout(input: {
 }): Promise<{ url: string; mode: PaymentsMode; sessionId: string }> {
   assertDonationAmount(input.cents);
 
-  const origin = input.origin.replace(/\/$/, "");
+  const origin = checkoutOrigin(input.origin);
   const mode = paymentsMode();
   if (mode === "demo") {
     await recordDonation(input.userId, input.cents, "demo");
@@ -118,7 +140,7 @@ export async function createContentCheckout(input: {
   priceOverride?: number;
 }): Promise<{ url: string; mode: PaymentsMode; sessionId: string }> {
   const cents = contentPriceCents(input.catalogId, input.priceOverride);
-  const origin = input.origin.replace(/\/$/, "");
+  const origin = checkoutOrigin(input.origin);
   if (cents <= 0) {
     await grantPurchase(input.userId, input.catalogId);
     return {

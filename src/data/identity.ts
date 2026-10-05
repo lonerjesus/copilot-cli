@@ -9,9 +9,9 @@ export const SITE = {
   domain: "www.kamaunegasi.net",
   url: "https://www.kamaunegasi.net",
   title: "KAMAU NEGASI",
-  tagline: "autonomous portfolio · vlog · signal stream · digital magazine",
+  tagline: "portfolio · vlog · stream",
   description:
-    "18+ only — not for people under 18 due to certain content. Interactive portfolio and vlog platform for Kendrick-Kamau Negasi — streaming footprint, magazine reader, cosmogram, and custom media deck across Streetpolitik, GAK, TSOL, BLKDTY, and more.",
+    "18+ only. Portfolio and vlog platform for Kendrick-Kamau Negasi.",
 } as const;
 
 export const PRIMARY_NAME = "Kendrick-Kamau Negasi";

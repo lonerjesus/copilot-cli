@@ -5,10 +5,8 @@ import { SITE } from "@/data/identity";
 import { track } from "@/lib/analytics";
 
 const LINES = [
-  "> boot kamaunegasi.net",
-  "> mount Streetpolitik · 357Itsumi · TSOL · 30over9 · GAK",
-  "> uplink footprint · magazine · cosmogram … ok",
-  "> enter stream mode",
+  "> boot",
+  "> stream online",
 ];
 
 export function BootSequence({ onDone }: { onDone: () => void }) {

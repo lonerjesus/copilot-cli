@@ -302,7 +302,7 @@ export async function recordDonation(
   return user;
 }
 
-export function publicUser(user: StoredUser) {
+export function publicUser(user: StoredUser, opts?: { isAdmin?: boolean }) {
   return {
     id: user.id,
     email: user.email,
@@ -311,5 +311,6 @@ export function publicUser(user: StoredUser) {
     purchasedCatalogIds: user.purchasedCatalogIds,
     donatedCentsTotal: user.donatedCentsTotal,
     createdAt: user.createdAt,
+    isAdmin: Boolean(opts?.isAdmin),
   };
 }

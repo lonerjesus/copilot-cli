@@ -3,7 +3,8 @@ import { PLATFORMS } from "@/data/identity";
 import { CATALOG } from "@/data/catalog";
 import { fetchSubstackFeed, mergeFootprint, catalogToFootprint } from "@/lib/feed";
 
-export const revalidate = 300;
+// Avoid SSG/network during Workers Builds — resolve on demand.
+export const dynamic = "force-dynamic";
 
 type IngestSource = {
   id: string;

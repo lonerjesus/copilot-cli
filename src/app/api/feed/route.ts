@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { buildFootprint } from "@/lib/feed";
 
-export const revalidate = 60;
+// Avoid SSG/network during Workers Builds — resolve on demand.
+export const dynamic = "force-dynamic";
 
 export async function GET() {
   const items = await buildFootprint();

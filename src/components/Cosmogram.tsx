@@ -2,14 +2,14 @@
 
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useAuth } from "@/components/AuthContext";
-import { buildPersonalChart, CHART_COPY } from "@/lib/chart";
+import { buildPersonalChart } from "@/lib/chart";
 import { track } from "@/lib/analytics";
 
 /**
  * Cosmogram is personal to the signed-in member (from their birth date).
  * Never shows house legal / birth-certificate names.
  */
-export function CosmogramPanel() {
+export function CosmogramPanel({ compact = false }: { compact?: boolean }) {
   const { user, refresh } = useAuth();
   const seen = useRef(false);
   const [draftDob, setDraftDob] = useState("");
@@ -17,7 +17,7 @@ export function CosmogramPanel() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    const node = document.getElementById("cosmogram");
+    const node = document.getElementById("chart") ?? document.getElementById("cosmogram");
     if (!node) return;
     const io = new IntersectionObserver(
       ([entry]) => {
@@ -66,23 +66,22 @@ export function CosmogramPanel() {
   };
 
   return (
-    <section id="cosmogram" className="section cosmogram" aria-labelledby="cosmo-title">
-      <header className="section__head">
-        <div>
-          <p className="section__eyebrow">chart://you</p>
-          <h2 id="cosmo-title">{CHART_COPY.title}</h2>
-        </div>
-        <p className="section__aside">
-          {chart
-            ? CHART_COPY.blurbFor(chart.sunSign, chart.lifePath, chart.birthdayNumber)
-            : "Add your birth date once — the chart is private to your account."}
-        </p>
-      </header>
+    <section
+      className={`section cosmogram ${compact ? "section--compact" : ""}`}
+      aria-label="Chart"
+    >
+      {!compact ? (
+        <header className="section__head">
+          <div>
+            <h2 id="cosmo-title">CHART</h2>
+          </div>
+        </header>
+      ) : null}
 
       {!chart ? (
         <form className="cosmo-setup" onSubmit={saveDob}>
           <label>
-            <span>birth date (18+ · unlocks your cosmogram)</span>
+            <span>DOB</span>
             <input
               type="date"
               required
@@ -97,54 +96,27 @@ export function CosmogramPanel() {
             </p>
           ) : null}
           <button type="submit" className="btn btn--primary" disabled={busy}>
-            {busy ? "saving…" : "generate my chart"}
+            {busy ? "…" : "load"}
           </button>
         </form>
       ) : (
-        <>
-          <div className="cosmo-hero">
+        <div className="cosmo-hero cosmo-hero--compact">
+          <p className="cosmo-hero__name">{chart.displayName}</p>
+          <div className="cosmo-hero__glyphs" aria-label="Core numbers">
             <div>
-              <p className="cosmo-hero__name">{chart.displayName}</p>
-              <p className="cosmo-hero__aka">personal signal · member chart</p>
+              <span>SUN</span>
+              <strong>{chart.sunSign}</strong>
             </div>
-            <div className="cosmo-hero__glyphs" aria-label="Core numbers">
-              <div>
-                <span>SUN</span>
-                <strong>{chart.sunSign}</strong>
-              </div>
-              <div>
-                <span>LIFE PATH</span>
-                <strong>{chart.lifePath}</strong>
-              </div>
-              <div>
-                <span>BIRTHDAY</span>
-                <strong>{chart.birthdayNumber}</strong>
-              </div>
+            <div>
+              <span>PATH</span>
+              <strong>{chart.lifePath}</strong>
+            </div>
+            <div>
+              <span>DAY</span>
+              <strong>{chart.birthdayNumber}</strong>
             </div>
           </div>
-
-          <ul className="cosmo-pillars">
-            {CHART_COPY.pillars(chart.sunSign, chart.lifePath, chart.birthdayNumber).map(
-              (pillar) => (
-                <li key={pillar.label}>
-                  <strong>{pillar.label}</strong>
-                  <p>{pillar.line}</p>
-                </li>
-              ),
-            )}
-          </ul>
-
-          <div className="cosmo-grid">
-            <div>
-              <h3>AFFIRMATIONS</h3>
-              <ul className="cosmo-affirms">
-                {CHART_COPY.affirmations.map((line) => (
-                  <li key={line}>{line}</li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </>
+        </div>
       )}
     </section>
   );

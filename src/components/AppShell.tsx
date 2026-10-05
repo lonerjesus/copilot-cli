@@ -7,23 +7,23 @@ import { CommandBar } from "@/components/CommandBar";
 import { Hero } from "@/components/Hero";
 import { StreamDeck } from "@/components/StreamDeck";
 import { CategoryBrowser } from "@/components/CategoryBrowser";
-import { ContinuumRail } from "@/components/ContinuumRail";
-import { FootprintFeed } from "@/components/FootprintFeed";
 import { AliasMatrix } from "@/components/AliasMatrix";
 import { CosmogramPanel } from "@/components/Cosmogram";
+import { DriveBay } from "@/components/DriveBay";
 import { MagazineReader } from "@/components/MagazineReader";
 import { MagazineProvider, useMagazine } from "@/components/MagazineContext";
 import { PlayerDock } from "@/components/player/PlayerDock";
 import { PlayerProvider, usePlayerState } from "@/components/player/PlayerContext";
 import { AuthProvider, useAuth } from "@/components/AuthContext";
 import { DonatePanel } from "@/components/DonatePanel";
-import { SaveGuard } from "@/components/SaveGuard";
-import type { FootprintItem } from "@/lib/feed";
 import { PRIMARY_NAME, SITE } from "@/data/identity";
 import { findCategoryByQuery, type CategoryId, type SubcategoryId } from "@/data/taxonomy";
 
-function ShellInner({ footprint }: { footprint: FootprintItem[] }) {
+type BayId = "stream" | "browse" | "chart" | "names" | "support";
+
+function ShellInner() {
   const [booted, setBooted] = useState(false);
+  const [openBay, setOpenBay] = useState<BayId | null>("stream");
   const [searchQuery, setSearchQuery] = useState("");
   const [searchCategory, setSearchCategory] = useState<CategoryId | "all">("all");
   const [searchSubcategory, setSearchSubcategory] = useState<SubcategoryId | "all">("all");
@@ -32,47 +32,81 @@ function ShellInner({ footprint }: { footprint: FootprintItem[] }) {
   const { openId, closeMagazine } = useMagazine();
   const { user, logout, refresh } = useAuth();
 
+  const bayFromHash = useCallback((hash: string): BayId | null => {
+    const id = hash.replace(/^#/, "").toLowerCase();
+    if (id === "stream" || id === "browse" || id === "chart" || id === "names" || id === "support") {
+      return id;
+    }
+    if (id === "categories") return "browse";
+    if (id === "cosmogram") return "chart";
+    if (id === "brands" || id === "donate") return id === "brands" ? "names" : "support";
+    return null;
+  }, []);
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    // Ownership comes from the server after webhook/demo settle — refresh only.
     if (params.get("purchased") || params.get("donated") === "1") {
       void refresh();
     }
   }, [refresh]);
 
-  const applySearch = useCallback((query: string) => {
-    const hit = findCategoryByQuery(query);
-    setSearchQuery(query);
-    setSearchCategory(hit.category?.id ?? "all");
-    setSearchSubcategory(hit.subcategory?.id ?? "all");
-    setBrowseKey((k) => k + 1);
+  useEffect(() => {
+    const applyHash = () => {
+      const bay = bayFromHash(window.location.hash);
+      if (bay) setOpenBay(bay);
+    };
+    applyHash();
+    window.addEventListener("hashchange", applyHash);
+    return () => window.removeEventListener("hashchange", applyHash);
+  }, [bayFromHash]);
+
+  const toggleBay = useCallback((id: BayId) => {
+    setOpenBay((cur) => (cur === id ? null : id));
   }, []);
+
+  const openBayTo = useCallback((id: BayId) => {
+    setOpenBay(id);
+    window.requestAnimationFrame(() => {
+      document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }, []);
+
+  const applySearch = useCallback(
+    (query: string) => {
+      const hit = findCategoryByQuery(query);
+      setSearchQuery(query);
+      setSearchCategory(hit.category?.id ?? "all");
+      setSearchSubcategory(hit.subcategory?.id ?? "all");
+      setBrowseKey((k) => k + 1);
+      openBayTo("browse");
+    },
+    [openBayTo],
+  );
 
   const onCommand = useCallback(
     (cmd: string) => {
-      if (cmd === "help") {
-        document.getElementById("commands")?.scrollIntoView({ behavior: "smooth" });
-        return;
-      }
       if (cmd === "play") {
         setExpanded(true);
         toggle();
         return;
       }
-      const map: Record<string, string> = {
+      if (cmd === "footprint") {
+        window.location.href = "/footprint";
+        return;
+      }
+      const map: Record<string, BayId> = {
         stream: "stream",
-        categories: "categories",
+        categories: "browse",
         magazine: "stream",
-        cosmogram: "cosmogram",
-        footprint: "footprint",
-        brands: "brands",
+        cosmogram: "chart",
+        brands: "names",
         support: "support",
         donate: "support",
       };
       const id = map[cmd];
-      if (id) document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+      if (id) openBayTo(id);
     },
-    [setExpanded, toggle],
+    [openBayTo, setExpanded, toggle],
   );
 
   return (
@@ -81,11 +115,10 @@ function ShellInner({ footprint }: { footprint: FootprintItem[] }) {
         Skip to content
       </a>
       <AgeGate />
-      <SaveGuard />
       {!booted ? <BootSequence onDone={() => setBooted(true)} /> : null}
-      <div className="shell shell--ready">
+      <div className="shell shell--ready shell--rack">
         <p className="agebanner" role="note">
-          18+ · not for people under 18 · mature content may appear · pro-Black excellence only
+          18+
         </p>
         <header className="topbar">
           <a className="topbar__brand" href="#top">
@@ -96,51 +129,106 @@ function ShellInner({ footprint }: { footprint: FootprintItem[] }) {
             </span>
           </a>
           <nav className="topbar__nav" aria-label="Primary">
-            <a href="#stream">stream</a>
-            <a href="#categories">browse</a>
-            <a href="#cosmogram">chart</a>
-            <a href="#support">support</a>
+            <button type="button" onClick={() => openBayTo("stream")}>
+              stream
+            </button>
+            <button type="button" onClick={() => openBayTo("browse")}>
+              browse
+            </button>
+            <a href="/footprint">footprint</a>
+            <button type="button" onClick={() => openBayTo("support")}>
+              support
+            </button>
+            {user?.isAdmin ? <a href="/admin">admin</a> : null}
           </nav>
           <div className="topbar__account">
             <span className="topbar__user" title={user?.email}>
               {user?.displayName ?? "member"}
             </span>
             <button type="button" className="topbar__logout" onClick={() => void logout()}>
-              sign out
+              out
             </button>
           </div>
         </header>
 
-        <main id="top" tabIndex={-1}>
+        <main id="top" tabIndex={-1} className="rack">
           <Hero />
-          <ContinuumRail />
-          <div id="commands" className="cmd-wrap">
+          <div className="cmd-wrap">
             <CommandBar onCommand={onCommand} onSearch={applySearch} />
           </div>
-          <StreamDeck />
-          <CategoryBrowser
-            key={browseKey}
-            initialQuery={searchQuery}
-            initialCategory={searchCategory}
-            initialSubcategory={searchSubcategory}
-          />
-          <CosmogramPanel />
-          <FootprintFeed initial={footprint} />
-          <DonatePanel />
-          <AliasMatrix />
+
+          <div className="rack__bays">
+            <DriveBay
+              id="stream"
+              drive="A"
+              label="STREAM"
+              open={openBay === "stream"}
+              onToggle={() => toggleBay("stream")}
+            >
+              <StreamDeck compact />
+            </DriveBay>
+
+            <DriveBay
+              id="browse"
+              drive="B"
+              label="BROWSE"
+              open={openBay === "browse"}
+              onToggle={() => toggleBay("browse")}
+            >
+              <CategoryBrowser
+                key={browseKey}
+                compact
+                initialQuery={searchQuery}
+                initialCategory={searchCategory}
+                initialSubcategory={searchSubcategory}
+              />
+            </DriveBay>
+
+            <DriveBay
+              id="chart"
+              drive="C"
+              label="CHART"
+              open={openBay === "chart"}
+              onToggle={() => toggleBay("chart")}
+            >
+              <CosmogramPanel compact />
+            </DriveBay>
+
+            <DriveBay
+              id="names"
+              drive="D"
+              label="NAMES"
+              open={openBay === "names"}
+              onToggle={() => toggleBay("names")}
+            >
+              <AliasMatrix compact />
+            </DriveBay>
+
+            <DriveBay
+              id="support"
+              drive="E"
+              label="SUPPORT"
+              open={openBay === "support"}
+              onToggle={() => toggleBay("support")}
+            >
+              <DonatePanel compact />
+            </DriveBay>
+
+            <DriveBay
+              id="footprint-bay"
+              drive="F"
+              label="FOOTPRINT"
+              open={false}
+              onToggle={() => undefined}
+              href="/footprint"
+              meta="archive"
+            />
+          </div>
         </main>
 
         <footer className="footer">
           <p>
-            © {new Date().getFullYear()} {PRIMARY_NAME} · Kendrick-Kamau Negasi LLC · BLKDTY Music
-            LLC · All rights reserved.
-          </p>
-          <p className="footer__note">
-            Warning: 18+ only. Account required. Automated scraping and bulk fetch are blocked.
-            Downloads/saves require a paid license per piece.
-          </p>
-          <p className="footer__note">
-            Creating is the Ritual, Love is the Reason. · #BeAutonomous · Cloudflare edge ready.
+            © {new Date().getFullYear()} {PRIMARY_NAME}
           </p>
         </footer>
 
@@ -151,12 +239,12 @@ function ShellInner({ footprint }: { footprint: FootprintItem[] }) {
   );
 }
 
-export function AppShell({ footprint }: { footprint: FootprintItem[] }) {
+export function AppShell() {
   return (
     <AuthProvider>
       <PlayerProvider>
         <MagazineProvider>
-          <ShellInner footprint={footprint} />
+          <ShellInner />
         </MagazineProvider>
       </PlayerProvider>
     </AuthProvider>

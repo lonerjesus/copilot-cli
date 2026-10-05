@@ -24,7 +24,7 @@ const SECURITY_HEADERS: Record<string, string> = {
     "form-action 'self' https://checkout.stripe.com",
     "frame-ancestors 'none'",
     "object-src 'none'",
-    "img-src 'self' data: blob: https://substackcdn.com https://i.vimeocdn.com https://static-cdn.jtvnw.net",
+    "img-src 'self' data: blob: https:",
     "font-src 'self' data: https://fonts.gstatic.com",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "script-src 'self' 'unsafe-inline'",
@@ -80,6 +80,10 @@ export async function middleware(request: NextRequest) {
   }
 
   if (!isPublic && !pathname.startsWith("/_next") && !sessionOk) {
+    const accountGate = process.env.ACCOUNT_GATE !== "0";
+    if (!accountGate) {
+      return withSecurity(NextResponse.next());
+    }
     if (botty && pathname !== "/access") {
       return withSecurity(
         new NextResponse("Account required. Automated access denied.", {
@@ -98,9 +102,14 @@ export async function middleware(request: NextRequest) {
   }
 
   if (pathname === "/access" && sessionOk) {
+    const nextRaw = request.nextUrl.searchParams.get("next");
     const url = request.nextUrl.clone();
-    url.pathname = "/";
     url.search = "";
+    if (nextRaw && nextRaw.startsWith("/") && !nextRaw.startsWith("//") && !nextRaw.includes("://")) {
+      url.pathname = nextRaw.split("?")[0] || "/";
+    } else {
+      url.pathname = "/";
+    }
     return withSecurity(NextResponse.redirect(url));
   }
 

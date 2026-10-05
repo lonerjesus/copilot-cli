@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { CATALOG, isPaywalled, type CatalogItem } from "@/data/catalog";
 import { contentPriceCents, formatUsd } from "@/data/commerce";
 import { useAuth } from "@/components/AuthContext";
 
@@ -13,6 +14,31 @@ export function ContentPayActions({ catalogId, title }: ContentPayActionsProps) 
   const { owns, markOwned, refresh } = useAuth();
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
+  const [liveItem, setLiveItem] = useState<CatalogItem | undefined>(
+    () => CATALOG.find((c) => c.id === catalogId),
+  );
+
+  useEffect(() => {
+    let alive = true;
+    const load = async () => {
+      try {
+        const res = await fetch("/api/catalog");
+        if (!res.ok) return;
+        const data = (await res.json()) as { items?: CatalogItem[] };
+        const hit = data.items?.find((c) => c.id === catalogId);
+        if (alive && hit) setLiveItem(hit);
+      } catch {
+        /* seed */
+      }
+    };
+    void load();
+    return () => {
+      alive = false;
+    };
+  }, [catalogId]);
+
+  const item = liveItem ?? CATALOG.find((c) => c.id === catalogId);
+  const paywalled = item ? isPaywalled(item) : true;
   const owned = owns(catalogId);
   const price = formatUsd(contentPriceCents(catalogId));
 
@@ -38,11 +64,9 @@ export function ContentPayActions({ catalogId, title }: ContentPayActionsProps) 
       }
       if (data.alreadyOwned) {
         markOwned(catalogId);
-        setMsg("Already licensed");
+        setMsg("owned");
         return;
       }
-      // Demo grants server-side immediately — refresh entitlements from server.
-      // Stripe mode: do not mark owned until return/webhook settles.
       if (data.mode === "demo") {
         await refresh();
         markOwned(catalogId);
@@ -51,7 +75,7 @@ export function ContentPayActions({ catalogId, title }: ContentPayActionsProps) 
         window.location.assign(data.url);
       }
     } catch {
-      setMsg("Network error");
+      setMsg("network");
     } finally {
       setBusy(false);
     }
@@ -65,46 +89,52 @@ export function ContentPayActions({ catalogId, title }: ContentPayActionsProps) 
         credentials: "same-origin",
       });
       if (res.status === 402) {
-        setMsg(`Purchase required · ${price}`);
+        setMsg(`pay · ${price}`);
         return;
       }
       if (!res.ok) {
         const data = (await res.json().catch(() => ({}))) as { error?: string };
-        setMsg(data.error ?? "Download denied");
+        setMsg(data.error ?? "denied");
         return;
       }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${catalogId}.kn.json`;
-      document.body.appendChild(a);
+      a.download = `${catalogId.replace(/[^A-Za-z0-9._-]+/g, "_")}.json`;
       a.click();
-      a.remove();
       URL.revokeObjectURL(url);
-      setMsg(`Saved · ${title}`);
     } catch {
-      setMsg("Network error");
+      setMsg("network");
     } finally {
       setBusy(false);
     }
   };
 
+  if (!paywalled) {
+    return (
+      <div className="pay-actions pay-actions--open">
+        <button type="button" className="btn btn--ghost" disabled={busy} onClick={download}>
+          save
+        </button>
+        {msg ? <p className="pay-actions__msg">{msg}</p> : null}
+      </div>
+    );
+  }
+
   return (
     <div className="pay-actions">
       {owned ? (
-        <button type="button" className="btn btn--primary" disabled={busy} onClick={download}>
-          {busy ? "…" : "download / save"}
+        <button type="button" className="btn btn--ghost" disabled={busy} onClick={download}>
+          save
         </button>
       ) : (
         <button type="button" className="btn btn--primary" disabled={busy} onClick={buy}>
-          {busy ? "…" : `unlock save · ${price}`}
+          {busy ? "…" : `buy ${price}`}
         </button>
       )}
-      <span className="pay-actions__hint">
-        {owned ? "licensed for this account" : "stream ok · save requires purchase"}
-      </span>
-      {msg ? <span className="pay-actions__msg">{msg}</span> : null}
+      <span className="pay-actions__title">{title}</span>
+      {msg ? <p className="pay-actions__msg">{msg}</p> : null}
     </div>
   );
 }

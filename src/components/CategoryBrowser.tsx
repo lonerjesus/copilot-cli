@@ -1,7 +1,7 @@
 "use client";
 
-import { startTransition, useDeferredValue, useMemo, useState } from "react";
-import { CATALOG, type CatalogItem, type MediaKind } from "@/data/catalog";
+import { startTransition, useDeferredValue, useEffect, useMemo, useState } from "react";
+import { CATALOG, isPaywalled, type CatalogItem, type MediaKind } from "@/data/catalog";
 import {
   CATEGORIES,
   getCategory,
@@ -10,7 +10,6 @@ import {
   type SubcategoryId,
 } from "@/data/taxonomy";
 import {
-  activeFilterCount,
   filterCatalog,
   uniqueBrands,
   uniqueKinds,
@@ -21,6 +20,7 @@ import { kindGlyph } from "@/lib/format";
 import { usePlayerState } from "@/components/player/PlayerContext";
 import { useMagazine } from "@/components/MagazineContext";
 import { track } from "@/lib/analytics";
+import { MediaPoster } from "@/components/MediaPoster";
 
 type CategoryBrowserProps = {
   initialQuery?: string;
@@ -32,7 +32,8 @@ export function CategoryBrowser({
   initialQuery = "",
   initialCategory = "all",
   initialSubcategory = "all",
-}: CategoryBrowserProps) {
+  compact = false,
+}: CategoryBrowserProps & { compact?: boolean }) {
   const { current, playItem } = usePlayerState();
   const { openMagazine, hasMagazine } = useMagazine();
   const [query, setQuery] = useState(initialQuery);
@@ -42,11 +43,30 @@ export function CategoryBrowser({
   const [platform, setPlatform] = useState<string | "all">("all");
   const [brand, setBrand] = useState<string | "all">("all");
   const [sort, setSort] = useState<SortMode>("newest");
+  const [live, setLive] = useState<CatalogItem[]>(CATALOG);
+
+  useEffect(() => {
+    let alive = true;
+    const load = async () => {
+      try {
+        const res = await fetch("/api/catalog");
+        if (!res.ok) return;
+        const data = (await res.json()) as { items?: CatalogItem[] };
+        if (alive && data.items?.length) setLive(data.items);
+      } catch {
+        /* seed */
+      }
+    };
+    void load();
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   const deferredQuery = useDeferredValue(query);
-  const brands = useMemo(() => uniqueBrands(), []);
-  const platforms = useMemo(() => uniquePlatforms(), []);
-  const kinds = useMemo(() => uniqueKinds(), []);
+  const brands = useMemo(() => uniqueBrands(live), [live]);
+  const platforms = useMemo(() => uniquePlatforms(live), [live]);
+  const kinds = useMemo(() => uniqueKinds(live), [live]);
 
   const activeCategory = category === "all" ? undefined : getCategory(category);
   const subOptions = activeCategory?.subcategories ?? [];
@@ -61,19 +81,10 @@ export function CategoryBrowser({
         platform,
         brand,
         sort,
+        items: live,
       }),
-    [deferredQuery, category, subcategory, kind, platform, brand, sort],
+    [deferredQuery, category, subcategory, kind, platform, brand, sort, live],
   );
-
-  const filterCount = activeFilterCount({
-    query: deferredQuery,
-    category,
-    subcategory,
-    kind,
-    platform,
-    brand,
-    sort,
-  });
 
   const grouped = useMemo(() => {
     const map = new Map<
@@ -123,34 +134,33 @@ export function CategoryBrowser({
   };
 
   return (
-    <section id="categories" className="section categories" aria-labelledby="categories-title">
-      <header className="section__head">
-        <div>
-          <p className="section__eyebrow">index://taxonomy</p>
-          <h2 id="categories-title">CATEGORIES</h2>
-        </div>
-        <p className="section__aside">
-          Separated categories + stacked filters. Mix search, kind, platform, brand, and sort to
-          stay in the stream.
-        </p>
-      </header>
+    <section
+      className={`section categories ${compact ? "section--compact" : ""}`}
+      aria-label="Browse"
+    >
+      {!compact ? (
+        <header className="section__head">
+          <div>
+            <h2 id="categories-title">CATEGORIES</h2>
+          </div>
+        </header>
+      ) : null}
 
       <div className="cat-search">
         <label className="cat-search__label" htmlFor="category-search">
-          search_
+          /
         </label>
         <input
           id="category-search"
           className="cat-search__input"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="essays · podcast · golden crow · grungezhou · live…"
+          placeholder="search"
           autoComplete="off"
           spellCheck={false}
         />
         <span className="cat-search__count">
-          {results.length}/{CATALOG.length}
-          {filterCount ? ` · ${filterCount} filters` : ""}
+          {results.length}/{live.length}
         </span>
       </div>
 
@@ -338,7 +348,8 @@ export function CategoryBrowser({
                         onClick={() => playItem(item, group.items)}
                       >
                         <div className={`tile__art tile__art--${item.kind}`} aria-hidden>
-                          <span className="tile__glyph">{kindGlyph(item.kind)}</span>
+                          <MediaPoster item={item} className="tile__poster" label={kindGlyph(item.kind)} />
+                          {isPaywalled(item) ? <span className="tile__badge">pay</span> : null}
                         </div>
                         <div className="tile__meta">
                           <p className="tile__brand">{item.brand}</p>

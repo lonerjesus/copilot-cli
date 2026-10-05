@@ -6,15 +6,13 @@ import { findCategoryByQuery } from "@/data/taxonomy";
 import { track } from "@/lib/analytics";
 
 const COMMANDS = [
-  { cmd: "stream", hint: "focus the streaming deck" },
-  { cmd: "categories", hint: "browse separated categories" },
-  { cmd: "magazine", hint: "jump to stream for magazine chapbooks" },
-  { cmd: "cosmogram", hint: "open birthday cosmogram" },
-  { cmd: "footprint", hint: "jump to live social signal" },
-  { cmd: "support", hint: "donate to keep the site online" },
-  { cmd: "play", hint: "toggle media deck" },
-  { cmd: "brands", hint: "open alias matrix" },
-  { cmd: "help", hint: "list commands" },
+  { cmd: "stream", hint: "A" },
+  { cmd: "categories", hint: "B" },
+  { cmd: "cosmogram", hint: "C" },
+  { cmd: "brands", hint: "D" },
+  { cmd: "support", hint: "E" },
+  { cmd: "footprint", hint: "F" },
+  { cmd: "play", hint: "▶" },
 ] as const;
 
 type CommandBarProps = {
@@ -47,9 +45,9 @@ export function CommandBar({ onCommand, onSearch }: CommandBarProps) {
     if (known) {
       track("command", { cmd: known.cmd });
       onCommand(known.cmd);
-      setFlash(`ok · ${known.cmd}`);
+      setFlash(known.hint);
       setValue("");
-      window.setTimeout(() => setFlash(""), 1600);
+      window.setTimeout(() => setFlash(""), 1200);
       return;
     }
 
@@ -58,11 +56,9 @@ export function CommandBar({ onCommand, onSearch }: CommandBarProps) {
       track("command", { cmd: "search", q: raw });
       onSearch(raw);
       onCommand("categories");
-      setFlash(
-        `cat · ${taxonomyHit.category.id}${taxonomyHit.subcategory ? `/${taxonomyHit.subcategory.id}` : ""}`,
-      );
+      setFlash(taxonomyHit.category.id);
       setValue("");
-      window.setTimeout(() => setFlash(""), 1600);
+      window.setTimeout(() => setFlash(""), 1200);
       return;
     }
 
@@ -71,20 +67,20 @@ export function CommandBar({ onCommand, onSearch }: CommandBarProps) {
       track("command", { cmd: "search", q: raw, hits: hits.length });
       onSearch(raw);
       onCommand("categories");
-      setFlash(`found · ${hits.length}`);
+      setFlash(`${hits.length}`);
       setValue("");
-      window.setTimeout(() => setFlash(""), 1600);
+      window.setTimeout(() => setFlash(""), 1200);
       return;
     }
 
-    setFlash(`unknown · try categories`);
-    window.setTimeout(() => setFlash(""), 1600);
+    setFlash("?");
+    window.setTimeout(() => setFlash(""), 1200);
   };
 
   return (
     <form className="cmd" onSubmit={submit}>
       <label className="cmd__prompt" htmlFor="terminal-cmd">
-        kn@signal:~$
+        kn$
       </label>
       <input
         id="terminal-cmd"
@@ -92,7 +88,7 @@ export function CommandBar({ onCommand, onSearch }: CommandBarProps) {
         className="cmd__input"
         value={value}
         onChange={(e) => setValue(e.target.value)}
-        placeholder="search your names · quarantine · wall_carpet · cosmogram  (press /)"
+        placeholder="/"
         autoComplete="off"
         spellCheck={false}
       />
@@ -109,9 +105,9 @@ export function CommandBar({ onCommand, onSearch }: CommandBarProps) {
               track("command", { cmd: c.cmd, via: "chip" });
               onCommand(c.cmd);
             }}
-            title={c.hint}
+            title={c.cmd}
           >
-            {c.cmd}
+            {c.hint}
           </button>
         ))}
       </div>
