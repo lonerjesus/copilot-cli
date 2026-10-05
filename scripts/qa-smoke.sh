@@ -55,6 +55,8 @@ check "footprint-redirect" "$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" "$
 check "footprint-authed" "$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" -b "$JAR" "$BASE/footprint")"
 check "feed-authed" "$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" -b "$JAR" "$BASE/api/feed")"
 check "ingest-authed" "$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" -b "$JAR" "$BASE/api/ingest")"
+check "catalog-authed" "$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" -b "$JAR" "$BASE/api/catalog")"
+check "catalog-auth" "$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" "$BASE/api/catalog")" "401"
 
 # download uploaded (paywalled) without purchase → 402
 dl="$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" -b "$JAR" "$BASE/api/commerce/download?id=qtoss-vol1")"
@@ -86,10 +88,15 @@ echo "$robots" | grep -qi 'Disallow: /' && echo "PASS  robots-disallow-all" && p
 home="$(curl -s -A "$UA" -b "$JAR" "$BASE/")"
 echo "$home" | grep -qi '18+' && echo "PASS  compliance-18plus-marker" && pass=$((pass+1)) || { echo "FAIL  compliance-18plus-marker"; fail=$((fail+1)); }
 echo "$home" | grep -q '/footprint' && echo "PASS  home-watch-footprint-link" && pass=$((pass+1)) || { echo "FAIL  home-watch-footprint-link"; fail=$((fail+1)); }
+echo "$home" | grep -q 'drive__face\|id="stream"' && echo "PASS  home-drive-rack" && pass=$((pass+1)) || { echo "FAIL  home-drive-rack"; fail=$((fail+1)); }
+echo "$home" | grep -q 'id="browse"' && echo "PASS  home-browse-bay" && pass=$((pass+1)) || { echo "FAIL  home-browse-bay"; fail=$((fail+1)); }
+echo "$home" | grep -q 'data-age-gate' && echo "PASS  age-gate-flag" && pass=$((pass+1)) || { echo "FAIL  age-gate-flag"; fail=$((fail+1)); }
 
 fp="$(curl -s -A "$UA" -b "$JAR" "$BASE/footprint")"
 echo "$fp" | grep -qi 'FOOTPRINT' && echo "PASS  footprint-page-title" && pass=$((pass+1)) || { echo "FAIL  footprint-page-title"; fail=$((fail+1)); }
 echo "$fp" | grep -q 'floppy' && echo "PASS  footprint-floppy-cards" && pass=$((pass+1)) || { echo "FAIL  footprint-floppy-cards"; fail=$((fail+1)); }
+echo "$fp" | grep -q 'floppy__menu\|footprint__menu' && echo "PASS  footprint-filter-menu" && pass=$((pass+1)) || { echo "FAIL  footprint-filter-menu"; fail=$((fail+1)); }
+echo "$fp" | grep -q '/#browse' && echo "PASS  footprint-browse-deeplink" && pass=$((pass+1)) || { echo "FAIL  footprint-browse-deeplink"; fail=$((fail+1)); }
 
 # Admin station — non-admin forbidden; admin can publish
 check "admin-page-authed" "$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" -b "$JAR" "$BASE/admin")"

@@ -35,7 +35,12 @@ export function AgeGate() {
     }
   }, []);
 
-  if (confirmed) return null;
+  const required =
+    typeof document === "undefined"
+      ? true
+      : document.documentElement.dataset.ageGate !== "0";
+
+  if (!required || confirmed) return null;
 
   return (
     <div className="agegate" role="alertdialog" aria-modal="true" aria-labelledby="agegate-title">

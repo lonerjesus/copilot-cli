@@ -70,8 +70,13 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const ageGate = process.env.AGE_GATE_REQUIRED !== "0" ? "1" : "0";
   return (
-    <html lang="en" className={`${display.variable} ${mono.variable} h-full`}>
+    <html
+      lang="en"
+      className={`${display.variable} ${mono.variable} h-full`}
+      data-age-gate={ageGate}
+    >
       <body className="min-h-full antialiased">{children}</body>
     </html>
   );
