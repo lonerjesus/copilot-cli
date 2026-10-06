@@ -4,6 +4,7 @@ import { useMemo, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { SITE } from "@/data/identity";
 import { MIN_PASSWORD_LENGTH } from "@/data/commerce";
+import { BrandMark, BrandWatermark } from "@/components/BrandMark";
 
 type Mode = "login" | "register";
 
@@ -119,11 +120,13 @@ export function AccessGate() {
 
   return (
     <main className="access" id="top">
+      <BrandWatermark />
       <div className="access__atmosphere" aria-hidden>
         <div className="access__grid" />
       </div>
       <section className="access__panel" aria-labelledby="access-title">
         <p className="access__eyebrow">18+</p>
+        <BrandMark size={96} priority className="access__logo" />
         <h1 id="access-title" className="access__brand">
           {SITE.title}
         </h1>

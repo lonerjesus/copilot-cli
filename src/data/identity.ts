@@ -12,6 +12,9 @@ export const SITE = {
   tagline: "portfolio · vlog · stream",
   description:
     "18+ only. Portfolio and vlog platform for Kendrick-Kamau Negasi.",
+  logo: "/logo-kn-phosphor.png",
+  logoLight: "/logo-kn-light.png",
+  logoInk: "/logo-kn.png",
 } as const;
 
 export const PRIMARY_NAME = "Kendrick-Kamau Negasi";

@@ -1,5 +1,4 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
   <rect width="64" height="64" fill="#060807"/>
-  <rect x="4" y="4" width="56" height="56" stroke="#c6f54a" stroke-width="2"/>
-  <text x="32" y="40" text-anchor="middle" font-family="ui-monospace, monospace" font-size="22" font-weight="700" fill="#c6f54a">KN</text>
+  <image href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAABUklEQVR42u2YUQ7CIAyGwextN9oRPPCO4I181icSQuioo3Qjfl9idAtOCn//UkMAAAAAAAAAAACYgtf7+bF4zsNyMuV7bVz+ujr4EEJYPHdrW/eYrtPnK4M3U8CswQ9XQBmsZfBnn+OmgDzYlPPSpFue0Aq+RxmLh/y1Y2qK0fxOjxpcTNBKslaydzXBPA00QUmldETwQxVQBr6teywrgjTWK3h3BWzrHvOF0Eh8ZPAuCyC5/YiaftsFSDuv2dF83OjdBwghWuX2kevn8s7v1a5Lf5B6iJ5j9ZAyKJU4TWVotdBTlsGzLu9dHcwUoEkB7XNq35PS5W+xUspiNRnJoKRda5mfZvytPKC2I+U96RR4ZICjfeFh6QG/TDSd9K7OZdNuUKr9Z3v+Wmm1VoN5O1y2vbUFOVJL7U9Uz+5wake/7CjcGzRdHwAAAAAAAAAAgBtfVgJDgodBjHoAAAAASUVORK5CYII=" x="4" y="4" width="56" height="56" preserveAspectRatio="xMidYMid meet"/>
 </svg>
