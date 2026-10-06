@@ -216,6 +216,14 @@ body:has(.agebanner) .topbar {
   width: min(560px, calc(100vw - 2rem));
 }
 
+.boot__logo {
+  width: 4.5rem;
+  height: auto;
+  margin-bottom: 0.65rem;
+  filter: drop-shadow(0 0 16px var(--glow));
+  animation: brand-in 0.7s ease both;
+}
+
 .boot__brand {
   margin: 0;
   font-family: var(--font-display);
@@ -254,6 +262,7 @@ body:has(.agebanner) .topbar {
 
 /* Shell */
 .shell {
+  position: relative;
   min-height: 100vh;
   min-height: 100dvh;
   padding-bottom: calc(var(--deck-h) + 1.5rem + var(--safe-b));
@@ -269,6 +278,30 @@ body:has(.agebanner) .topbar {
 
 .shell--booting {
   pointer-events: none;
+}
+
+.brand-watermark {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.brand-watermark__mark {
+  width: min(48vw, 26rem);
+  height: auto;
+  opacity: 0.07;
+  mix-blend-mode: screen;
+  transform: translateY(-3vh);
+}
+
+.shell > *:not(.brand-watermark),
+.access > *:not(.brand-watermark) {
+  position: relative;
+  z-index: 1;
 }
 
 .topbar {
@@ -289,6 +322,22 @@ body:has(.agebanner) .topbar {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+}
+
+.topbar__logo,
+.brand-mark {
+  display: block;
+  width: auto;
+  height: auto;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  flex-shrink: 0;
+}
+
+.topbar__logo {
+  width: 2.25rem;
+  height: 2.25rem;
+  object-fit: contain;
 }
 
 .topbar__mark {
@@ -407,6 +456,19 @@ body:has(.agebanner) .topbar {
   letter-spacing: 0.04em;
   color: var(--text);
   text-wrap: balance;
+}
+
+.hero__logo-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  margin: 0.15rem 0 0.35rem;
+}
+
+.hero__logo {
+  width: clamp(6.5rem, 22vw, 10.5rem);
+  height: auto;
+  filter: drop-shadow(0 0 18px color-mix(in oklab, var(--phosphor) 28%, transparent));
 }
 
 .hero__name {
@@ -3109,6 +3171,13 @@ a.drive .drive__face {
   letter-spacing: 0.14em;
   font-size: 0.68rem;
   text-transform: uppercase;
+}
+
+.access__logo {
+  width: 5.5rem;
+  height: auto;
+  margin: 0 0 0.75rem;
+  filter: drop-shadow(0 0 14px color-mix(in oklab, var(--phosphor) 35%, transparent));
 }
 
 .access__brand {

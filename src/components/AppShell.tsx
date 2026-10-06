@@ -18,6 +18,7 @@ import { PlayerProvider, usePlayerState } from "@/components/player/PlayerContex
 import { AuthProvider, useAuth } from "@/components/AuthContext";
 import { DonatePanel } from "@/components/DonatePanel";
 import { SiteFooter } from "@/components/SiteFooter";
+import { BrandMark, BrandWatermark } from "@/components/BrandMark";
 import { SITE } from "@/data/identity";
 import { findCategoryByQuery, type CategoryId, type SubcategoryId } from "@/data/taxonomy";
 
@@ -129,12 +130,13 @@ function ShellInner() {
       <AgeGate />
       {!booted ? <BootSequence onDone={() => setBooted(true)} /> : null}
       <div className="shell shell--ready shell--rack">
+        <BrandWatermark />
         <p className="agebanner" role="note">
           18+
         </p>
         <header className="topbar">
           <a className="topbar__brand" href="#top">
-            <span className="topbar__mark">KN</span>
+            <BrandMark size={36} priority className="topbar__logo" />
             <span>
               <strong>{SITE.title}</strong>
               <small>{SITE.domain}</small>

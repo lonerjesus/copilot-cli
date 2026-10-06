@@ -36,7 +36,12 @@ export const metadata: Metadata = {
   description: SITE.description,
   applicationName: SITE.title,
   icons: {
-    icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/logo-kn-64.png", type: "image/png", sizes: "64x64" },
+      { url: "/logo-kn-192.png", type: "image/png", sizes: "192x192" },
+    ],
+    apple: [{ url: "/logo-kn-192.png", type: "image/png", sizes: "192x192" }],
   },
   authors: [{ name: "Kendrick-Kamau Negasi" }],
   keywords: [

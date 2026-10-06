@@ -5,6 +5,7 @@ import { AgeGate } from "@/components/AgeGate";
 import { AuthProvider, useAuth } from "@/components/AuthContext";
 import { AdminStation } from "@/components/AdminStation";
 import { SiteFooter } from "@/components/SiteFooter";
+import { BrandMark, BrandWatermark } from "@/components/BrandMark";
 import { SITE } from "@/data/identity";
 
 function AdminInner() {
@@ -34,12 +35,13 @@ function AdminInner() {
     <>
       <AgeGate />
       <div className="shell shell--ready">
+        <BrandWatermark />
         <p className="agebanner" role="note">
           18+
         </p>
         <header className="topbar">
           <Link className="topbar__brand" href="/">
-            <span className="topbar__mark">KN</span>
+            <BrandMark size={36} priority className="topbar__logo" />
             <span>
               <strong>{SITE.title}</strong>
               <small>admin</small>

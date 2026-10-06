@@ -4,6 +4,7 @@ import Link from "next/link";
 import { SITE } from "@/data/identity";
 import { usePlayerState } from "@/components/player/PlayerContext";
 import { useMagazine } from "@/components/MagazineContext";
+import { BrandMark } from "@/components/BrandMark";
 import { getQueue } from "@/data/catalog";
 import { track } from "@/lib/analytics";
 
@@ -19,7 +20,10 @@ export function Hero() {
       </div>
 
       <div className="hero__content">
-        <h1 className="hero__brand">{SITE.title}</h1>
+        <div className="hero__logo-wrap">
+          <BrandMark size={148} priority className="hero__logo" />
+          <h1 className="hero__brand sr-only">{SITE.title}</h1>
+        </div>
         <p className="hero__tagline">{SITE.tagline}</p>
         <p className="hero__commerce">
           Member house stream · outside archive on Footprint

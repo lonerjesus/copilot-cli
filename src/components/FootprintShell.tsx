@@ -9,6 +9,7 @@ import { FootprintArchive } from "@/components/FootprintArchive";
 import { PlayerDock } from "@/components/player/PlayerDock";
 import { PlayerProvider } from "@/components/player/PlayerContext";
 import { SiteFooter } from "@/components/SiteFooter";
+import { BrandMark, BrandWatermark } from "@/components/BrandMark";
 import type { FootprintItem } from "@/lib/feed";
 import { SITE } from "@/data/identity";
 
@@ -23,12 +24,13 @@ function FootprintInner({ footprint }: { footprint: FootprintItem[] }) {
       </a>
       <AgeGate />
       <div className="shell shell--ready">
+        <BrandWatermark />
         <p className="agebanner" role="note">
           18+
         </p>
         <header className="topbar">
           <Link className="topbar__brand" href="/">
-            <span className="topbar__mark">KN</span>
+            <BrandMark size={36} priority className="topbar__logo" />
             <span>
               <strong>{SITE.title}</strong>
               <small>{SITE.domain}</small>

@@ -108,7 +108,7 @@ export const config = {
   // Apply security headers to app routes + brand static assets (OG / favicon).
   // Other image extensions stay out of middleware for cache locality.
   matcher: [
-    "/((?!_next/static|_next/image|.*\\.(?:jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|.*\\.(?:jpg|jpeg|gif|webp|png)$).*)",
     "/og.png",
     "/favicon.svg",
   ],

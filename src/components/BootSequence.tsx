@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { SITE } from "@/data/identity";
+import { BrandMark } from "@/components/BrandMark";
 import { track } from "@/lib/analytics";
 
 const LINES = [
@@ -41,6 +42,7 @@ export function BootSequence({ onDone }: { onDone: () => void }) {
         skip_
       </button>
       <div className="boot__panel">
+        <BrandMark size={72} priority className="boot__logo" />
         <p className="boot__brand">{SITE.title}</p>
         <p className="boot__domain">{SITE.domain}</p>
         <ul className="boot__log">
