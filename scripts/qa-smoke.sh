@@ -114,6 +114,9 @@ echo "$home" | grep -q '/footprint' && echo "PASS  home-watch-footprint-link" &&
 echo "$home" | grep -q 'drive__face\|id="stream"' && echo "PASS  home-drive-rack" && pass=$((pass+1)) || { echo "FAIL  home-drive-rack"; fail=$((fail+1)); }
 echo "$home" | grep -q 'id="browse"' && echo "PASS  home-browse-bay" && pass=$((pass+1)) || { echo "FAIL  home-browse-bay"; fail=$((fail+1)); }
 echo "$home" | grep -q 'data-age-gate' && echo "PASS  age-gate-flag" && pass=$((pass+1)) || { echo "FAIL  age-gate-flag"; fail=$((fail+1)); }
+echo "$home" | grep -qE 'f4\.bcbits\.com/img/|substackcdn\.com/image/|mzstatic\.com/image/' \
+  && echo "PASS  home-media-posters" && pass=$((pass+1)) \
+  || { echo "FAIL  home-media-posters"; fail=$((fail+1)); }
 
 fp="$(curl -s -A "$UA" -b "$JAR" "$BASE/footprint")"
 echo "$fp" | grep -qi 'FOOTPRINT' && echo "PASS  footprint-page-title" && pass=$((pass+1)) || { echo "FAIL  footprint-page-title"; fail=$((fail+1)); }
