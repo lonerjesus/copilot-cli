@@ -1916,6 +1916,27 @@ a.drive .drive__face {
   letter-spacing: 0.08em;
 }
 
+.admin-gate__hint {
+  margin: 0 auto;
+  max-width: 22rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.admin-gate__hint code {
+  color: var(--phosphor);
+  font-size: 0.8em;
+}
+
+.admin-gate__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-top: 0.35rem;
+}
+
 @media (max-width: 900px) {
   .admin__layout {
     grid-template-columns: 1fr;
