@@ -263,7 +263,10 @@ export function StreamDeck({ compact = false }: { compact?: boolean }) {
       })}
 
       {house.length === 0 ? (
-        <p className="stream__empty">House stream is empty — check back after the next drop.</p>
+        <p className="stream__empty">
+          House stream is empty — check{" "}
+          <a href="/footprint">Footprint</a> for outside archives, or wait for the next drop.
+        </p>
       ) : null}
     </section>
   );

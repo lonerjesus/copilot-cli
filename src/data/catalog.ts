@@ -144,7 +144,7 @@ export const CATALOG: CatalogItem[] = [
     poster: "https://substackcdn.com/image/fetch/$s_!kw0l!,f_auto,q_auto:best,fl_progressive:steep/https%3A%2F%2Ftellingshowoflove.substack.com%2Ftwitter%2Fsubscribe-card.jpg%3Fv%3D-242575336%26version%3D9",
     embed: { provider: "audio", url: "https://tellingshowoflove.substack.com" },
     tags: ["TSOL", "Imponderabilia", "podcast"],
-    blurb: "Imponderabilia transmission — wall carpet frequency opening.",
+    blurb: "Imponderabilia transmission — Wall_Carpet frequency opening.",
   },
   {
     id: "tsol-reboot",
@@ -427,7 +427,7 @@ export const CATALOG: CatalogItem[] = [
     externalUrl: "https://www.kamaunegasi.me",
     poster: "/og.png",
     tags: ["Golden Crow", "brand", "acquisitions"],
-    blurb: "Golden Crow house node — acquisitions frequency under the Negasi portfolio.",
+    blurb: "Golden Crow house node — acquisitions frequency under the Kendrick-Kamau Negasi portfolio.",
   },
   {
     id: "golden-crow-acquisitions",

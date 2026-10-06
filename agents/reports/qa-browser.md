@@ -1,22 +1,19 @@
-# qa-browser
+# qa-browser.md
 
-**Agent:** qa-browser  
-**Verdict:** PASS
+**Agent:** `qa-browser`  
+**Verdict:** `PASS`
 
 ## Path matrix
 
 | Path | Result |
 |------|--------|
-| Home 200 | PASS |
-| `/api/feed` | PASS |
-| `/api/ingest` | PASS |
-| `/robots.txt` | PASS |
-| `/sitemap.xml` | PASS |
-| oEmbed foreign deny (400) | PASS |
-| Ingest exact 357Itsumi / Streetpolitik | PASS |
-| 18+ marker in HTML | PASS |
-| Lint (`npm run lint`) | PASS |
-| Manual: age gate → enter stream → cosmogram → footprint | PASS |
+| Unauth `/` → `/access` | PASS |
+| Register → authed home | PASS |
+| House stream (no Names; MagCloud Featured) | PASS |
+| Footprint outside media | PASS |
+| Session exclusivity (2nd login kicks 1st) | PASS |
+| Catalog auth + house API | PASS |
+| Paywall / fetched download | PASS |
+| `tsc` + `build:next` + smoke 52/52 | PASS |
 
-Script: `bash scripts/qa-smoke.sh http://localhost:3000` → 10/10.  
-Artifacts: hero / stream-player / cosmogram / footprint screenshots + squad walkthrough video.
+Automated: `scripts/qa-smoke.sh` @ http://127.0.0.1:3000 — **52 passed · 0 failed**
