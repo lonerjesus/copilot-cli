@@ -2765,12 +2765,27 @@ a.drive .drive__face {
   line-height: 1;
 }
 
+.access__tagline {
+  margin: 0.55rem 0 0;
+  color: var(--phosphor);
+  font-size: 0.78rem;
+  letter-spacing: 0.14em;
+  text-transform: lowercase;
+}
+
 .access__copy {
-  margin: 0.85rem 0 1.25rem;
+  margin: 0.85rem 0 0.55rem;
   color: var(--muted);
   font-size: 0.86rem;
   line-height: 1.55;
   overflow-wrap: anywhere;
+}
+
+.access__commerce {
+  margin: 0 0 1.25rem;
+  color: var(--steel);
+  font-size: 0.78rem;
+  line-height: 1.5;
 }
 
 .access__tabs {
@@ -2815,7 +2830,8 @@ a.drive .drive__face {
 
 .access__form input[type="email"],
 .access__form input[type="password"],
-.access__form input[type="text"] {
+.access__form input[type="text"],
+.access__form input[type="date"] {
   display: block;
   width: 100%;
   box-sizing: border-box;
@@ -2827,6 +2843,193 @@ a.drive .drive__face {
   text-transform: none;
   color: var(--text);
   border-radius: var(--radius);
+}
+
+.access__password {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.45rem;
+  align-items: end;
+}
+
+.access__password-label {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--steel);
+  min-width: 0;
+}
+
+.access__reveal {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--phosphor-dim);
+  padding: 0.7rem 0.75rem;
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  height: fit-content;
+}
+
+.access__reveal:hover,
+.access__reveal[aria-pressed="true"] {
+  border-color: var(--phosphor-dim);
+  color: var(--phosphor);
+}
+
+.access__hint {
+  margin: -0.35rem 0 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+}
+
+.access__hint--ok {
+  color: var(--phosphor-dim);
+}
+
+.access__forgot {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.access__forgot-toggle {
+  border: 0;
+  background: transparent;
+  color: var(--phosphor-dim);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-align: left;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+.access__forgot-stub {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.74rem;
+  line-height: 1.45;
+  border: 1px solid var(--line);
+  padding: 0.65rem 0.75rem;
+}
+
+.access__forgot-panel {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.access__forgot-panel .btn {
+  width: auto;
+  justify-self: start;
+}
+
+.access__legal {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: center;
+  margin-top: 0.85rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--steel);
+}
+
+.access__legal a {
+  color: var(--phosphor-dim);
+  text-decoration: none;
+}
+
+.access__legal a:hover {
+  color: var(--phosphor);
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+.legal {
+  position: relative;
+  min-height: 100vh;
+  display: grid;
+  place-items: start center;
+  padding: 2rem 1.25rem 3rem;
+}
+
+.legal__panel {
+  position: relative;
+  width: min(640px, 100%);
+  padding: 1.75rem 1.5rem 1.5rem;
+  border: 1px solid var(--line-hot);
+  background: color-mix(in oklab, var(--panel) 92%, transparent);
+}
+
+.legal__eyebrow {
+  margin: 0 0 0.65rem;
+  color: var(--amber);
+  letter-spacing: 0.14em;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+}
+
+.legal__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.8rem, 5vw, 2.4rem);
+  letter-spacing: 0.06em;
+}
+
+.legal__lede {
+  margin: 0.85rem 0 1.35rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.legal__section {
+  margin: 0 0 1.25rem;
+}
+
+.legal__section h2 {
+  margin: 0 0 0.45rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--phosphor);
+}
+
+.legal__section p,
+.legal__section li {
+  color: var(--text);
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+.legal__section ul {
+  margin: 0.35rem 0 0;
+  padding-left: 1.1rem;
+}
+
+.legal__back {
+  margin: 1.5rem 0 0;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+}
+
+.legal__disclaimer {
+  margin: 1.25rem 0 0;
+  color: var(--steel);
+  font-size: 0.72rem;
+  line-height: 1.45;
+  letter-spacing: 0.02em;
+}
+
+.legal__back a {
+  color: var(--phosphor-dim);
 }
 
 .access__form input:focus-visible {

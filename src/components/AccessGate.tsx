@@ -1,7 +1,9 @@
 "use client";
 
 import { useMemo, useState, type FormEvent } from "react";
+import Link from "next/link";
 import { SITE } from "@/data/identity";
+import { MIN_PASSWORD_LENGTH } from "@/data/commerce";
 
 type Mode = "login" | "register";
 
@@ -18,18 +20,60 @@ export function AccessGate() {
   const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [displayName, setDisplayName] = useState("");
   const [birthDate, setBirthDate] = useState("");
   const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [website, setWebsite] = useState(""); // honeypot
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [forgotBusy, setForgotBusy] = useState(false);
+  const [forgotStatus, setForgotStatus] = useState("");
 
   const nextPath = useMemo(() => {
     if (typeof window === "undefined") return "/";
     const params = new URLSearchParams(window.location.search);
     return safeInternalPath(params.get("next"));
   }, []);
+
+  const passwordHint =
+    mode === "register"
+      ? password.length === 0
+        ? `Use at least ${MIN_PASSWORD_LENGTH} characters.`
+        : password.length < MIN_PASSWORD_LENGTH
+          ? `${password.length}/${MIN_PASSWORD_LENGTH} — keep going.`
+          : `${password.length} characters · ready.`
+      : null;
+
+  const requestPasswordReset = async () => {
+    setForgotStatus("");
+    setForgotBusy(true);
+    try {
+      const res = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ email, website }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        message?: string;
+      };
+      if (!res.ok) {
+        setForgotStatus(data.error ?? "Request failed");
+        return;
+      }
+      setForgotStatus(
+        data.message ??
+          "If an account exists for that email, a reset link will be sent when email reset is enabled.",
+      );
+    } catch {
+      setForgotStatus("Network error");
+    } finally {
+      setForgotBusy(false);
+    }
+  };
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -73,7 +117,12 @@ export function AccessGate() {
         <h1 id="access-title" className="access__brand">
           {SITE.title}
         </h1>
+        <p className="access__tagline">{SITE.tagline}</p>
         <p className="access__copy">Account required.</p>
+        <p className="access__commerce">
+          House downloads checkout via Stripe after sign-in. Fetched platform streams stay free for
+          members.
+        </p>
 
         <div className="access__tabs" role="tablist" aria-label="Account mode">
           <button
@@ -81,7 +130,11 @@ export function AccessGate() {
             role="tab"
             aria-selected={mode === "login"}
             className={mode === "login" ? "is-on" : ""}
-            onClick={() => setMode("login")}
+            onClick={() => {
+              setMode("login");
+              setForgotOpen(false);
+              setError("");
+            }}
           >
             sign in
           </button>
@@ -90,7 +143,11 @@ export function AccessGate() {
             role="tab"
             aria-selected={mode === "register"}
             className={mode === "register" ? "is-on" : ""}
-            onClick={() => setMode("register")}
+            onClick={() => {
+              setMode("register");
+              setForgotOpen(false);
+              setError("");
+            }}
           >
             create account
           </button>
@@ -145,18 +202,78 @@ export function AccessGate() {
             />
           </label>
 
-          <label>
-            <span>password {mode === "register" ? "(≥10 chars)" : ""}</span>
-            <input
-              type="password"
-              required
-              minLength={mode === "register" ? 10 : 1}
-              maxLength={128}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete={mode === "login" ? "current-password" : "new-password"}
-            />
-          </label>
+          <div className="access__password">
+            <label className="access__password-label">
+              <span>password</span>
+              <input
+                type={showPassword ? "text" : "password"}
+                required
+                minLength={mode === "register" ? MIN_PASSWORD_LENGTH : 1}
+                maxLength={128}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete={mode === "login" ? "current-password" : "new-password"}
+              />
+            </label>
+            <button
+              type="button"
+              className="access__reveal"
+              aria-pressed={showPassword}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              onClick={() => setShowPassword((v) => !v)}
+            >
+              {showPassword ? "hide" : "show"}
+            </button>
+          </div>
+          {passwordHint ? (
+            <p
+              className={
+                password.length >= MIN_PASSWORD_LENGTH
+                  ? "access__hint access__hint--ok"
+                  : "access__hint"
+              }
+              aria-live="polite"
+            >
+              {passwordHint}
+            </p>
+          ) : null}
+
+          {mode === "login" ? (
+            <div className="access__forgot">
+              <button
+                type="button"
+                className="access__forgot-toggle"
+                aria-expanded={forgotOpen}
+                onClick={() => {
+                  setForgotOpen((v) => !v);
+                  setForgotStatus("");
+                }}
+              >
+                Forgot password?
+              </button>
+              {forgotOpen ? (
+                <div className="access__forgot-panel">
+                  <p className="access__forgot-stub" role="status">
+                    Email reset is not live yet (Auth pack). You can still POST the stub with the
+                    email above — we never confirm whether an account exists.
+                  </p>
+                  <button
+                    type="button"
+                    className="btn"
+                    disabled={forgotBusy || !email.trim()}
+                    onClick={() => void requestPasswordReset()}
+                  >
+                    {forgotBusy ? "sending…" : "request reset stub"}
+                  </button>
+                  {forgotStatus ? (
+                    <p className="access__hint" role="status">
+                      {forgotStatus}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
 
           {mode === "register" ? (
             <label className="access__check">
@@ -182,9 +299,13 @@ export function AccessGate() {
         </form>
 
         <p className="access__fine">
-          Viewing requires an account. Fetched platform media is free to stream and save for
-          members. New house uploads require purchase to download. Redistribution is prohibited.
+          Viewing requires an account. Redistribution is prohibited.
         </p>
+        <nav className="access__legal" aria-label="Legal">
+          <Link href="/privacy">Privacy</Link>
+          <span aria-hidden>·</span>
+          <Link href="/terms">Terms</Link>
+        </nav>
       </section>
     </main>
   );

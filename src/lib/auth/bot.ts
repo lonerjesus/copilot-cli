@@ -16,12 +16,16 @@ export function isSuspiciousBot(request: NextRequest): boolean {
 /** Public paths that never require a session — explicit allowlist only */
 export const PUBLIC_PATHS = new Set([
   "/access",
+  "/privacy",
+  "/terms",
   "/robots.txt",
   "/sitemap.xml",
   "/favicon.ico",
   "/favicon.svg",
+  "/og.png",
   "/api/auth/register",
   "/api/auth/login",
+  "/api/auth/forgot-password",
   "/api/auth/logout",
   "/api/auth/me",
   "/api/commerce/webhook",

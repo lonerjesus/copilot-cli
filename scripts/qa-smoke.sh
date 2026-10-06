@@ -28,6 +28,29 @@ home_code="$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" "$BASE/")"
 check "home-redirect-access" "$home_code" "307"
 
 check "access" "$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" "$BASE/access")"
+check "privacy" "$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" "$BASE/privacy")"
+check "terms" "$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" "$BASE/terms")"
+check "og-image" "$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" "$BASE/og.png")"
+
+access_html="$(curl -s -A "$UA" "$BASE/access")"
+echo "$access_html" | grep -q 'portfolio · vlog · stream' && echo "PASS  access-tagline" && pass=$((pass+1)) || { echo "FAIL  access-tagline"; fail=$((fail+1)); }
+echo "$access_html" | grep -qi 'forgot password' && echo "PASS  access-forgot-stub" && pass=$((pass+1)) || { echo "FAIL  access-forgot-stub"; fail=$((fail+1)); }
+echo "$access_html" | grep -q '/privacy' && echo "PASS  access-privacy-link" && pass=$((pass+1)) || { echo "FAIL  access-privacy-link"; fail=$((fail+1)); }
+echo "$access_html" | grep -q '/terms' && echo "PASS  access-terms-link" && pass=$((pass+1)) || { echo "FAIL  access-terms-link"; fail=$((fail+1)); }
+
+# forgot-password stub — generic 200, no account probe; bots denied
+forgot_code="$(curl -s -o /tmp/kn-forgot.json -w '%{http_code}' -A "$UA" -X POST "$BASE/api/auth/forgot-password" \
+  -H 'content-type: application/json' \
+  -d '{"email":"nobody@example.com","website":""}')"
+if [[ "$forgot_code" == "200" ]] && grep -qE '"ok"[[:space:]]*:[[:space:]]*true' /tmp/kn-forgot.json; then
+  echo "PASS  forgot-password-stub ($forgot_code)"
+  pass=$((pass + 1))
+else
+  echo "FAIL  forgot-password-stub (code=$forgot_code body=$(head -c 200 /tmp/kn-forgot.json))"
+  fail=$((fail + 1))
+fi
+rm -f /tmp/kn-forgot.json
+check "bot-forgot-denied" "$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/api/auth/forgot-password" -H 'content-type: application/json' -d '{"email":"x@y.com"}')" "403"
 
 # Content APIs require auth
 check "feed-auth" "$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" "$BASE/api/feed")" "401"

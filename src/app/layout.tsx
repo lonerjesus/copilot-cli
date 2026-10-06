@@ -58,11 +58,20 @@ export const metadata: Metadata = {
     siteName: SITE.title,
     type: "website",
     locale: "en_US",
+    images: [
+      {
+        url: `${SITE.url}/og.png`,
+        width: 1200,
+        height: 630,
+        alt: `${SITE.title} — ${SITE.tagline}`,
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: SITE.title,
     description: SITE.description,
+    images: [`${SITE.url}/og.png`],
   },
   alternates: {
     canonical: SITE.url,
