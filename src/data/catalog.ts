@@ -20,9 +20,11 @@ export type CatalogItem = {
   poster?: string;
   /**
    * fetched = scraped/linked from platforms (stream + save free for members)
-   * uploaded = house original upload (paywalled save/download)
+   * uploaded = house original upload
    */
   source?: "fetched" | "uploaded";
+  /** Explicit paywall for house uploads — independent of `source`. */
+  paywalled?: boolean;
   embed?: {
     provider: "youtube" | "vimeo" | "twitch" | "soundcloud" | "substack" | "audio" | "bandcamp";
     id?: string;
@@ -32,8 +34,9 @@ export type CatalogItem = {
   blurb: string;
 };
 
-/** Paywall only house uploads — fetched/scraped media is open to members. */
+/** Paywall house uploads by default — fetched/scraped media is open to members. */
 export function isPaywalled(item: CatalogItem): boolean {
+  if (typeof item.paywalled === "boolean") return item.paywalled;
   if (item.source === "uploaded") return true;
   if (item.source === "fetched") return false;
   // Legacy inference before every row is tagged

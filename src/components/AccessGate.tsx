@@ -37,6 +37,16 @@ export function AccessGate() {
     return safeInternalPath(params.get("next"));
   }, []);
 
+  const sessionNotice = useMemo(() => {
+    if (typeof window === "undefined") return "";
+    const reason = new URLSearchParams(window.location.search).get("reason");
+    if (reason === "session") {
+      return "Signed out — only one login at a time. Sign in again on this device.";
+    }
+    if (reason === "logout") return "Signed out.";
+    return "";
+  }, []);
+
   const passwordHint =
     mode === "register"
       ? password.length === 0
@@ -123,6 +133,11 @@ export function AccessGate() {
           House downloads checkout via Stripe after sign-in. Fetched platform streams stay free for
           members.
         </p>
+        {sessionNotice ? (
+          <p className="access__notice" role="status" aria-live="polite">
+            {sessionNotice}
+          </p>
+        ) : null}
 
         <div className="access__tabs" role="tablist" aria-label="Account mode">
           <button
