@@ -35,22 +35,30 @@ export function MediaPoster({
   label?: string;
 }) {
   const seed = useMemo(() => seedPoster(item), [item]);
-  const [remote, setRemote] = useState<string | null>(null);
-  const [loaded, setLoaded] = useState(false);
-  const [failed, setFailed] = useState(false);
+  const [brokenSeed, setBrokenSeed] = useState<string | null>(null);
+  const [remote, setRemote] = useState<{ forUrl: string; thumb: string } | null>(null);
+  const [status, setStatus] = useState<{ src: string; loaded?: boolean; failed?: boolean }>({
+    src: "",
+  });
 
-  const src = seed || remote;
+  const activeSeed = seed && brokenSeed === seed ? null : seed;
+  const remoteThumb = remote?.forUrl === item.externalUrl ? remote.thumb : null;
+  const src = activeSeed || remoteThumb;
+  const loaded = Boolean(src && status.src === src && status.loaded);
+  const failed = Boolean(src && status.src === src && status.failed);
 
   useEffect(() => {
-    if (seed || !item.externalUrl.startsWith("https://")) return;
+    if (activeSeed || !item.externalUrl.startsWith("https://")) return;
     let alive = true;
+    const forUrl = item.externalUrl;
     const run = async () => {
       try {
-        const res = await fetch(`/api/oembed?url=${encodeURIComponent(item.externalUrl)}`);
+        const res = await fetch(`/api/oembed?url=${encodeURIComponent(forUrl)}`);
         if (!res.ok) return;
         const data = (await res.json()) as { thumbnail_url?: string };
-        if (alive && data.thumbnail_url?.startsWith("https://")) {
-          setRemote(data.thumbnail_url);
+        const thumb = data.thumbnail_url;
+        if (alive && thumb && (thumb.startsWith("https://") || thumb.startsWith("/"))) {
+          setRemote({ forUrl, thumb });
         }
       } catch {
         /* glyph fallback */
@@ -60,11 +68,13 @@ export function MediaPoster({
     return () => {
       alive = false;
     };
-  }, [seed, item.externalUrl]);
+  }, [activeSeed, item.externalUrl]);
 
   if (!src || failed) {
+    const mark = (item.brand || item.title || "?").trim().slice(0, 1).toUpperCase() || "·";
     return (
       <div className={`media-poster media-poster--empty ${className}`} aria-hidden>
+        <span className="media-poster__fallback">{mark}</span>
         {label ? <span className="media-poster__label">{label}</span> : null}
       </div>
     );
@@ -80,8 +90,14 @@ export function MediaPoster({
         loading="lazy"
         decoding="async"
         referrerPolicy="no-referrer"
-        onLoad={() => setLoaded(true)}
-        onError={() => setFailed(true)}
+        onLoad={() => setStatus({ src, loaded: true })}
+        onError={() => {
+          if (activeSeed && src === activeSeed) {
+            setBrokenSeed(activeSeed);
+            return;
+          }
+          setStatus({ src, failed: true });
+        }}
       />
       {label ? <span className="media-poster__label">{label}</span> : null}
     </div>
