@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { SITE } from "@/data/identity";
 import { usePlayerState } from "@/components/player/PlayerContext";
 import { getQueue } from "@/data/catalog";
@@ -30,9 +31,9 @@ export function Hero() {
           >
             {playing ? "▶" : "stream"}
           </button>
-          <a className="btn btn--ghost" href="/footprint">
+          <Link className="btn btn--ghost" href="/footprint">
             F:
-          </a>
+          </Link>
         </div>
       </div>
     </section>

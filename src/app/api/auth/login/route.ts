@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { isAdminEmail } from "@/lib/admin";
+import { normalizeEmail } from "@/lib/auth/email";
 import {
   AuthStoreUnavailableError,
   authenticateUser,
@@ -21,7 +22,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const user = await authenticateUser(body.email, body.password);
+    const user = await authenticateUser(normalizeEmail(body.email), body.password);
     if (!user) return jsonError("Invalid credentials", 401);
 
     const response = NextResponse.json(

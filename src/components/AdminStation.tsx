@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { CATEGORIES, type CategoryId, type SubcategoryId } from "@/data/taxonomy";
 import type { MediaKind } from "@/data/catalog";
 import type { UploadedContent } from "@/lib/content-store";
@@ -39,7 +39,7 @@ export function AdminStation() {
   );
   const subs = category?.subcategories ?? [];
 
-  const refresh = async () => {
+  const refresh = useCallback(async () => {
     const res = await fetch("/api/admin/content", { credentials: "same-origin" });
     if (!res.ok) {
       setError(res.status === 403 ? "admin_only" : "load_failed");
@@ -49,10 +49,30 @@ export function AdminStation() {
     const data = (await res.json()) as { items: UploadedContent[] };
     setItems(data.items ?? []);
     setLoading(false);
-  };
+  }, []);
 
   useEffect(() => {
-    void refresh();
+    const controller = new AbortController();
+    fetch("/api/admin/content", {
+      credentials: "same-origin",
+      signal: controller.signal,
+    })
+      .then(async (res) => {
+        if (!res.ok) {
+          setError(res.status === 403 ? "admin_only" : "load_failed");
+          setLoading(false);
+          return;
+        }
+        const data = (await res.json()) as { items: UploadedContent[] };
+        setItems(data.items ?? []);
+        setLoading(false);
+      })
+      .catch((err: unknown) => {
+        if (controller.signal.aborted) return;
+        setError(err instanceof Error ? err.message : "load_failed");
+        setLoading(false);
+      });
+    return () => controller.abort();
   }, []);
 
   const onCategory = (id: CategoryId) => {

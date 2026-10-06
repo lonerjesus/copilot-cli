@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { AgeGate } from "@/components/AgeGate";
 import { BootSequence } from "@/components/BootSequence";
 import { CommandBar } from "@/components/CommandBar";
@@ -22,6 +24,7 @@ import { findCategoryByQuery, type CategoryId, type SubcategoryId } from "@/data
 type BayId = "stream" | "browse" | "chart" | "names" | "support";
 
 function ShellInner() {
+  const router = useRouter();
   const [booted, setBooted] = useState(false);
   const [openBay, setOpenBay] = useState<BayId | null>("stream");
   const [searchQuery, setSearchQuery] = useState("");
@@ -91,7 +94,7 @@ function ShellInner() {
         return;
       }
       if (cmd === "footprint") {
-        window.location.href = "/footprint";
+        router.push("/footprint");
         return;
       }
       const map: Record<string, BayId> = {
@@ -106,7 +109,7 @@ function ShellInner() {
       const id = map[cmd];
       if (id) openBayTo(id);
     },
-    [openBayTo, setExpanded, toggle],
+    [openBayTo, router, setExpanded, toggle],
   );
 
   return (
@@ -135,11 +138,11 @@ function ShellInner() {
             <button type="button" onClick={() => openBayTo("browse")}>
               browse
             </button>
-            <a href="/footprint">footprint</a>
+            <Link href="/footprint">footprint</Link>
             <button type="button" onClick={() => openBayTo("support")}>
               support
             </button>
-            {user?.isAdmin ? <a href="/admin">admin</a> : null}
+            {user?.isAdmin ? <Link href="/admin">admin</Link> : null}
           </nav>
           <div className="topbar__account">
             <span className="topbar__user" title={user?.email}>
