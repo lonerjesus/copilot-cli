@@ -17,3 +17,10 @@ Permanent multi-agent protocol for **www.kamaunegasi.net**:
 - [`agents/squad.json`](./agents/squad.json) — machine-readable roster
 
 **Verifier always runs last.** Exact house names only — never invent third-party identities.
+
+## Cursor Cloud specific instructions
+
+- Node.js 22 (see `.nvmrc`). Bootstrap with `npm ci`. If `.env.local` is absent, copy `.env.example` to `.env.local`. That file enables demo payments; Stripe keys are not required for local development.
+- Dev server: `npm run dev` (Next.js 16 listens on `0.0.0.0:3000`). Open `http://localhost:3000`. Requests to `127.0.0.1` are treated as a cross-origin dev host and Next.js blocks HMR until `allowedDevOrigins` includes that host.
+- End-to-end check against the running dev server: `npm run qa:smoke` (account gate, registration, catalog, demo purchase). Accounts persist in gitignored `.data/`.
+- `npx tsc --noEmit` is the clean type check. `npm run lint` currently fails on existing issues in `AdminShell`, `AdminStation`, `AppShell`, and `FootprintShell`.
