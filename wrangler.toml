@@ -38,10 +38,12 @@ ACCOUNT_GATE = "1"
 # Owner-only /admin clearance (must match the signed-in account email).
 ADMIN_EMAIL = "357itsumi@proton.me"
 
-# House media binaries (admin uploads). Create once: npx wrangler r2 bucket create kamaunegasi-media
+# House media binaries (admin uploads). Bucket is created by scripts/ensure-r2-bucket.sh
+# during `npm run build` on Workers Builds (or manually: npm run cf:ensure-r2).
 [[r2_buckets]]
 binding = "MEDIA_R2"
 bucket_name = "kamaunegasi-media"
+preview_bucket_name = "kamaunegasi-media"
 
 # Durable auth/commerce store (kamaunegasi-auth KV namespace).
 [[kv_namespaces]]
