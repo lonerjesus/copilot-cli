@@ -4,7 +4,8 @@ import Link from "next/link";
 import { AgeGate } from "@/components/AgeGate";
 import { AuthProvider, useAuth } from "@/components/AuthContext";
 import { AdminStation } from "@/components/AdminStation";
-import { PRIMARY_NAME, SITE } from "@/data/identity";
+import { SiteFooter } from "@/components/SiteFooter";
+import { SITE } from "@/data/identity";
 
 function AdminInner() {
   const { user, loading, logout } = useAuth();
@@ -63,11 +64,7 @@ function AdminInner() {
         <main id="top" tabIndex={-1}>
           <AdminStation />
         </main>
-        <footer className="footer">
-          <p>
-            © {new Date().getFullYear()} {PRIMARY_NAME}
-          </p>
-        </footer>
+        <SiteFooter />
       </div>
     </>
   );

@@ -18,6 +18,10 @@ export function Hero() {
 
       <div className="hero__content">
         <h1 className="hero__brand">{SITE.title}</h1>
+        <p className="hero__tagline">{SITE.tagline}</p>
+        <p className="hero__commerce">
+          House downloads via Stripe · fetched streams stay free
+        </p>
         <div className="hero__cta">
           <button
             type="button"

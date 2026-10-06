@@ -8,8 +8,9 @@ import { MagazineReader } from "@/components/MagazineReader";
 import { FootprintArchive } from "@/components/FootprintArchive";
 import { PlayerDock } from "@/components/player/PlayerDock";
 import { PlayerProvider } from "@/components/player/PlayerContext";
+import { SiteFooter } from "@/components/SiteFooter";
 import type { FootprintItem } from "@/lib/feed";
-import { PRIMARY_NAME, SITE } from "@/data/identity";
+import { SITE } from "@/data/identity";
 
 function FootprintInner({ footprint }: { footprint: FootprintItem[] }) {
   const { user, logout } = useAuth();
@@ -57,11 +58,7 @@ function FootprintInner({ footprint }: { footprint: FootprintItem[] }) {
           <FootprintArchive initial={footprint} />
         </main>
 
-        <footer className="footer">
-          <p>
-            © {new Date().getFullYear()} {PRIMARY_NAME}
-          </p>
-        </footer>
+        <SiteFooter />
 
         <PlayerDock />
         <MagazineReader catalogId={openId} onClose={closeMagazine} />

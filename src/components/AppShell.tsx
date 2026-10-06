@@ -18,7 +18,8 @@ import { PlayerDock } from "@/components/player/PlayerDock";
 import { PlayerProvider, usePlayerState } from "@/components/player/PlayerContext";
 import { AuthProvider, useAuth } from "@/components/AuthContext";
 import { DonatePanel } from "@/components/DonatePanel";
-import { PRIMARY_NAME, SITE } from "@/data/identity";
+import { SiteFooter } from "@/components/SiteFooter";
+import { SITE } from "@/data/identity";
 import { findCategoryByQuery, type CategoryId, type SubcategoryId } from "@/data/taxonomy";
 
 type BayId = "stream" | "browse" | "chart" | "names" | "support";
@@ -229,11 +230,7 @@ function ShellInner() {
           </div>
         </main>
 
-        <footer className="footer">
-          <p>
-            © {new Date().getFullYear()} {PRIMARY_NAME}
-          </p>
-        </footer>
+        <SiteFooter />
 
         <PlayerDock />
         <MagazineReader catalogId={openId} onClose={closeMagazine} />
