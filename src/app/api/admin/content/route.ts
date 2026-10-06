@@ -6,9 +6,11 @@ import { jsonError } from "@/lib/commerce/checkout";
 import {
   createUpload,
   deleteUpload,
+  findUpload,
   listUploads,
   validateCreateInput,
 } from "@/lib/content-store";
+import { deleteMediaForCatalogUrls } from "@/lib/media-store";
 
 export async function GET() {
   const user = await getSessionUser();
@@ -65,8 +67,12 @@ export async function DELETE(request: Request) {
   if (!id) return jsonError("missing_id", 400);
 
   try {
+    const existing = await findUpload(id);
     const ok = await deleteUpload(id);
     if (!ok) return jsonError("not_found", 404);
+    if (existing) {
+      await deleteMediaForCatalogUrls([existing.src, existing.poster, existing.externalUrl]);
+    }
     return NextResponse.json(
       { ok: true },
       { headers: { "Cache-Control": "no-store" } },

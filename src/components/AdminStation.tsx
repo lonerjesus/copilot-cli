@@ -1,6 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ChangeEvent,
+  type FormEvent,
+} from "react";
 import { CATEGORIES, type CategoryId, type SubcategoryId } from "@/data/taxonomy";
 import type { MediaKind } from "@/data/catalog";
 import type { UploadedContent } from "@/lib/content-store";
@@ -23,7 +30,7 @@ const PRESETS: UploadPreset[] = [
     category: "video",
     subcategory: "archive",
     blurbHint: "House video drop",
-    srcHint: "https://…/clip.mp4",
+    srcHint: "Upload a file below, or paste https://…/clip.mp4",
   },
   {
     id: "photo",
@@ -32,7 +39,7 @@ const PRESETS: UploadPreset[] = [
     category: "visuals",
     subcategory: "stills",
     blurbHint: "House still / photo dump",
-    srcHint: "https://…/photo.jpg",
+    srcHint: "Upload a file below, or paste https://…/photo.jpg",
   },
   {
     id: "music",
@@ -41,7 +48,7 @@ const PRESETS: UploadPreset[] = [
     category: "audio",
     subcategory: "music",
     blurbHint: "House track / mix",
-    srcHint: "https://…/track.mp3",
+    srcHint: "Upload a file below, or paste https://…/track.mp3",
   },
 ];
 
@@ -71,6 +78,7 @@ export function AdminStation() {
   const [ok, setOk] = useState("");
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [uploadNote, setUploadNote] = useState("");
 
   const category = useMemo(
     () => CATEGORIES.find((c) => c.id === form.category),
@@ -115,6 +123,68 @@ export function AdminStation() {
     return () => controller.abort();
   }, []);
 
+  const uploadFile = async (file: File, role: "media" | "poster") => {
+    setError("");
+    setUploadNote("");
+    setBusy(true);
+    try {
+      const body = new FormData();
+      body.append("file", file);
+      body.append("role", role);
+      const res = await fetch("/api/admin/media", {
+        method: "POST",
+        credentials: "same-origin",
+        body,
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        url?: string;
+      };
+      if (!res.ok) {
+        setError(data.error ?? "upload_failed");
+        return null;
+      }
+      if (!data.url) {
+        setError("upload_failed");
+        return null;
+      }
+      setUploadNote(
+        role === "poster" ? "poster stored on Cloudflare R2" : "media stored on Cloudflare R2",
+      );
+      return data.url;
+    } catch {
+      setError("network_error");
+      return null;
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const onMediaFile = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    const url = await uploadFile(file, "media");
+    if (!url) return;
+    setForm((f) => ({
+      ...f,
+      src: url,
+      externalUrl: f.externalUrl.trim() || url,
+      poster:
+        f.poster ||
+        (activePreset.kind === "still" ? url : f.poster),
+    }));
+  };
+
+  const onPosterFile = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    const url = await uploadFile(file, "poster");
+    if (!url) return;
+    setForm((f) => ({ ...f, poster: url }));
+  };
+
   const applyPreset = (next: UploadPreset) => {
     setPreset(next.id);
     setForm((f) => ({
@@ -145,6 +215,10 @@ export function AdminStation() {
     setBusy(true);
     try {
       const mediaUrl = form.src.trim() || form.externalUrl.trim();
+      if (!mediaUrl) {
+        setError("missing_media");
+        return;
+      }
       const res = await fetch("/api/admin/content", {
         method: "POST",
         credentials: "same-origin",
@@ -217,7 +291,9 @@ export function AdminStation() {
     <section className="admin" aria-labelledby="admin-title">
       <header className="admin__head">
         <h1 id="admin-title">ADMIN</h1>
-        <p className="admin__lead">Upload video, photos, or music to the member stream.</p>
+        <p className="admin__lead">
+          Upload video, photos, or music — files live on Cloudflare R2 and stream from the house.
+        </p>
       </header>
 
       <div className="admin__presets" role="group" aria-label="Upload type">
@@ -308,13 +384,27 @@ export function AdminStation() {
             </label>
           </div>
           <label>
-            <span>media file url (https) — video / photo / audio</span>
+            <span>media file (R2)</span>
+            <input
+              type="file"
+              accept={
+                activePreset.id === "music"
+                  ? "audio/*"
+                  : activePreset.id === "photo"
+                    ? "image/*"
+                    : "video/*,audio/*"
+              }
+              disabled={busy}
+              onChange={(e) => void onMediaFile(e)}
+            />
+          </label>
+          <label>
+            <span>media url (https) — if not uploading a file</span>
             <input
               type="url"
               value={form.src}
               onChange={(e) => setForm({ ...form, src: e.target.value })}
               placeholder={activePreset.srcHint}
-              required={!form.externalUrl.trim()}
             />
           </label>
           <label>
@@ -324,12 +414,17 @@ export function AdminStation() {
               value={form.externalUrl}
               onChange={(e) => setForm({ ...form, externalUrl: e.target.value })}
               placeholder="https://www.kamaunegasi.net/"
-              required={!form.src.trim()}
             />
           </label>
           <div className="admin__row">
             <label>
-              <span>poster url (optional)</span>
+              <span>poster (R2 upload or url)</span>
+              <input
+                type="file"
+                accept="image/*"
+                disabled={busy}
+                onChange={(e) => void onPosterFile(e)}
+              />
               <input
                 type="url"
                 value={form.poster}
@@ -384,6 +479,11 @@ export function AdminStation() {
             <span>paywall save / download (house upload)</span>
           </label>
 
+          {uploadNote ? (
+            <p className="admin__msg" role="status">
+              {uploadNote}
+            </p>
+          ) : null}
           {error ? (
             <p className="admin__msg admin__msg--err" role="alert">
               {error}

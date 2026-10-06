@@ -54,6 +54,7 @@ export async function GET(request: NextRequest) {
       publishedAt: item.publishedAt,
       tags: item.tags,
       externalUrl: item.externalUrl,
+      src: item.src ?? null,
       poster: item.poster ?? null,
       source: item.source ?? (gated ? "uploaded" : "fetched"),
     },

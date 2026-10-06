@@ -38,6 +38,11 @@ ACCOUNT_GATE = "1"
 # Owner-only /admin clearance (must match the signed-in account email).
 ADMIN_EMAIL = "357itsumi@proton.me"
 
+# House media binaries (admin uploads). Create once: npx wrangler r2 bucket create kamaunegasi-media
+[[r2_buckets]]
+binding = "MEDIA_R2"
+bucket_name = "kamaunegasi-media"
+
 # Durable auth/commerce store (kamaunegasi-auth KV namespace).
 [[kv_namespaces]]
 binding = "AUTH_KV"
@@ -52,6 +57,10 @@ EXACT_NAME_POLICY = "1"
 AGE_GATE_REQUIRED = "1"
 ACCOUNT_GATE = "1"
 ADMIN_EMAIL = "357itsumi@proton.me"
+
+[[previews.r2_buckets]]
+binding = "MEDIA_R2"
+bucket_name = "kamaunegasi-media"
 
 [[previews.kv_namespaces]]
 binding = "AUTH_KV"

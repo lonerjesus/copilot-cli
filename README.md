@@ -16,6 +16,7 @@ Futuristic terminal UI · streaming-style browse · chronic social footprint fee
 - Next.js (App Router) + TypeScript + OpenNext on Cloudflare Workers
 - Terminal design system (CSS variables, no card-heavy chrome)
 - First-party auth (HTTP-only signed cookies · scrypt passwords · local `.data/` or Workers `AUTH_KV`)
+- House media on **Cloudflare R2** (`MEDIA_R2`) — admin uploads store binaries; members stream via `/api/media/…`
 - `/api/feed` · `/api/oembed` · `/api/ingest` (auth-gated)
 - `/api/donate` · `/api/commerce/purchase` · `/api/commerce/download`
 - Payments: `PAYMENTS_MODE=demo` locally, or Stripe via `STRIPE_SECRET_KEY`
@@ -53,9 +54,10 @@ Before go-live:
 
 1. Secret: `npx wrangler secret put AUTH_SECRET` (≥16 chars)
 2. Durable auth KV — production + Preview `preview_id` are set in `wrangler.toml` (`AUTH_KV`). Optional: create an isolated preview namespace with `npx wrangler kv namespace create AUTH_KV --preview` and replace `preview_id`.
-3. Optional Stripe: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`
-4. Custom domains — `wrangler.toml` declares `www.kamaunegasi.net` + apex via `routes` (`custom_domain = true`). After deploy, confirm both hostnames under the Worker’s Custom Domains (live must not show Cloudflare’s “There is nothing here yet”).
-5. Var: `ADMIN_EMAIL` (owner account for `/admin` — set in `wrangler.toml` / CF vars)
+3. Media bucket — `npx wrangler r2 bucket create kamaunegasi-media` (binding `MEDIA_R2` in `wrangler.toml`). Local dev without R2 writes to `.data/media/`.
+4. Optional Stripe: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`
+5. Custom domains — `wrangler.toml` declares `www.kamaunegasi.net` + apex via `routes` (`custom_domain = true`). After deploy, confirm both hostnames under the Worker’s Custom Domains (live must not show Cloudflare’s “There is nothing here yet”).
+6. Var: `ADMIN_EMAIL` (owner account for `/admin` — set in `wrangler.toml` / CF vars)
 
 Local Cloudflare preview:
 
