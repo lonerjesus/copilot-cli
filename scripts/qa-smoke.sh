@@ -116,15 +116,31 @@ echo "$home" | grep -q 'id="browse"' && echo "PASS  home-browse-bay" && pass=$((
 echo "$home" | grep -q 'data-age-gate' && echo "PASS  age-gate-flag" && pass=$((pass+1)) || { echo "FAIL  age-gate-flag"; fail=$((fail+1)); }
 echo "$home" | grep -q 'portfolio · vlog · stream' && echo "PASS  home-tagline" && pass=$((pass+1)) || { echo "FAIL  home-tagline"; fail=$((fail+1)); }
 echo "$home" | grep -q '/privacy' && echo "PASS  home-privacy-link" && pass=$((pass+1)) || { echo "FAIL  home-privacy-link"; fail=$((fail+1)); }
-echo "$home" | grep -qE 'f4\.bcbits\.com/img/|substackcdn\.com/image/|mzstatic\.com/image/' \
+# House stream posters (MagCloud chapbooks) — outside platforms live on Footprint
+echo "$home" | grep -qE 'magcloud|QUARANTINED|FEATURED|tile__poster' \
   && echo "PASS  home-media-posters" && pass=$((pass+1)) \
   || { echo "FAIL  home-media-posters"; fail=$((fail+1)); }
+echo "$home" | grep -q 'id="names"' && { echo "FAIL  home-no-names-bay"; fail=$((fail+1)); } || { echo "PASS  home-no-names-bay"; pass=$((pass+1)); }
 
 fp="$(curl -s -A "$UA" -b "$JAR" "$BASE/footprint")"
 echo "$fp" | grep -qi 'FOOTPRINT' && echo "PASS  footprint-page-title" && pass=$((pass+1)) || { echo "FAIL  footprint-page-title"; fail=$((fail+1)); }
 echo "$fp" | grep -q 'floppy' && echo "PASS  footprint-floppy-cards" && pass=$((pass+1)) || { echo "FAIL  footprint-floppy-cards"; fail=$((fail+1)); }
 echo "$fp" | grep -q 'floppy__menu\|footprint__menu' && echo "PASS  footprint-filter-menu" && pass=$((pass+1)) || { echo "FAIL  footprint-filter-menu"; fail=$((fail+1)); }
 echo "$fp" | grep -q '/#browse' && echo "PASS  footprint-browse-deeplink" && pass=$((pass+1)) || { echo "FAIL  footprint-browse-deeplink"; fail=$((fail+1)); }
+echo "$fp" | grep -qE 'f4\.bcbits\.com/img/|substackcdn\.com/image/|mzstatic\.com/image/|bandcamp|SoundCloud' \
+  && echo "PASS  footprint-outside-media" && pass=$((pass+1)) \
+  || { echo "FAIL  footprint-outside-media"; fail=$((fail+1)); }
+
+# One login at a time — second login invalidates the first session
+JAR2="$(mktemp)"
+curl -s -A "$UA" -c "$JAR2" -b "$JAR2" -X POST "$BASE/api/auth/login" \
+  -H 'content-type: application/json' \
+  -d "{\"email\":\"$EMAIL\",\"password\":\"$PASS\",\"website\":\"\"}" >/dev/null
+check "session-exclusive-old" "$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" -b "$JAR" "$BASE/api/auth/me")" "401"
+check "session-exclusive-new" "$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" -b "$JAR2" "$BASE/api/auth/me")"
+# Keep using the active jar for remaining checks
+rm -f "$JAR"
+JAR="$JAR2"
 
 # Admin station — non-admin forbidden; admin can publish
 check "admin-page-authed" "$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" -b "$JAR" "$BASE/admin")"

@@ -1,24 +1,19 @@
-# security-report — 2026-10-04 full audit
+# security-report — check-netflix-house
 
-**Agent:** security  
-**Verdict:** PASS (code) · OPS remaining
+**Agent:** `security`  
+**Branch:** `cursor/netflix-house-stream-560e`  
+**Verdict:** `PASS`
 
-### PASS
-- Account gate (`middleware.ts` + `PUBLIC_PATHS`)
-- Session HMAC Web Crypto parity (`token.ts`)
-- Bot UA deny + rate limit + honeypot + `safeInternalPath`
-- Download 402 until owned; webhook fail-closed without secret
-- Cookie flags httpOnly / SameSite=Lax / secure in production
-- CSP + X-Robots-Tag noindex; robots disallow-all
-- Auth store fail-closed without AUTH_KV/FS in production (`store.ts`)
-- `/api/ingest` read-only GET; `/api/oembed` host allowlist
-- Analytics first-party `localStorage` only
+## Findings addressed this pass
 
-### WARN
-- Rate-limit Map is per-isolate on Workers
-- Shared webhook header secret (not Stripe signature)
-- Bot UA spoofable (session remains real gate)
+| ID | Severity | Status | Fix |
+|----|----------|--------|-----|
+| SEC-RMW | High | PASS | `updateStore()` serializes full read-modify-write for session + purchase + donation + createUser |
+| SEC-EMBED | High | PASS | `validateCreateInput` allowlists embed providers + requires `https:` for embed.url |
+| SEC-1 | High | PASS | `sid` ↔ `activeSessionId` exclusivity |
+| SEC-2 | Medium | PASS | `/api/auth/me` clears stale cookie; AuthContext logout on 401 |
+| SEC-3 | Medium | PASS | HTTPS on externalUrl / src / poster |
+| SEC-5 | Info | WARN | Middleware still HMAC-only; mitigated by me + AuthContext kick |
 
-### OPS (required before production traffic)
-- Bind `AUTH_KV` in `wrangler.toml` after `wrangler kv namespace create AUTH_KV`
-- `wrangler secret put AUTH_SECRET` (≥16 chars)
+## Deps
+No new dependencies.

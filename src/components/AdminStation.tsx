@@ -5,15 +5,53 @@ import { CATEGORIES, type CategoryId, type SubcategoryId } from "@/data/taxonomy
 import type { MediaKind } from "@/data/catalog";
 import type { UploadedContent } from "@/lib/content-store";
 
-const KINDS: MediaKind[] = ["vlog", "essay", "video", "audio", "still", "live"];
+type UploadPreset = {
+  id: "video" | "photo" | "music";
+  label: string;
+  kind: MediaKind;
+  category: CategoryId;
+  subcategory: SubcategoryId;
+  blurbHint: string;
+  srcHint: string;
+};
+
+const PRESETS: UploadPreset[] = [
+  {
+    id: "video",
+    label: "Video",
+    kind: "video",
+    category: "video",
+    subcategory: "archive",
+    blurbHint: "House video drop",
+    srcHint: "https://…/clip.mp4",
+  },
+  {
+    id: "photo",
+    label: "Photo",
+    kind: "still",
+    category: "visuals",
+    subcategory: "stills",
+    blurbHint: "House still / photo dump",
+    srcHint: "https://…/photo.jpg",
+  },
+  {
+    id: "music",
+    label: "Music",
+    kind: "audio",
+    category: "audio",
+    subcategory: "music",
+    blurbHint: "House track / mix",
+    srcHint: "https://…/track.mp3",
+  },
+];
 
 const emptyForm = {
   title: "",
   subtitle: "",
   brand: "Telling Show Of Love",
-  kind: "vlog" as MediaKind,
-  category: "vlog" as CategoryId,
-  subcategory: "season" as SubcategoryId,
+  kind: "video" as MediaKind,
+  category: "video" as CategoryId,
+  subcategory: "archive" as SubcategoryId,
   platform: "house",
   externalUrl: "",
   poster: "",
@@ -28,6 +66,7 @@ const emptyForm = {
 export function AdminStation() {
   const [items, setItems] = useState<UploadedContent[]>([]);
   const [form, setForm] = useState(emptyForm);
+  const [preset, setPreset] = useState<UploadPreset["id"]>("video");
   const [error, setError] = useState("");
   const [ok, setOk] = useState("");
   const [busy, setBusy] = useState(false);
@@ -38,6 +77,7 @@ export function AdminStation() {
     [form.category],
   );
   const subs = category?.subcategories ?? [];
+  const activePreset = PRESETS.find((p) => p.id === preset) ?? PRESETS[0];
 
   const refresh = useCallback(async () => {
     const res = await fetch("/api/admin/content", { credentials: "same-origin" });
@@ -75,6 +115,20 @@ export function AdminStation() {
     return () => controller.abort();
   }, []);
 
+  const applyPreset = (next: UploadPreset) => {
+    setPreset(next.id);
+    setForm((f) => ({
+      ...f,
+      kind: next.kind,
+      category: next.category,
+      subcategory: next.subcategory,
+      platform: "house",
+      paywalled: true,
+      blurb: f.blurb || next.blurbHint,
+      tags: f.tags || next.id,
+    }));
+  };
+
   const onCategory = (id: CategoryId) => {
     const cat = CATEGORIES.find((c) => c.id === id);
     setForm((f) => ({
@@ -90,6 +144,7 @@ export function AdminStation() {
     setOk("");
     setBusy(true);
     try {
+      const mediaUrl = form.src.trim() || form.externalUrl.trim();
       const res = await fetch("/api/admin/content", {
         method: "POST",
         credentials: "same-origin",
@@ -102,11 +157,11 @@ export function AdminStation() {
           category: form.category,
           subcategory: form.subcategory,
           platform: form.platform,
-          externalUrl: form.externalUrl,
-          poster: form.poster || undefined,
+          externalUrl: form.externalUrl.trim() || mediaUrl,
+          poster: form.poster || (form.kind === "still" ? form.src || undefined : undefined),
           src: form.src || undefined,
           duration: form.duration || undefined,
-          blurb: form.blurb,
+          blurb: form.blurb || activePreset.blurbHint,
           body: form.body || undefined,
           paywalled: form.paywalled,
           tags: form.tags
@@ -124,7 +179,13 @@ export function AdminStation() {
         return;
       }
       setOk(`published · ${data.item?.id}`);
-      setForm((f) => ({ ...emptyForm, brand: f.brand, kind: f.kind, category: f.category, subcategory: f.subcategory }));
+      setForm((f) => ({
+        ...emptyForm,
+        brand: f.brand,
+        kind: activePreset.kind,
+        category: activePreset.category,
+        subcategory: activePreset.subcategory,
+      }));
       await refresh();
     } catch {
       setError("network_error");
@@ -156,7 +217,21 @@ export function AdminStation() {
     <section className="admin" aria-labelledby="admin-title">
       <header className="admin__head">
         <h1 id="admin-title">ADMIN</h1>
+        <p className="admin__lead">Upload video, photos, or music to the member stream.</p>
       </header>
+
+      <div className="admin__presets" role="group" aria-label="Upload type">
+        {PRESETS.map((p) => (
+          <button
+            key={p.id}
+            type="button"
+            className={`admin__preset ${preset === p.id ? "is-active" : ""}`}
+            onClick={() => applyPreset(p)}
+          >
+            {p.label}
+          </button>
+        ))}
+      </div>
 
       <div className="admin__layout">
         <form className="admin__form" onSubmit={submit}>
@@ -184,7 +259,7 @@ export function AdminStation() {
                 value={form.kind}
                 onChange={(e) => setForm({ ...form, kind: e.target.value as MediaKind })}
               >
-                {KINDS.map((k) => (
+                {(["video", "still", "audio", "vlog", "essay", "live"] as MediaKind[]).map((k) => (
                   <option key={k} value={k}>
                     {k}
                   </option>
@@ -231,14 +306,34 @@ export function AdminStation() {
               </select>
             </label>
           </div>
+          <label>
+            <span>media file url (https) — video / photo / audio</span>
+            <input
+              type="url"
+              value={form.src}
+              onChange={(e) => setForm({ ...form, src: e.target.value })}
+              placeholder={activePreset.srcHint}
+              required={!form.externalUrl.trim()}
+            />
+          </label>
+          <label>
+            <span>page / post url (optional if media url set)</span>
+            <input
+              type="url"
+              value={form.externalUrl}
+              onChange={(e) => setForm({ ...form, externalUrl: e.target.value })}
+              placeholder="https://www.kamaunegasi.net/"
+              required={!form.src.trim()}
+            />
+          </label>
           <div className="admin__row">
             <label>
-              <span>platform</span>
+              <span>poster url (optional)</span>
               <input
-                required
-                maxLength={40}
-                value={form.platform}
-                onChange={(e) => setForm({ ...form, platform: e.target.value })}
+                type="url"
+                value={form.poster}
+                onChange={(e) => setForm({ ...form, poster: e.target.value })}
+                placeholder="https://…/art.jpg"
               />
             </label>
             <label>
@@ -252,34 +347,6 @@ export function AdminStation() {
             </label>
           </div>
           <label>
-            <span>media / post url (https)</span>
-            <input
-              required
-              type="url"
-              value={form.externalUrl}
-              onChange={(e) => setForm({ ...form, externalUrl: e.target.value })}
-              placeholder="https://"
-            />
-          </label>
-          <label>
-            <span>direct media src (optional)</span>
-            <input
-              type="url"
-              value={form.src}
-              onChange={(e) => setForm({ ...form, src: e.target.value })}
-              placeholder="https://…/file.mp4"
-            />
-          </label>
-          <label>
-            <span>poster url (optional)</span>
-            <input
-              type="url"
-              value={form.poster}
-              onChange={(e) => setForm({ ...form, poster: e.target.value })}
-              placeholder="https://…/art.jpg"
-            />
-          </label>
-          <label>
             <span>blurb</span>
             <textarea
               required
@@ -287,16 +354,16 @@ export function AdminStation() {
               rows={3}
               value={form.blurb}
               onChange={(e) => setForm({ ...form, blurb: e.target.value })}
+              placeholder={activePreset.blurbHint}
             />
           </label>
           <label>
-            <span>body (blog / essay / notes)</span>
+            <span>body (optional notes)</span>
             <textarea
-              rows={8}
+              rows={6}
               maxLength={50000}
               value={form.body}
               onChange={(e) => setForm({ ...form, body: e.target.value })}
-              placeholder="Optional long-form text…"
             />
           </label>
           <label>
@@ -304,7 +371,7 @@ export function AdminStation() {
             <input
               value={form.tags}
               onChange={(e) => setForm({ ...form, tags: e.target.value })}
-              placeholder="TSOL, vlog"
+              placeholder={preset}
             />
           </label>
           <label className="admin__check">
@@ -328,14 +395,14 @@ export function AdminStation() {
           ) : null}
 
           <button type="submit" className="btn btn--primary" disabled={busy}>
-            {busy ? "publishing…" : "publish"}
+            {busy ? "publishing…" : `publish ${activePreset.label.toLowerCase()}`}
           </button>
         </form>
 
         <aside className="admin__list" aria-label="Published uploads">
           <h2>uploads · {loading ? "…" : items.length}</h2>
           {items.length === 0 && !loading ? (
-            <p className="admin__empty">No uploads yet.</p>
+            <p className="admin__empty">No uploads yet — use Video / Photo / Music above.</p>
           ) : (
             <ul>
               {items.map((item) => (

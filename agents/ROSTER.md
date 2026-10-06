@@ -127,6 +127,15 @@ Use **exact house spellings only**. Never invent, “correct,” expand, or conf
 | **Outputs** | `bounce-risk.md` — friction points + ranked fixes. |
 | **Handoff** | Wave A (parallel). Feeds `qa-browser`, `verifier`. |
 
+### `code-checker`
+
+| | |
+|---|---|
+| **Mission** | Production correctness: API contracts, catalog house/fetched split, session exclusivity, admin upload validation, TypeScript/smoke gaps. |
+| **Inputs** | Full PR diff; `src/lib/auth/**`; `src/data/catalog.ts`; `src/lib/feed.ts`; `scripts/qa-smoke.sh`; admin content routes. |
+| **Outputs** | `code-checker.md` — `PASS`/`FAIL`, must-fix polish list, residual risk. |
+| **Handoff** | Wave A (parallel with `security`). Feeds `qa-browser`, `verifier`. |
+
 ### `qa-browser`
 
 | | |
@@ -161,7 +170,7 @@ Use **exact house spellings only**. Never invent, “correct,” expand, or conf
 ```
 Wave A (parallel, trigger-gated):
   security · performance · ux · catalog-names · content-ingest ·
-  compliance-18plus · a11y · analytics-bounce
+  compliance-18plus · a11y · analytics-bounce · code-checker
 
 Wave B:
   qa-browser
@@ -174,4 +183,5 @@ Wave D (always):
 ```
 
 Machine-readable mirror: [`squad.json`](./squad.json).  
-Invocation matrix: [`RUNBOOK.md`](./RUNBOOK.md).
+Invocation matrix: [`RUNBOOK.md`](./RUNBOOK.md).  
+Task checkers: [`checkers/README.md`](./checkers/README.md).

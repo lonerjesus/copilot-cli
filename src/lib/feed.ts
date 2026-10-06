@@ -1,4 +1,4 @@
-import { CATALOG, type CatalogItem } from "@/data/catalog";
+import { CATALOG, isFetchedMedia, type CatalogItem } from "@/data/catalog";
 import { PLATFORMS } from "@/data/identity";
 
 export type FootprintItem = {
@@ -18,8 +18,9 @@ function platformLabel(id: string): string {
   return PLATFORMS.find((p) => p.id === id)?.label ?? id.toUpperCase();
 }
 
+/** Outside / fetched platforms only — house uploads stay on the member stream. */
 export function catalogToFootprint(items: CatalogItem[] = CATALOG): FootprintItem[] {
-  return items.map((item) => ({
+  return items.filter(isFetchedMedia).map((item) => ({
     id: `catalog:${item.id}`,
     title: item.title,
     summary: item.blurb,

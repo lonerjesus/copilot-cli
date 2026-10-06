@@ -20,6 +20,8 @@ export type StoredUser = {
   createdAt: string;
   purchasedCatalogIds: string[];
   donatedCentsTotal: number;
+  /** Only one login at a time — must match session cookie `sid`. */
+  activeSessionId?: string;
 };
 
 export type AuthStore = {
@@ -160,25 +162,41 @@ async function writeStore(store: AuthStore): Promise<void> {
     return;
   }
 
-  writeQueue = writeQueue.then(async () => {
-    if (mode === "kv") {
-      const kv = await getAuthKv();
-      if (!kv) throw new AuthStoreUnavailableError();
-      await kv.put(STORE_KEY, JSON.stringify(store));
-      return;
-    }
+  if (mode === "kv") {
+    const kv = await getAuthKv();
+    if (!kv) throw new AuthStoreUnavailableError();
+    await kv.put(STORE_KEY, JSON.stringify(store));
+    return;
+  }
 
-    const { mkdir, writeFile } = await import("node:fs/promises");
-    const path = await import("node:path");
-    const dataDir = path.join(process.cwd(), ".data");
-    await mkdir(dataDir, { recursive: true });
-    await writeFile(
-      path.join(dataDir, "auth-store.json"),
-      JSON.stringify(store, null, 2),
-      "utf8",
-    );
-  });
-  await writeQueue;
+  const { mkdir, writeFile } = await import("node:fs/promises");
+  const path = await import("node:path");
+  const dataDir = path.join(process.cwd(), ".data");
+  await mkdir(dataDir, { recursive: true });
+  await writeFile(
+    path.join(dataDir, "auth-store.json"),
+    JSON.stringify(store, null, 2),
+    "utf8",
+  );
+}
+
+/**
+ * Serialize full read-modify-write so concurrent login/purchase/donation
+ * cannot clobber activeSessionId or other user fields.
+ */
+async function updateStore<T>(mutator: (store: AuthStore) => T | Promise<T>): Promise<T> {
+  const run = async () => {
+    const store = await readStore();
+    const result = await mutator(store);
+    await writeStore(store);
+    return result;
+  };
+  const queued = writeQueue.then(run, run);
+  writeQueue = queued.then(
+    () => undefined,
+    () => undefined,
+  );
+  return queued;
 }
 
 function normalizeEmail(email: string): string {
@@ -242,10 +260,13 @@ export async function createUser(input: {
     donatedCentsTotal: 0,
   };
 
-  const store = await readStore();
-  store.users.push(user);
-  await writeStore(store);
-  return user;
+  return updateStore((store) => {
+    if (store.users.some((u) => u.email === email)) {
+      throw new Error("Account already exists");
+    }
+    store.users.push(user);
+    return user;
+  });
 }
 
 export async function updateUserBirthDate(
@@ -253,12 +274,12 @@ export async function updateUserBirthDate(
   birthDateRaw: string,
 ): Promise<StoredUser | null> {
   const birthDate = assertAdultBirthDate(birthDateRaw);
-  const store = await readStore();
-  const user = store.users.find((u) => u.id === userId);
-  if (!user) return null;
-  user.birthDate = birthDate;
-  await writeStore(store);
-  return user;
+  return updateStore((store) => {
+    const user = store.users.find((u) => u.id === userId);
+    if (!user) return null;
+    user.birthDate = birthDate;
+    return user;
+  });
 }
 
 export async function authenticateUser(
@@ -271,15 +292,36 @@ export async function authenticateUser(
   return user;
 }
 
+/** Bind the sole active login session (invalidates any prior device). */
+export async function setActiveSession(
+  userId: string,
+  sessionId: string,
+): Promise<StoredUser | null> {
+  return updateStore((store) => {
+    const user = store.users.find((u) => u.id === userId);
+    if (!user) return null;
+    user.activeSessionId = sessionId;
+    return user;
+  });
+}
+
+export async function clearActiveSession(userId: string): Promise<void> {
+  await updateStore((store) => {
+    const user = store.users.find((u) => u.id === userId);
+    if (!user) return;
+    delete user.activeSessionId;
+  });
+}
+
 export async function grantPurchase(userId: string, catalogId: string): Promise<StoredUser | null> {
-  const store = await readStore();
-  const user = store.users.find((u) => u.id === userId);
-  if (!user) return null;
-  if (!user.purchasedCatalogIds.includes(catalogId)) {
-    user.purchasedCatalogIds.push(catalogId);
-    await writeStore(store);
-  }
-  return user;
+  return updateStore((store) => {
+    const user = store.users.find((u) => u.id === userId);
+    if (!user) return null;
+    if (!user.purchasedCatalogIds.includes(catalogId)) {
+      user.purchasedCatalogIds.push(catalogId);
+    }
+    return user;
+  });
 }
 
 export async function recordDonation(
@@ -287,19 +329,19 @@ export async function recordDonation(
   cents: number,
   mode: string,
 ): Promise<StoredUser | null> {
-  const store = await readStore();
-  const user = store.users.find((u) => u.id === userId);
-  if (!user) return null;
-  user.donatedCentsTotal += cents;
-  store.donations.push({
-    id: randomToken(12),
-    userId,
-    cents,
-    at: new Date().toISOString(),
-    mode,
+  return updateStore((store) => {
+    const user = store.users.find((u) => u.id === userId);
+    if (!user) return null;
+    user.donatedCentsTotal += cents;
+    store.donations.push({
+      id: randomToken(12),
+      userId,
+      cents,
+      at: new Date().toISOString(),
+      mode,
+    });
+    return user;
   });
-  await writeStore(store);
-  return user;
 }
 
 export function publicUser(user: StoredUser, opts?: { isAdmin?: boolean }) {

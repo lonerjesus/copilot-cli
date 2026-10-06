@@ -9,10 +9,11 @@ const COMMANDS = [
   { cmd: "stream", hint: "A" },
   { cmd: "categories", hint: "B" },
   { cmd: "cosmogram", hint: "C" },
-  { cmd: "brands", hint: "D" },
-  { cmd: "support", hint: "E" },
-  { cmd: "footprint", hint: "F" },
+  { cmd: "support", hint: "D" },
+  { cmd: "footprint", hint: "E" },
   { cmd: "play", hint: "▶" },
+  { cmd: "next", hint: "⏭" },
+  { cmd: "queue", hint: "Q" },
 ] as const;
 
 type CommandBarProps = {

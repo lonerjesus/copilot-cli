@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Chakra_Petch, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import { SITE } from "@/data/identity";
@@ -18,6 +18,14 @@ const mono = IBM_Plex_Mono({
   display: "swap",
   preload: false,
 });
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#060807",
+  colorScheme: "dark",
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE.url),

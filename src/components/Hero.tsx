@@ -20,7 +20,7 @@ export function Hero() {
         <h1 className="hero__brand">{SITE.title}</h1>
         <p className="hero__tagline">{SITE.tagline}</p>
         <p className="hero__commerce">
-          House downloads via Stripe · fetched streams stay free
+          Member house stream · outside archive on Footprint
         </p>
         <div className="hero__cta">
           <button

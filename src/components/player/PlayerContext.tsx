@@ -18,7 +18,11 @@ type PlayerStateValue = {
   index: number;
   playing: boolean;
   expanded: boolean;
+  /** Items after the current index — Spotify-style Up Next. */
+  upNext: CatalogItem[];
   playItem: (item: CatalogItem, queue?: CatalogItem[]) => void;
+  /** Insert after current without interrupting playback (Play Next). */
+  queueNext: (item: CatalogItem) => void;
   toggle: () => void;
   next: () => void;
   prev: () => void;
@@ -43,6 +47,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const timer = useRef<number | null>(null);
 
   const current = queue[index] ?? initial[0] ?? null;
+  const upNext = useMemo(() => queue.slice(index + 1), [queue, index]);
 
   const clearTimer = () => {
     if (timer.current) {
@@ -78,15 +83,24 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     setExpanded(true);
   }, [queue]);
 
+  const queueNext = useCallback((item: CatalogItem) => {
+    setQueue((q) => {
+      const without = q.filter((entry) => entry.id !== item.id);
+      const at = Math.min(index + 1, without.length);
+      const nextQ = [...without.slice(0, at), item, ...without.slice(at)];
+      return nextQ;
+    });
+    setExpanded(true);
+  }, [index]);
+
   const toggle = useCallback(() => setPlaying((p) => !p), []);
 
   useEffect(() => {
     clearTimer();
-    // Real embeds (Bandcamp / SoundCloud / Twitch) own playback — don't fake scrub/auto-advance.
+    // Real embeds own playback — don't fake scrub/auto-advance.
     const liveEmbed = ["bandcamp", "soundcloud", "twitch", "youtube", "vimeo"].includes(
       current?.embed?.provider ?? "",
     );
-    // Also treat native src / youtube|vimeo URL detection as live (no fake scrub)
     const nativeOrUrl =
       Boolean(current?.src) ||
       /youtube\.com|youtu\.be|vimeo\.com\/\d+|bandcamp\.com|soundcloud\.com|twitch\.tv/i.test(
@@ -112,13 +126,15 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       index,
       playing,
       expanded,
+      upNext,
       playItem,
+      queueNext,
       toggle,
       next,
       prev,
       setExpanded,
     }),
-    [queue, current, index, playing, expanded, playItem, toggle, next, prev],
+    [queue, current, index, playing, expanded, upNext, playItem, queueNext, toggle, next, prev],
   );
 
   const progressValue = useMemo(

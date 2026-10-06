@@ -4,6 +4,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useSyncExternalStore,
   type ReactNode,
@@ -65,6 +66,12 @@ async function fetchMe() {
   try {
     const res = await fetch("/api/auth/me", { credentials: "same-origin" });
     if (!res.ok) {
+      // Clear superseded / expired cookie so middleware stops treating us as authed.
+      if (res.status === 401) {
+        await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" }).catch(
+          () => undefined,
+        );
+      }
       emit({ user: null, loading: false, version: snapshot.version + 1 });
       return;
     }
@@ -87,6 +94,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const state = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   ensureBootstrap();
+
+  // Kick when session is missing or superseded (one login at a time).
+  useEffect(() => {
+    if (state.loading) return;
+    if (state.user) return;
+    router.replace("/access");
+  }, [state.loading, state.user, router]);
 
   const refresh = useCallback(async () => {
     await fetchMe();

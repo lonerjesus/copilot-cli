@@ -17,6 +17,11 @@
   --radius: 2px;
   --deck-h: 72px;
   --max: 1180px;
+  --page-x: clamp(0.65rem, 3vw, 1.25rem);
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-r: env(safe-area-inset-right, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-l: env(safe-area-inset-left, 0px);
 }
 
 @theme inline {
@@ -32,18 +37,23 @@
 
 html {
   scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {
   margin: 0;
   min-height: 100%;
+  min-height: 100dvh;
   color: var(--text);
   background:
     radial-gradient(1200px 600px at 80% -10%, color-mix(in oklab, var(--phosphor) 12%, transparent), transparent 55%),
     radial-gradient(900px 500px at -10% 20%, color-mix(in oklab, var(--amber) 10%, transparent), transparent 50%),
     linear-gradient(180deg, #08100c 0%, var(--void) 40%, #050706 100%);
   font-family: var(--font-mono);
-  overflow-x: hidden;
+  overflow-x: clip;
+  padding-left: var(--safe-l);
+  padding-right: var(--safe-r);
 }
 
 a {
@@ -105,7 +115,8 @@ select:focus:not(:focus-visible) {
 /* Age notice */
 .agebanner {
   margin: 0;
-  padding: 0.45rem 1.25rem;
+  padding: 0.45rem var(--page-x);
+  padding-top: calc(0.45rem + var(--safe-t));
   text-align: center;
   letter-spacing: 0.12em;
   font-size: 0.68rem;
@@ -115,13 +126,18 @@ select:focus:not(:focus-visible) {
   border-bottom: 1px solid color-mix(in oklab, var(--amber) 50%, #000);
 }
 
+/* When age banner is present, sticky topbar should not double-count safe-area */
+body:has(.agebanner) .topbar {
+  padding-top: 0.45rem;
+}
+
 .agegate {
   position: fixed;
   inset: 0;
   z-index: 90;
   display: grid;
   place-items: center;
-  padding: 1.25rem;
+  padding: calc(1rem + var(--safe-t)) var(--page-x) calc(1rem + var(--safe-b));
   background: color-mix(in oklab, var(--void) 88%, transparent);
   backdrop-filter: blur(8px);
 }
@@ -239,7 +255,8 @@ select:focus:not(:focus-visible) {
 /* Shell */
 .shell {
   min-height: 100vh;
-  padding-bottom: calc(var(--deck-h) + 1.5rem);
+  min-height: 100dvh;
+  padding-bottom: calc(var(--deck-h) + 1.5rem + var(--safe-b));
   opacity: 0;
   transform: translateY(8px);
   transition: opacity 0.5s ease, transform 0.5s ease;
@@ -262,7 +279,7 @@ select:focus:not(:focus-visible) {
   align-items: center;
   justify-content: space-between;
   gap: 0.65rem;
-  padding: 0.45rem 0.85rem;
+  padding: calc(0.45rem + var(--safe-t)) var(--page-x) 0.45rem;
   border-bottom: 1px solid var(--line);
   background: color-mix(in oklab, var(--void) 86%, transparent);
   backdrop-filter: blur(10px);
@@ -321,7 +338,7 @@ select:focus:not(:focus-visible) {
   min-height: min(52vh, 520px);
   display: grid;
   align-items: end;
-  padding: clamp(1.25rem, 4vw, 2.5rem) 0.85rem 1.5rem;
+  padding: clamp(1.25rem, 4vw, 2.5rem) var(--page-x) 1.5rem;
   overflow: hidden;
   border-bottom: 1px solid var(--line);
 }
@@ -463,7 +480,7 @@ select:focus:not(:focus-visible) {
 .cmd-wrap {
   width: min(100%, var(--max));
   margin: 0 auto;
-  padding: 0.55rem 0.85rem;
+  padding: 0.55rem var(--page-x);
 }
 
 .cmd {
@@ -528,7 +545,7 @@ select:focus:not(:focus-visible) {
 .section {
   width: min(100%, var(--max));
   margin: 0 auto;
-  padding: 1.35rem 0.85rem 0.65rem;
+  padding: 1.35rem var(--page-x) 0.65rem;
 }
 
 .section--compact {
@@ -572,7 +589,7 @@ select:focus:not(:focus-visible) {
 .shell--rack .rack {
   width: min(100%, var(--max));
   margin: 0 auto;
-  padding: 0 0.85rem 4.5rem;
+  padding: 0 var(--page-x) 4.5rem;
 }
 
 .rack__bays {
@@ -753,23 +770,184 @@ a.drive .drive__face {
   letter-spacing: 0.08em;
 }
 
-.row__head span {
+.row__head span,
+.row__hint {
   color: var(--muted);
   font-size: 0.75rem;
+}
+
+.row__hint {
+  display: block;
+  margin-top: 0.2rem;
+  letter-spacing: 0.04em;
+}
+
+.stream__empty {
+  margin: 1rem 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
 }
 
 .row__track {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: minmax(220px, 260px);
+  grid-auto-columns: minmax(200px, 260px);
   gap: 0.85rem;
   overflow-x: auto;
   padding-bottom: 0.5rem;
   scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
 }
 
 .row__track:focus-visible {
   outline: 1px solid var(--phosphor-dim);
+}
+
+/* Apple TV–style featured shelf */
+.row--featured {
+  margin-bottom: 1.85rem;
+}
+
+.featured {
+  margin-bottom: 0.85rem;
+}
+
+.featured__card {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 0;
+  border: 1px solid var(--line-hot);
+  background:
+    linear-gradient(120deg, color-mix(in oklab, var(--phosphor) 8%, transparent), transparent 42%),
+    linear-gradient(160deg, var(--panel-2), var(--panel));
+  padding: 0;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.featured__card:hover,
+.featured__card.is-active,
+.featured__card:focus-visible {
+  border-color: var(--phosphor-dim);
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--phosphor) 28%, transparent);
+}
+
+.featured__art {
+  position: relative;
+  min-height: clamp(180px, 32vw, 280px);
+  overflow: hidden;
+  border-right: 1px solid var(--line);
+}
+
+.featured__play {
+  position: absolute;
+  inset: auto auto 0.75rem 0.75rem;
+  z-index: 2;
+  width: 2.6rem;
+  height: 2.6rem;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--phosphor);
+  background: color-mix(in oklab, var(--void) 55%, transparent);
+  color: var(--phosphor);
+  font-size: 0.95rem;
+}
+
+.featured__meta {
+  display: grid;
+  align-content: center;
+  gap: 0.45rem;
+  padding: 1rem 1.1rem;
+  min-width: 0;
+}
+
+.featured__eyebrow {
+  margin: 0;
+  color: var(--amber);
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.featured__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.25rem, 3.2vw, 1.85rem);
+  letter-spacing: 0.04em;
+  line-height: 1.15;
+}
+
+.featured__sub,
+.featured__blurb,
+.featured__cta {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.featured__cta {
+  color: var(--phosphor-dim);
+  letter-spacing: 0.08em;
+  text-transform: lowercase;
+  margin-top: 0.35rem;
+}
+
+.row--featured .row__track {
+  grid-auto-columns: minmax(180px, 220px);
+}
+
+.tile__playhint {
+  position: absolute;
+  inset: auto auto 0.45rem 0.45rem;
+  z-index: 2;
+  width: 1.7rem;
+  height: 1.7rem;
+  display: grid;
+  place-items: center;
+  border: 1px solid color-mix(in oklab, var(--phosphor) 45%, var(--line));
+  background: color-mix(in oklab, var(--void) 60%, transparent);
+  color: var(--phosphor);
+  font-size: 0.7rem;
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+
+.tile:hover .tile__playhint,
+.tile--active .tile__playhint,
+.tile:focus-visible .tile__playhint {
+  opacity: 1;
+}
+
+.tile__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.tile__next {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--steel);
+  padding: 0.35rem 0.55rem;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  text-transform: lowercase;
+}
+
+.tile__next:hover {
+  border-color: var(--phosphor-dim);
+  color: var(--phosphor);
+}
+
+.tile-wrap--featured .tile__art {
+  height: 148px;
 }
 
 .tile {
@@ -1487,6 +1665,36 @@ a.drive .drive__face {
   letter-spacing: 0.06em;
 }
 
+.admin__lead {
+  margin: 0.35rem 0 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.admin__presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1rem 0 0.25rem;
+}
+
+.admin__preset {
+  appearance: none;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: inherit;
+  padding: 0.45rem 0.95rem;
+  font: inherit;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.admin__preset.is-active {
+  background: color-mix(in oklab, var(--panel) 70%, var(--ink) 8%);
+  border-color: color-mix(in oklab, var(--line) 40%, var(--ink));
+}
+
 .admin__aside {
   margin: 0;
   max-width: 42rem;
@@ -2020,6 +2228,7 @@ a.drive .drive__face {
   border-top: 1px solid var(--line-hot);
   background: color-mix(in oklab, #070b08 94%, transparent);
   backdrop-filter: blur(12px);
+  padding-bottom: var(--safe-b);
 }
 
 .deck__bar {
@@ -2051,6 +2260,83 @@ a.drive .drive__face {
   align-items: center;
   gap: 0.55rem;
   min-width: 0;
+}
+
+.deck__upnext-peek {
+  display: none;
+  color: var(--muted);
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 14rem;
+}
+
+@media (min-width: 900px) {
+  .deck__upnext-peek {
+    display: inline;
+  }
+}
+
+.deck__upnext {
+  margin-top: 0.85rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--line);
+}
+
+.deck__upnext-label {
+  margin: 0 0 0.45rem;
+  color: var(--phosphor-dim);
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+}
+
+.deck__upnext-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.3rem;
+}
+
+.deck__upnext-item {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1.4rem 1fr auto;
+  gap: 0.45rem;
+  align-items: baseline;
+  border: 1px solid transparent;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  padding: 0.35rem 0.4rem;
+  cursor: pointer;
+}
+
+.deck__upnext-item:hover,
+.deck__upnext-item:focus-visible {
+  border-color: var(--line-hot);
+  background: color-mix(in oklab, var(--panel-2) 80%, transparent);
+}
+
+.deck__upnext-idx {
+  color: var(--muted);
+  font-size: 0.68rem;
+}
+
+.deck__upnext-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.78rem;
+}
+
+.deck__upnext-brand {
+  color: var(--steel);
+  font-size: 0.65rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .deck__dot {
@@ -2245,7 +2531,7 @@ a.drive .drive__face {
 .footer {
   width: min(100%, var(--max));
   margin: 2rem auto 0;
-  padding: 2rem 1.25rem 1rem;
+  padding: 2rem var(--page-x) calc(1rem + var(--safe-b));
   color: var(--muted);
   font-size: 0.75rem;
   letter-spacing: 0.04em;
@@ -2775,9 +3061,13 @@ a.drive .drive__face {
 .access {
   position: relative;
   min-height: 100vh;
+  min-height: 100dvh;
   display: grid;
   place-items: center;
-  padding: 2rem 1.25rem;
+  padding:
+    calc(1.25rem + var(--safe-t))
+    calc(var(--page-x) + 0.25rem)
+    calc(1.25rem + var(--safe-b));
 }
 
 .access__atmosphere {
@@ -3221,4 +3511,171 @@ a.drive .drive__face {
   .topbar__account {
     display: none;
   }
+
+  .topbar__brand small {
+    display: none;
+  }
+
+  .row__head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+
+  .row__track {
+    grid-auto-columns: minmax(168px, 78vw);
+    gap: 0.65rem;
+    margin-inline: calc(var(--page-x) * -0.35);
+    padding-inline: calc(var(--page-x) * 0.35);
+  }
+
+  .featured__card {
+    grid-template-columns: 1fr;
+  }
+
+  .featured__art {
+    min-height: 200px;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .tile__art {
+    height: 118px;
+  }
+
+  .drive__face {
+    min-height: 2.75rem;
+    padding: 0.65rem 0.75rem;
+  }
+
+  .btn {
+    min-height: 2.75rem;
+    padding: 0.7rem 1rem;
+  }
+
+  .access__panel {
+    width: min(440px, 100%);
+    padding: 1.35rem 1.1rem 1.25rem;
+  }
+
+  .deck__bar {
+    padding: 0.55rem var(--page-x);
+    gap: 0.55rem;
+  }
+
+  .deck__controls button,
+  .deck__expand {
+    min-height: 2.5rem;
+    min-width: 2.5rem;
+  }
+
+  .cat-filters {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .admin {
+    padding: 1.15rem var(--page-x) 2.5rem;
+  }
 }
+
+@media (max-width: 480px) {
+  :root {
+    --deck-h: 64px;
+    --page-x: 0.7rem;
+  }
+
+  .topbar__brand strong {
+    font-size: 0.82rem;
+    letter-spacing: 0.06em;
+  }
+
+  .topbar__mark {
+    width: 1.9rem;
+    height: 1.9rem;
+    font-size: 0.75rem;
+  }
+
+  .hero--compact .hero__brand {
+    font-size: clamp(1.55rem, 9vw, 2.1rem);
+  }
+
+  .hero__tagline {
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+  }
+
+  .hero__commerce {
+    font-size: 0.68rem;
+    max-width: 28ch;
+  }
+
+  .hero__cta {
+    width: 100%;
+  }
+
+  .hero__cta .btn {
+    flex: 1 1 auto;
+  }
+
+  .row__track {
+    grid-auto-columns: minmax(148px, 72vw);
+  }
+
+  .tile__title {
+    font-size: 0.86rem;
+  }
+
+  .cmd__flash {
+    min-width: 0;
+    font-size: 0.68rem;
+  }
+
+  .cat-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .cat-search {
+    grid-template-columns: 1fr;
+    gap: 0.4rem;
+  }
+
+  .cat-search__count {
+    justify-self: start;
+  }
+
+  .deck__label {
+    font-size: 0.74rem;
+  }
+
+  .footprint__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .alias-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Large / desktop comfort */
+@media (min-width: 1200px) {
+  :root {
+    --page-x: 1.35rem;
+  }
+}
+
+/* Prefer hover affordances only when a fine pointer is available */
+@media (hover: none) {
+  .tile:hover,
+  .tile--active {
+    transform: none;
+  }
+
+  .btn:hover {
+    transform: none;
+  }
+
+  .tile__playhint {
+    opacity: 0.85;
+  }
+}
+

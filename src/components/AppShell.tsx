@@ -9,7 +9,6 @@ import { CommandBar } from "@/components/CommandBar";
 import { Hero } from "@/components/Hero";
 import { StreamDeck } from "@/components/StreamDeck";
 import { CategoryBrowser } from "@/components/CategoryBrowser";
-import { AliasMatrix } from "@/components/AliasMatrix";
 import { CosmogramPanel } from "@/components/Cosmogram";
 import { DriveBay } from "@/components/DriveBay";
 import { MagazineReader } from "@/components/MagazineReader";
@@ -22,7 +21,7 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { SITE } from "@/data/identity";
 import { findCategoryByQuery, type CategoryId, type SubcategoryId } from "@/data/taxonomy";
 
-type BayId = "stream" | "browse" | "chart" | "names" | "support";
+type BayId = "stream" | "browse" | "chart" | "support";
 
 function ShellInner() {
   const router = useRouter();
@@ -32,18 +31,18 @@ function ShellInner() {
   const [searchCategory, setSearchCategory] = useState<CategoryId | "all">("all");
   const [searchSubcategory, setSearchSubcategory] = useState<SubcategoryId | "all">("all");
   const [browseKey, setBrowseKey] = useState(0);
-  const { toggle, setExpanded } = usePlayerState();
+  const { toggle, setExpanded, next } = usePlayerState();
   const { openId, closeMagazine } = useMagazine();
   const { user, logout, refresh } = useAuth();
 
   const bayFromHash = useCallback((hash: string): BayId | null => {
     const id = hash.replace(/^#/, "").toLowerCase();
-    if (id === "stream" || id === "browse" || id === "chart" || id === "names" || id === "support") {
+    if (id === "stream" || id === "browse" || id === "chart" || id === "support") {
       return id;
     }
     if (id === "categories") return "browse";
     if (id === "cosmogram") return "chart";
-    if (id === "brands" || id === "donate") return id === "brands" ? "names" : "support";
+    if (id === "donate") return "support";
     return null;
   }, []);
 
@@ -94,6 +93,16 @@ function ShellInner() {
         toggle();
         return;
       }
+      if (cmd === "next") {
+        setExpanded(true);
+        next();
+        return;
+      }
+      if (cmd === "queue") {
+        setExpanded(true);
+        openBayTo("stream");
+        return;
+      }
       if (cmd === "footprint") {
         router.push("/footprint");
         return;
@@ -103,14 +112,13 @@ function ShellInner() {
         categories: "browse",
         magazine: "stream",
         cosmogram: "chart",
-        brands: "names",
         support: "support",
         donate: "support",
       };
       const id = map[cmd];
       if (id) openBayTo(id);
     },
-    [openBayTo, router, setExpanded, toggle],
+    [openBayTo, router, setExpanded, toggle, next],
   );
 
   return (
@@ -199,18 +207,8 @@ function ShellInner() {
             </DriveBay>
 
             <DriveBay
-              id="names"
-              drive="D"
-              label="NAMES"
-              open={openBay === "names"}
-              onToggle={() => toggleBay("names")}
-            >
-              <AliasMatrix compact />
-            </DriveBay>
-
-            <DriveBay
               id="support"
-              drive="E"
+              drive="D"
               label="SUPPORT"
               open={openBay === "support"}
               onToggle={() => toggleBay("support")}
@@ -220,7 +218,7 @@ function ShellInner() {
 
             <DriveBay
               id="footprint-bay"
-              drive="F"
+              drive="E"
               label="FOOTPRINT"
               open={false}
               onToggle={() => undefined}

@@ -173,7 +173,8 @@ export function validateCreateInput(raw: unknown): CreateContentInput {
   const category = String(o.category ?? "").trim() as CategoryId;
   const subcategory = String(o.subcategory ?? "").trim() as SubcategoryId;
   const platform = String(o.platform ?? "").trim().toLowerCase();
-  const externalUrl = String(o.externalUrl ?? "").trim();
+  const externalUrlRaw = String(o.externalUrl ?? "").trim();
+  const srcRaw = o.src ? String(o.src).trim() : "";
   const blurb = String(o.blurb ?? "").trim();
 
   if (!title || title.length > 160) throw new Error("invalid_title");
@@ -183,13 +184,27 @@ export function validateCreateInput(raw: unknown): CreateContentInput {
   if (!platform || platform.length > 40) throw new Error("invalid_platform");
   if (!blurb || blurb.length > 600) throw new Error("invalid_blurb");
 
+  const mediaCandidate = externalUrlRaw || srcRaw;
+  if (!mediaCandidate) throw new Error("invalid_url");
+
   let url: URL;
   try {
-    url = new URL(externalUrl);
+    url = new URL(mediaCandidate);
   } catch {
     throw new Error("invalid_url");
   }
   if (url.protocol !== "https:") throw new Error("invalid_url");
+
+  let externalUrl = url.toString();
+  if (externalUrlRaw) {
+    try {
+      const eu = new URL(externalUrlRaw);
+      if (eu.protocol !== "https:") throw new Error("invalid_url");
+      externalUrl = eu.toString();
+    } catch {
+      throw new Error("invalid_url");
+    }
+  }
 
   const poster = o.poster ? String(o.poster).trim() : undefined;
   if (poster) {
@@ -203,7 +218,7 @@ export function validateCreateInput(raw: unknown): CreateContentInput {
 
   const body = o.body ? String(o.body).slice(0, 50_000) : undefined;
   const subtitle = o.subtitle ? String(o.subtitle).trim().slice(0, 200) : undefined;
-  const src = o.src ? String(o.src).trim() : undefined;
+  const src = srcRaw || undefined;
   if (src) {
     try {
       const s = new URL(src);
@@ -217,6 +232,36 @@ export function validateCreateInput(raw: unknown): CreateContentInput {
     ? o.tags.map((t) => String(t).trim()).filter(Boolean).slice(0, 12)
     : [];
 
+  const EMBED_PROVIDERS = [
+    "youtube",
+    "vimeo",
+    "twitch",
+    "soundcloud",
+    "substack",
+    "audio",
+    "bandcamp",
+  ] as const;
+
+  let embed: CatalogItem["embed"] | undefined;
+  if (o.embed && typeof o.embed === "object") {
+    const e = o.embed as Record<string, unknown>;
+    const provider = String(e.provider ?? "").trim() as (typeof EMBED_PROVIDERS)[number];
+    if (!EMBED_PROVIDERS.includes(provider)) throw new Error("invalid_embed");
+    const id = e.id != null ? String(e.id).trim().slice(0, 120) : undefined;
+    let embedUrl: string | undefined;
+    if (e.url != null && String(e.url).trim()) {
+      try {
+        const eu = new URL(String(e.url).trim());
+        if (eu.protocol !== "https:") throw new Error("invalid_embed");
+        embedUrl = eu.toString();
+      } catch {
+        throw new Error("invalid_embed");
+      }
+    }
+    if (!id && !embedUrl) throw new Error("invalid_embed");
+    embed = { provider, id: id || undefined, url: embedUrl };
+  }
+
   return {
     title,
     subtitle,
@@ -225,7 +270,7 @@ export function validateCreateInput(raw: unknown): CreateContentInput {
     category,
     subcategory,
     platform,
-    externalUrl: url.toString(),
+    externalUrl,
     poster,
     src,
     duration: o.duration ? String(o.duration).trim().slice(0, 24) : undefined,
@@ -233,10 +278,7 @@ export function validateCreateInput(raw: unknown): CreateContentInput {
     blurb,
     body,
     paywalled: o.paywalled !== false,
-    embed:
-      o.embed && typeof o.embed === "object"
-        ? (o.embed as CatalogItem["embed"])
-        : undefined,
+    embed,
   };
 }
 

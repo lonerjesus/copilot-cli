@@ -124,6 +124,19 @@
       "outputs": ["bounce-risk.md"]
     },
     {
+      "id": "code-checker",
+      "specialty": "correctness, API contracts, session/catalog splits, production polish",
+      "triggers": [
+        "every-pr",
+        "src/lib/auth/**",
+        "src/data/catalog.ts",
+        "src/app/api/**",
+        "scripts/qa-smoke.sh"
+      ],
+      "dependsOn": [],
+      "outputs": ["code-checker.md"]
+    },
+    {
       "id": "qa-browser",
       "specialty": "desktop/mobile critical-path browser verification",
       "triggers": [
@@ -166,6 +179,7 @@
         "compliance-18plus",
         "a11y",
         "analytics-bounce",
+        "code-checker",
         "qa-browser",
         "cloudflare-deploy"
       ],

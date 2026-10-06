@@ -41,8 +41,19 @@ export function isPaywalled(item: CatalogItem): boolean {
   return false;
 }
 
+/** House originals for the member Netflix stream (not outside/fetched). */
+export function isHouseMedia(item: CatalogItem): boolean {
+  if (item.source === "uploaded") return true;
+  if (item.source === "fetched") return false;
+  return isPaywalled(item);
+}
+
 export function isFetchedMedia(item: CatalogItem): boolean {
-  return !isPaywalled(item);
+  return !isHouseMedia(item);
+}
+
+export function houseCatalog(items: CatalogItem[]): CatalogItem[] {
+  return items.filter(isHouseMedia);
 }
 
 export type StreamRow = {
@@ -133,7 +144,7 @@ export const CATALOG: CatalogItem[] = [
     poster: "https://substackcdn.com/image/fetch/$s_!kw0l!,f_auto,q_auto:best,fl_progressive:steep/https%3A%2F%2Ftellingshowoflove.substack.com%2Ftwitter%2Fsubscribe-card.jpg%3Fv%3D-242575336%26version%3D9",
     embed: { provider: "audio", url: "https://tellingshowoflove.substack.com" },
     tags: ["TSOL", "Imponderabilia", "podcast"],
-    blurb: "Imponderabilia transmission — wall carpet frequency opening.",
+    blurb: "Imponderabilia transmission — Wall_Carpet frequency opening.",
   },
   {
     id: "tsol-reboot",
@@ -416,7 +427,7 @@ export const CATALOG: CatalogItem[] = [
     externalUrl: "https://www.kamaunegasi.me",
     poster: "/og.png",
     tags: ["Golden Crow", "brand", "acquisitions"],
-    blurb: "Golden Crow house node — acquisitions frequency under the Negasi portfolio.",
+    blurb: "Golden Crow house node — acquisitions frequency under the Kendrick-Kamau Negasi portfolio.",
   },
   {
     id: "golden-crow-acquisitions",
@@ -827,112 +838,68 @@ export const CATALOG: CatalogItem[] = [
   },
 ];
 
+/** Member home shelves — house originals only. Outside platforms live on Footprint. */
 export const STREAM_ROWS: StreamRow[] = [
   {
     id: "now",
-    title: "NOW PLAYING QUEUE",
-    hint: "auto-advance · stay in the stream",
-    itemIds: [
-      "twitch-live",
-      "bandcamp-telling-songs",
-      "bandcamp-30over9-good-sloppy",
-      "tsol-pardon-their-illness",
-      "apple-wall-carpet",
-      "qtoss-vol1",
-    ],
-  },
-  {
-    id: "tsol",
-    title: "TELLING SHOW OF LOVE",
-    hint: "essays · vlogs · reboot season",
-    itemIds: [
-      "tsol-pardon-their-illness",
-      "tsol-temporada-tres",
-      "tsol-one-that-got-away",
-      "tsol-too-eager",
-      "tsol-meta-man",
-      "tsol-being-lame",
-      "tsol-i-fret-not",
-      "tsol-yall-funny",
-      "tsol-trying-too-hard",
-      "tsol-final-notice",
-      "tsol-celine",
-      "tsol-reboot",
-    ],
-  },
-  {
-    id: "print",
-    title: "MAGCLOUD · CHAPBOOKS",
-    hint: "QUARANTINED THOUGHTS OF A STREET STATISTIC",
+    title: "FEATURED",
+    hint: "house originals · press play",
     itemIds: ["qtoss-vol1", "qtoss-vol2"],
   },
   {
-    id: "pods",
-    title: "APPLE PODCASTS",
-    hint: "STPK's Smoker's Lounge Music · Imponderabilia: Wall_Carpet 235",
-    itemIds: ["stpks-smokers-lounge", "apple-wall-carpet", "wall-carpet-235"],
+    id: "video",
+    title: "VIDEOS",
+    hint: "clips · vlogs · live",
+    itemIds: [],
   },
   {
     id: "music",
-    title: "TELLING SONGS AS CONTENT · 357ITSUMI",
-    hint: "Bandcamp · SoundCloud · Slushy · Shazam",
-    itemIds: [
-      "bandcamp-telling-songs",
-      "bandcamp-30over9-good-sloppy",
-      "bc-mind-intruder",
-      "bc-good-sloppy-title",
-      "bc-electro-blk",
-      "bc-god-is-able",
-      "bc-jonny",
-      "bc-faust-stalkers",
-      "soundcloud-357",
-      "slushy-357",
-      "shazam-357itsumi",
-      "shazam-streetpolitik",
-    ],
+    title: "MUSIC",
+    hint: "tracks · mixes · albums",
+    itemIds: [],
   },
   {
-    id: "vault",
-    title: "STREETPOLITIK / 357ITSUMI VAULT",
-    hint: "archive video · free music · Vimeo",
-    itemIds: [
-      "vimeo-jose-slim",
-      "vimeo-tiponn",
-      "vimeo-thinking-of-you",
-      "vimeo-thinking-pt2",
-      "streetpolitik-toneden",
-      "facebook-357",
-      "rumble-357",
-    ],
+    id: "photos",
+    title: "PHOTOS",
+    hint: "stills · dumps",
+    itemIds: [],
   },
   {
-    id: "house",
-    title: "HOUSE LABELS & ALIASES",
-    hint: "GAK · BLKDTY · Faust Fakeway · TL1 · LoveDrugVendingMachine · GRUNGEzhou · Golden Crow",
-    itemIds: [
-      "gak-manifest",
-      "blkdty-house",
-      "faust-fakeway",
-      "tl1-feed",
-      "ldvm-drop",
-      "black-oh-my",
-      "telling-stills",
-      "grungezhou-libellus",
-      "grungezhou-supply",
-      "golden-crow",
-      "golden-crow-acquisitions",
-    ],
+    id: "writing",
+    title: "READING",
+    hint: "essays · chapbooks",
+    itemIds: ["qtoss-vol1", "qtoss-vol2"],
   },
 ];
+
+/** Which house kinds fill a Netflix-style shelf (plus pinned itemIds). */
+export function streamRowMatches(rowId: string, item: CatalogItem): boolean {
+  switch (rowId) {
+    case "video":
+      return item.kind === "video" || item.kind === "vlog" || item.kind === "live";
+    case "music":
+      return item.kind === "audio";
+    case "photos":
+      return item.kind === "still";
+    case "writing":
+      return item.kind === "essay";
+    case "now":
+      return true;
+    default:
+      return false;
+  }
+}
 
 export function getItem(id: string): CatalogItem | undefined {
   return CATALOG.find((item) => item.id === id);
 }
 
 export function getQueue(): CatalogItem[] {
-  return STREAM_ROWS[0].itemIds
+  const pinned = STREAM_ROWS[0].itemIds
     .map((id) => getItem(id))
     .filter((item): item is CatalogItem => Boolean(item));
+  if (pinned.length) return pinned;
+  return houseCatalog(CATALOG).slice(0, 12);
 }
 
 export function getByCategory(

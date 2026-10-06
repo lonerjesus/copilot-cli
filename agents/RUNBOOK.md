@@ -61,10 +61,13 @@ Invoke an agent when **any** listed path/signal matches. Run Wave A agents in pa
 `(catalog-names → content-ingest) ∥ compliance-18plus` → `qa-browser` → `verifier`
 
 **UI polish**  
-`ux` ∥ `a11y` ∥ `performance` ∥ `analytics-bounce` ∥ `catalog-names` ∥ `security` → `qa-browser` → `verifier`
+`ux` ∥ `a11y` ∥ `performance` ∥ `analytics-bounce` ∥ `catalog-names` ∥ `security` ∥ `code-checker` → `qa-browser` → `verifier`
 
 **API / oEmbed change**  
-`security` ∥ `performance` ∥ `catalog-names` → `qa-browser` (smoke play path) → `cloudflare-deploy` (if edge/config) → `verifier`
+`security` ∥ `performance` ∥ `catalog-names` ∥ `code-checker` → `qa-browser` (smoke play path) → `cloudflare-deploy` (if edge/config) → `verifier`
 
 **Deploy-only**  
 `cloudflare-deploy` ∥ `security` ∥ `performance` → `verifier`
+
+**Netflix house / session / Footprint split**  
+`check-netflix-house` pack — see [`checkers/README.md`](./checkers/README.md)
