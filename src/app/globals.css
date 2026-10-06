@@ -2552,6 +2552,20 @@ a.drive .drive__face {
   animation: orb 3.5s ease-in-out infinite;
 }
 
+.deck__visual--blocked {
+  gap: 0.65rem;
+  padding: 1rem;
+  text-align: center;
+}
+
+.deck__blocked {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .deck__bars {
   position: absolute;
   bottom: 18%;
