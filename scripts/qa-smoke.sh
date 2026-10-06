@@ -28,6 +28,15 @@ home_code="$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" "$BASE/")"
 check "home-redirect-access" "$home_code" "307"
 
 check "access" "$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" "$BASE/access")"
+check "privacy" "$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" "$BASE/privacy")"
+check "terms" "$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" "$BASE/terms")"
+check "og-image" "$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" "$BASE/og.png")"
+
+access_html="$(curl -s -A "$UA" "$BASE/access")"
+echo "$access_html" | grep -q 'portfolio · vlog · stream' && echo "PASS  access-tagline" && pass=$((pass+1)) || { echo "FAIL  access-tagline"; fail=$((fail+1)); }
+echo "$access_html" | grep -qi 'forgot password' && echo "PASS  access-forgot-stub" && pass=$((pass+1)) || { echo "FAIL  access-forgot-stub"; fail=$((fail+1)); }
+echo "$access_html" | grep -q '/privacy' && echo "PASS  access-privacy-link" && pass=$((pass+1)) || { echo "FAIL  access-privacy-link"; fail=$((fail+1)); }
+echo "$access_html" | grep -q '/terms' && echo "PASS  access-terms-link" && pass=$((pass+1)) || { echo "FAIL  access-terms-link"; fail=$((fail+1)); }
 
 # Content APIs require auth
 check "feed-auth" "$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" "$BASE/api/feed")" "401"

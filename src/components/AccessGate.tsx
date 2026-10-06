@@ -1,7 +1,9 @@
 "use client";
 
 import { useMemo, useState, type FormEvent } from "react";
+import Link from "next/link";
 import { SITE } from "@/data/identity";
+import { MIN_PASSWORD_LENGTH } from "@/data/commerce";
 
 type Mode = "login" | "register";
 
@@ -18,18 +20,29 @@ export function AccessGate() {
   const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [displayName, setDisplayName] = useState("");
   const [birthDate, setBirthDate] = useState("");
   const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [website, setWebsite] = useState(""); // honeypot
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [forgotOpen, setForgotOpen] = useState(false);
 
   const nextPath = useMemo(() => {
     if (typeof window === "undefined") return "/";
     const params = new URLSearchParams(window.location.search);
     return safeInternalPath(params.get("next"));
   }, []);
+
+  const passwordHint =
+    mode === "register"
+      ? password.length === 0
+        ? `Use at least ${MIN_PASSWORD_LENGTH} characters.`
+        : password.length < MIN_PASSWORD_LENGTH
+          ? `${password.length}/${MIN_PASSWORD_LENGTH} — keep going.`
+          : `${password.length} characters · ready.`
+      : null;
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -73,7 +86,11 @@ export function AccessGate() {
         <h1 id="access-title" className="access__brand">
           {SITE.title}
         </h1>
+        <p className="access__tagline">{SITE.tagline}</p>
         <p className="access__copy">Account required.</p>
+        <p className="access__commerce">
+          Stream fetched platform media free as a member. House uploads download via Stripe.
+        </p>
 
         <div className="access__tabs" role="tablist" aria-label="Account mode">
           <button
@@ -81,7 +98,11 @@ export function AccessGate() {
             role="tab"
             aria-selected={mode === "login"}
             className={mode === "login" ? "is-on" : ""}
-            onClick={() => setMode("login")}
+            onClick={() => {
+              setMode("login");
+              setForgotOpen(false);
+              setError("");
+            }}
           >
             sign in
           </button>
@@ -90,7 +111,11 @@ export function AccessGate() {
             role="tab"
             aria-selected={mode === "register"}
             className={mode === "register" ? "is-on" : ""}
-            onClick={() => setMode("register")}
+            onClick={() => {
+              setMode("register");
+              setForgotOpen(false);
+              setError("");
+            }}
           >
             create account
           </button>
@@ -145,18 +170,60 @@ export function AccessGate() {
             />
           </label>
 
-          <label>
-            <span>password {mode === "register" ? "(≥10 chars)" : ""}</span>
-            <input
-              type="password"
-              required
-              minLength={mode === "register" ? 10 : 1}
-              maxLength={128}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete={mode === "login" ? "current-password" : "new-password"}
-            />
-          </label>
+          <div className="access__password">
+            <label className="access__password-label">
+              <span>password</span>
+              <input
+                type={showPassword ? "text" : "password"}
+                required
+                minLength={mode === "register" ? MIN_PASSWORD_LENGTH : 1}
+                maxLength={128}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete={mode === "login" ? "current-password" : "new-password"}
+              />
+            </label>
+            <button
+              type="button"
+              className="access__reveal"
+              aria-pressed={showPassword}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              onClick={() => setShowPassword((v) => !v)}
+            >
+              {showPassword ? "hide" : "show"}
+            </button>
+          </div>
+          {passwordHint ? (
+            <p
+              className={
+                password.length >= MIN_PASSWORD_LENGTH
+                  ? "access__hint access__hint--ok"
+                  : "access__hint"
+              }
+              aria-live="polite"
+            >
+              {passwordHint}
+            </p>
+          ) : null}
+
+          {mode === "login" ? (
+            <div className="access__forgot">
+              <button
+                type="button"
+                className="access__forgot-toggle"
+                aria-expanded={forgotOpen}
+                onClick={() => setForgotOpen((v) => !v)}
+              >
+                Forgot password?
+              </button>
+              {forgotOpen ? (
+                <p className="access__forgot-stub" role="status">
+                  Email password reset is not live yet. If you are locked out, contact the house
+                  operator — full reset lands in the Auth pack.
+                </p>
+              ) : null}
+            </div>
+          ) : null}
 
           {mode === "register" ? (
             <label className="access__check">
@@ -182,9 +249,13 @@ export function AccessGate() {
         </form>
 
         <p className="access__fine">
-          Viewing requires an account. Fetched platform media is free to stream and save for
-          members. New house uploads require purchase to download. Redistribution is prohibited.
+          Viewing requires an account. Redistribution is prohibited.
         </p>
+        <nav className="access__legal" aria-label="Legal">
+          <Link href="/privacy">Privacy</Link>
+          <span aria-hidden>·</span>
+          <Link href="/terms">Terms</Link>
+        </nav>
       </section>
     </main>
   );
