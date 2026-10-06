@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { CATALOG, type CatalogItem, type MediaKind } from "@/data/catalog";
+import { CATALOG, isPlayableMedia, type CatalogItem, type MediaKind } from "@/data/catalog";
 import type { FootprintItem } from "@/lib/feed";
 import { decodeEntities, relativePulse } from "@/lib/format";
 import { usePlayerState } from "@/components/player/PlayerContext";
@@ -104,13 +104,7 @@ export function FootprintArchive({ initial }: FootprintArchiveProps) {
   const openItem = (item: FootprintItem) => {
     track("footprint_open", { id: item.id, platform: item.platform });
     const catalogMatch = matchLive(item);
-    if (
-      catalogMatch &&
-      (catalogMatch.kind === "audio" ||
-        catalogMatch.kind === "video" ||
-        catalogMatch.kind === "live" ||
-        catalogMatch.kind === "vlog")
-    ) {
+    if (catalogMatch && isPlayableMedia(catalogMatch)) {
       playItem(catalogMatch);
       return;
     }

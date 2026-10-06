@@ -174,6 +174,16 @@ function EmbedStage({
     return <NativeMedia kind={kind} src={src} title={title} playing={playing} onEnded={onEnded} />;
   }
 
+  // Player is AV-only — essays/stills never render a stage.
+  if (kind === "essay" || kind === "still") {
+    return (
+      <div className="deck__visual deck__visual--blocked" aria-hidden>
+        <div className="deck__orb" />
+        <p className="deck__blocked">audio / video only</p>
+      </div>
+    );
+  }
+
   const channel = twitchChannel(url, provider === "twitch" ? id : undefined);
   if (channel && (provider === "twitch" || url?.includes("twitch.tv"))) {
     const parents = ["www.kamaunegasi.net", "kamaunegasi.net", "localhost"];

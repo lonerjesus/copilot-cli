@@ -14,6 +14,8 @@ import {
   STREAM_ROWS,
   houseCatalog,
   isPaywalled,
+  isPlayableMedia,
+  playableCatalog,
   streamRowMatches,
   type CatalogItem,
 } from "@/data/catalog";
@@ -200,17 +202,11 @@ export function StreamDeck({ compact = false }: { compact?: boolean }) {
   const activate = useCallback(
     (item: CatalogItem, queue: CatalogItem[], via: string) => {
       track("enter_stream", { id: item.id, via });
-      if ((item.kind === "essay" || item.kind === "still") && hasMagazine(item.id)) {
-        openMagazine(item.id);
+      if (!isPlayableMedia(item)) {
+        if (hasMagazine(item.id)) openMagazine(item.id);
         return;
       }
-      if (item.kind === "essay" && !item.src && !item.embed) {
-        if (hasMagazine(item.id)) {
-          openMagazine(item.id);
-          return;
-        }
-      }
-      playItem(item, queue);
+      playItem(item, playableCatalog(queue));
     },
     [hasMagazine, openMagazine, playItem],
   );
@@ -292,10 +288,14 @@ export function StreamDeck({ compact = false }: { compact?: boolean }) {
                       featured={featured}
                       active={current?.id === item.id}
                       onPlay={() => activate(item, items, "shelf")}
-                      onQueueNext={() => {
-                        track("queue_next", { id: item.id });
-                        queueNext(item);
-                      }}
+                      onQueueNext={
+                        isPlayableMedia(item)
+                          ? () => {
+                              track("queue_next", { id: item.id });
+                              queueNext(item);
+                            }
+                          : undefined
+                      }
                       canMagazine={hasMagazine(item.id)}
                       onMagazine={() => openMagazine(item.id)}
                     />
