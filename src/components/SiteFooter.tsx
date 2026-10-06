@@ -1,13 +1,10 @@
 import Link from "next/link";
-import { PRIMARY_NAME } from "@/data/identity";
+import { SITE } from "@/data/identity";
 
-export function SiteFooter({ note }: { note?: string }) {
+export function SiteFooter() {
   return (
-    <footer className="footer">
-      <p>
-        © {new Date().getFullYear()} {PRIMARY_NAME}
-        {note ? <span className="footer__note"> · {note}</span> : null}
-      </p>
+    <footer className="footer footer--compact">
+      <p>© {new Date().getFullYear()} {SITE.title}</p>
       <nav className="footer__legal" aria-label="Legal">
         <Link href="/privacy">Privacy</Link>
         <span aria-hidden>·</span>

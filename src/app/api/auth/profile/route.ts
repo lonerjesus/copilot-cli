@@ -8,7 +8,7 @@ import {
 import { getSessionUserFromRequest } from "@/lib/auth/session";
 import { jsonError } from "@/lib/commerce/checkout";
 
-/** Set / update birth date for personal cosmogram (authenticated). */
+/** Set / update birth date (authenticated, 18+). */
 export async function PATCH(request: NextRequest) {
   const session = await getSessionUserFromRequest(request);
   if (!session) return jsonError("Unauthorized", 401);

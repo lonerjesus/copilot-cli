@@ -4,7 +4,7 @@ import { SITE } from "@/data/identity";
 
 export const metadata: Metadata = {
   title: "Privacy",
-  description: `Privacy policy for ${SITE.domain}. How we handle accounts, birth dates, and cosmogram data.`,
+  description: `Privacy policy for ${SITE.domain}.`,
   robots: { index: false, follow: false },
 };
 
@@ -24,21 +24,10 @@ export default function PrivacyPage() {
             <li>Email and password hash (for sign-in).</li>
             <li>Optional display name.</li>
             <li>
-              Birth date — used only to confirm you are 18+ and to power your personal{" "}
-              <strong>cosmogram</strong> (a private chart for your account). It is not shown as a
-              legal name on the site.
+              Birth date — used only to confirm you are 18+. It is not shown on public surfaces.
             </li>
             <li>Purchase and ownership records for house uploads you buy.</li>
           </ul>
-        </section>
-
-        <section className="legal__section">
-          <h2>Cosmogram &amp; DOB</h2>
-          <p>
-            Your date of birth stays on your account profile for the cosmogram. We do not publish
-            birth-certificate names or DOB on public surfaces. Cosmogram output is personal to the
-            signed-in member.
-          </p>
         </section>
 
         <section className="legal__section">

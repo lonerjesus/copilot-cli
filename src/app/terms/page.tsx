@@ -21,8 +21,7 @@ export default function TermsPage() {
         <section className="legal__section">
           <h2>Eligibility</h2>
           <p>
-            You must be 18 or older. Registration requires an age confirmation and a birth date used
-            for age checks and your personal cosmogram.
+            You must be 18 or older. Registration requires an age confirmation and a birth date.
           </p>
         </section>
 

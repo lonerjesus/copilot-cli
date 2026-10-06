@@ -162,9 +162,5 @@ export async function fetchSubstackFeed(): Promise<FootprintItem[]> {
 }
 
 export async function buildFootprint(): Promise<FootprintItem[]> {
-  const { getLiveCatalog } = await import("@/lib/live-catalog");
-  const live = await getLiveCatalog();
-  const catalog = catalogToFootprint(live);
-  const rss = await fetchSubstackFeed();
-  return mergeFootprint(rss, catalog);
+  return [];
 }

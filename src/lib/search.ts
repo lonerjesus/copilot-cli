@@ -1,5 +1,4 @@
-import { ALIASES } from "@/data/identity";
-import { CATALOG, type CatalogItem, type MediaKind } from "@/data/catalog";
+import { CATALOG, houseCatalog, type CatalogItem, type MediaKind } from "@/data/catalog";
 import {
   CATEGORIES,
   findCategoryByQuery,
@@ -33,12 +32,6 @@ export type SearchHit =
       category: Category;
       subcategory?: Subcategory;
       score: number;
-    }
-  | {
-      type: "alias";
-      name: string;
-      kind: string;
-      score: number;
     };
 
 function scoreText(haystack: string, query: string): number {
@@ -53,19 +46,19 @@ function scoreText(haystack: string, query: string): number {
   return 0;
 }
 
-export function uniqueBrands(items: CatalogItem[] = CATALOG): string[] {
+export function uniqueBrands(items: CatalogItem[] = houseCatalog(CATALOG)): string[] {
   return Array.from(new Set(items.map((item) => item.brand))).sort((a, b) =>
     a.localeCompare(b),
   );
 }
 
-export function uniquePlatforms(items: CatalogItem[] = CATALOG): string[] {
+export function uniquePlatforms(items: CatalogItem[] = houseCatalog(CATALOG)): string[] {
   return Array.from(new Set(items.map((item) => item.platform))).sort((a, b) =>
     a.localeCompare(b),
   );
 }
 
-export function uniqueKinds(items: CatalogItem[] = CATALOG): MediaKind[] {
+export function uniqueKinds(items: CatalogItem[] = houseCatalog(CATALOG)): MediaKind[] {
   return Array.from(new Set(items.map((item) => item.kind))) as MediaKind[];
 }
 
@@ -85,7 +78,7 @@ export function searchCatalog(query: string): SearchHit[] {
     });
   }
 
-  for (const item of CATALOG) {
+  for (const item of houseCatalog(CATALOG)) {
     const fields = [
       item.title,
       item.subtitle ?? "",
@@ -99,18 +92,6 @@ export function searchCatalog(query: string): SearchHit[] {
     ];
     const score = Math.max(...fields.map((f) => scoreText(f, q)));
     if (score > 0) hits.push({ type: "item", item, score });
-  }
-
-  for (const alias of ALIASES) {
-    const score = Math.max(
-      scoreText(alias.name, q),
-      scoreText(alias.short ?? "", q),
-      scoreText(alias.kind, q),
-      scoreText(alias.note ?? "", q),
-    );
-    if (score > 0) {
-      hits.push({ type: "alias", name: alias.name, kind: alias.kind, score });
-    }
   }
 
   for (const cat of CATEGORIES) {
@@ -142,17 +123,13 @@ export function searchCatalog(query: string): SearchHit[] {
       const key =
         hit.type === "item"
           ? `item:${hit.item.id}`
-          : hit.type === "alias"
-            ? `alias:${hit.name}`
-            : `cat:${hit.category.id}:${hit.subcategory?.id ?? ""}`;
+          : `cat:${hit.category.id}:${hit.subcategory?.id ?? ""}`;
       return (
         arr.findIndex((other) => {
           const otherKey =
             other.type === "item"
               ? `item:${other.item.id}`
-              : other.type === "alias"
-                ? `alias:${other.name}`
-                : `cat:${other.category.id}:${other.subcategory?.id ?? ""}`;
+              : `cat:${other.category.id}:${other.subcategory?.id ?? ""}`;
           return otherKey === key;
         }) === index
       );
@@ -187,7 +164,7 @@ export function filterCatalog(options: CatalogFilters): CatalogItem[] {
     platform = "all",
     brand = "all",
     sort = "newest",
-    items = CATALOG,
+    items = houseCatalog(CATALOG),
   } = options;
   const q = query.trim().toLowerCase();
 

@@ -25,8 +25,8 @@ function AdminInner() {
         <p className="section__eyebrow">denied</p>
         <h1>NO CLEARANCE</h1>
         <p className="admin-gate__hint">
-          Signed in as <strong>{user?.email ?? "unknown"}</strong>. Admin only opens for the
-          owner email set as <code>ADMIN_EMAIL</code> on the Worker — then refresh.
+          Signed in as <strong>{user?.email ?? "guest"}</strong>. Sign in as the owner, then use
+          admin in the menu.
         </p>
         <div className="admin-gate__actions">
           <Link className="btn btn--ghost" href="/">
@@ -58,7 +58,6 @@ function AdminInner() {
           </Link>
           <nav className="topbar__nav" aria-label="Primary">
             <Link href="/">home</Link>
-            <Link href="/footprint">footprint</Link>
             <Link href="/admin" aria-current="page">
               admin
             </Link>

@@ -244,7 +244,7 @@ export function StreamDeck({ compact = false }: { compact?: boolean }) {
 
             {empty ? (
               <p className="row__empty">
-                No {row.title.toLowerCase()} yet — house uploads land here.
+                No {row.title.toLowerCase()} yet.
               </p>
             ) : null}
 

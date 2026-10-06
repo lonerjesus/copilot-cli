@@ -197,7 +197,7 @@ export function AccessGate() {
                 />
               </label>
               <label>
-                <span>birth date (for your cosmogram · 18+)</span>
+                <span>birth date (18+)</span>
                 <input
                   type="date"
                   required

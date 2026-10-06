@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     return jsonError("Valid email required", 400);
   }
   if (!body.birthDate) {
-    return jsonError("Birth date required for your personal cosmogram", 400);
+    return jsonError("Birth date required (18+)", 400);
   }
 
   try {

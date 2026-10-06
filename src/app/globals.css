@@ -4126,3 +4126,194 @@ a.drive .drive__face {
   }
 }
 
+
+/* Compact rail menu (Twitter-like · terminal colors) */
+.shell--rail {
+  display: grid;
+  grid-template-columns: 12.5rem minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+.rail {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1rem 0.75rem 1.25rem;
+  border-right: 1px solid var(--line);
+  background: color-mix(in oklab, var(--void) 92%, var(--panel));
+  z-index: 20;
+}
+
+.rail__brand {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  text-decoration: none;
+  color: inherit;
+}
+
+.rail__brand strong {
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+}
+
+.rail__logo {
+  flex-shrink: 0;
+}
+
+.rail__nav {
+  display: grid;
+  gap: 0.2rem;
+  flex: 1;
+}
+
+.rail__nav button,
+.rail__nav a {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  text-align: left;
+  font: inherit;
+  font-size: 0.95rem;
+  letter-spacing: 0.04em;
+  padding: 0.55rem 0.7rem;
+  text-decoration: none;
+  cursor: pointer;
+  border-radius: 0;
+}
+
+.rail__nav button.is-active,
+.rail__nav button[aria-current="page"],
+.rail__nav a[aria-current="page"] {
+  color: var(--text);
+  background: color-mix(in oklab, var(--panel) 80%, var(--phosphor) 8%);
+  box-shadow: inset 2px 0 0 var(--phosphor);
+}
+
+.rail__nav button:hover,
+.rail__nav a:hover {
+  color: var(--text);
+}
+
+.rail__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--line);
+}
+
+.rail__user {
+  font-size: 0.72rem;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rail__out {
+  appearance: none;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  padding: 0.3rem 0.5rem;
+  cursor: pointer;
+}
+
+.rail__stage {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.stage {
+  flex: 1;
+  padding: 0.75rem 1rem 2rem;
+  max-width: 56rem;
+}
+
+.rail-toggle,
+.rail-scrim {
+  display: none;
+}
+
+.hero--minimal {
+  min-height: auto;
+  padding: 1.25rem 0 0.5rem;
+}
+
+.hero--minimal .hero__content {
+  display: grid;
+  justify-items: start;
+  gap: 0.85rem;
+  padding: 0;
+}
+
+.hero--minimal .hero__logo {
+  width: clamp(4.5rem, 12vw, 7.5rem);
+  height: auto;
+}
+
+.footer--compact {
+  padding: 1rem;
+  font-size: 0.72rem;
+}
+
+@media (max-width: 820px) {
+  .shell--rail {
+    grid-template-columns: 1fr;
+  }
+
+  .rail {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: min(16rem, 84vw);
+    transform: translateX(-105%);
+    transition: transform 0.2s ease;
+    box-shadow: 8px 0 32px rgba(0, 0, 0, 0.35);
+  }
+
+  .shell--menu .rail {
+    transform: translateX(0);
+  }
+
+  .rail-toggle {
+    display: grid;
+    place-content: center;
+    position: fixed;
+    top: calc(0.65rem + var(--safe-t, 0px));
+    left: 0.65rem;
+    z-index: 30;
+    width: 2.4rem;
+    height: 2.4rem;
+    border: 1px solid var(--line);
+    background: color-mix(in oklab, var(--void) 88%, var(--panel));
+    color: inherit;
+    font-size: 1.1rem;
+    cursor: pointer;
+  }
+
+  .rail-scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 15;
+    border: 0;
+    background: rgba(0, 0, 0, 0.45);
+    cursor: pointer;
+  }
+
+  .stage {
+    padding-top: 3.25rem;
+  }
+}
