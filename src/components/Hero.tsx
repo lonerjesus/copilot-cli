@@ -5,7 +5,7 @@ import { SITE } from "@/data/identity";
 import { usePlayerState } from "@/components/player/PlayerContext";
 import { useMagazine } from "@/components/MagazineContext";
 import { BrandMark } from "@/components/BrandMark";
-import { getQueue } from "@/data/catalog";
+import { getQueue, isPlayableMedia } from "@/data/catalog";
 import { track } from "@/lib/analytics";
 
 export function Hero() {
@@ -34,11 +34,12 @@ export function Hero() {
             className="btn btn--primary"
             onClick={() => {
               const queue = getQueue();
-              const item = current ?? queue[0];
+              const item =
+                (current && isPlayableMedia(current) ? current : null) ?? queue[0];
               track("enter_stream", { id: item?.id ?? "empty" });
               if (!item) return;
-              if (item.kind === "essay" && hasMagazine(item.id)) {
-                openMagazine(item.id);
+              if (!isPlayableMedia(item)) {
+                if (hasMagazine(item.id)) openMagazine(item.id);
                 return;
               }
               playItem(item, queue);

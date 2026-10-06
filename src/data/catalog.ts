@@ -44,6 +44,22 @@ export function isPaywalled(item: CatalogItem): boolean {
   return false;
 }
 
+/** Kinds the media player will actually play (not essays/stills). */
+export const PLAYABLE_KINDS: ReadonlySet<MediaKind> = new Set([
+  "audio",
+  "video",
+  "vlog",
+  "live",
+]);
+
+export function isPlayableMedia(item: CatalogItem): boolean {
+  return PLAYABLE_KINDS.has(item.kind);
+}
+
+export function playableCatalog(items: CatalogItem[]): CatalogItem[] {
+  return items.filter(isPlayableMedia);
+}
+
 /** House originals for the member Netflix stream (not outside/fetched). */
 export function isHouseMedia(item: CatalogItem): boolean {
   if (item.source === "uploaded") return true;
@@ -900,9 +916,9 @@ export function getItem(id: string): CatalogItem | undefined {
 export function getQueue(): CatalogItem[] {
   const pinned = STREAM_ROWS[0].itemIds
     .map((id) => getItem(id))
-    .filter((item): item is CatalogItem => Boolean(item));
+    .filter((item): item is CatalogItem => Boolean(item && isPlayableMedia(item)));
   if (pinned.length) return pinned;
-  return houseCatalog(CATALOG).slice(0, 12);
+  return playableCatalog(houseCatalog(CATALOG)).slice(0, 12);
 }
 
 export function getByCategory(

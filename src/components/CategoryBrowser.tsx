@@ -1,7 +1,7 @@
 "use client";
 
 import { startTransition, useDeferredValue, useEffect, useMemo, useState } from "react";
-import { CATALOG, houseCatalog, isPaywalled, type CatalogItem, type MediaKind } from "@/data/catalog";
+import { CATALOG, houseCatalog, isPaywalled, isPlayableMedia, playableCatalog, type CatalogItem, type MediaKind } from "@/data/catalog";
 import {
   CATEGORIES,
   getCategory,
@@ -344,7 +344,20 @@ export function CategoryBrowser({
                       <button
                         type="button"
                         className={`tile tile--compact ${current?.id === item.id ? "tile--active" : ""}`}
-                        onClick={() => playItem(item, group.items)}
+                        onClick={() => {
+                          if (!isPlayableMedia(item)) {
+                            if (hasMagazine(item.id)) openMagazine(item.id);
+                            return;
+                          }
+                          playItem(item, playableCatalog(group.items));
+                        }}
+                        aria-label={
+                          isPlayableMedia(item)
+                            ? `Play ${item.title}`
+                            : hasMagazine(item.id)
+                              ? `Open magazine for ${item.title}`
+                              : item.title
+                        }
                       >
                         <div className={`tile__art tile__art--${item.kind}`} aria-hidden>
                           <MediaPoster item={item} className="tile__poster" label={kindGlyph(item.kind)} />

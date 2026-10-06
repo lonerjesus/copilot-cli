@@ -10,7 +10,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { getQueue, type CatalogItem } from "@/data/catalog";
+import { getQueue, isPlayableMedia, playableCatalog, type CatalogItem } from "@/data/catalog";
 
 type PlayerStateValue = {
   queue: CatalogItem[];
@@ -37,8 +37,18 @@ type PlayerProgressValue = {
 const PlayerStateContext = createContext<PlayerStateValue | null>(null);
 const PlayerProgressContext = createContext<PlayerProgressValue | null>(null);
 
+function stepIndex(queue: CatalogItem[], from: number, dir: 1 | -1): number {
+  if (!queue.length) return 0;
+  let i = from;
+  for (let n = 0; n < queue.length; n++) {
+    i = (i + dir + queue.length) % queue.length;
+    if (isPlayableMedia(queue[i]!)) return i;
+  }
+  return from;
+}
+
 export function PlayerProvider({ children }: { children: ReactNode }) {
-  const initial = useMemo(() => getQueue(), []);
+  const initial = useMemo(() => playableCatalog(getQueue()), []);
   const [queue, setQueue] = useState<CatalogItem[]>(initial);
   const [index, setIndex] = useState(0);
   const [playing, setPlaying] = useState(false);
@@ -46,8 +56,11 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [progress, setProgress] = useState(0);
   const timer = useRef<number | null>(null);
 
-  const current = queue[index] ?? initial[0] ?? null;
-  const upNext = useMemo(() => queue.slice(index + 1), [queue, index]);
+  const current = queue[index] && isPlayableMedia(queue[index]!) ? queue[index]! : null;
+  const upNext = useMemo(
+    () => queue.slice(index + 1).filter(isPlayableMedia),
+    [queue, index],
+  );
 
   const clearTimer = () => {
     if (timer.current) {
@@ -57,38 +70,37 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   };
 
   const next = useCallback(() => {
-    setIndex((i) => (queue.length ? (i + 1) % queue.length : 0));
+    setIndex((i) => stepIndex(queue, i, 1));
     setProgress(0);
     setPlaying(true);
-  }, [queue.length]);
+  }, [queue]);
 
   const prev = useCallback(() => {
-    setIndex((i) => (queue.length ? (i - 1 + queue.length) % queue.length : 0));
+    setIndex((i) => stepIndex(queue, i, -1));
     setProgress(0);
     setPlaying(true);
-  }, [queue.length]);
+  }, [queue]);
 
   const playItem = useCallback((item: CatalogItem, nextQueue?: CatalogItem[]) => {
-    const q = nextQueue ?? queue;
-    const found = q.findIndex((entry) => entry.id === item.id);
-    if (nextQueue) setQueue(nextQueue);
-    if (found >= 0) {
-      setIndex(found);
-    } else {
-      setQueue([item, ...q]);
-      setIndex(0);
-    }
+    if (!isPlayableMedia(item)) return;
+    const raw = nextQueue ?? queue;
+    const q = playableCatalog(raw);
+    const withItem = q.some((entry) => entry.id === item.id) ? q : [item, ...q];
+    const found = withItem.findIndex((entry) => entry.id === item.id);
+    setQueue(withItem);
+    setIndex(found >= 0 ? found : 0);
     setProgress(0);
     setPlaying(true);
     setExpanded(true);
   }, [queue]);
 
   const queueNext = useCallback((item: CatalogItem) => {
+    if (!isPlayableMedia(item)) return;
     setQueue((q) => {
-      const without = q.filter((entry) => entry.id !== item.id);
+      const playable = playableCatalog(q);
+      const without = playable.filter((entry) => entry.id !== item.id);
       const at = Math.min(index + 1, without.length);
-      const nextQ = [...without.slice(0, at), item, ...without.slice(at)];
-      return nextQ;
+      return [...without.slice(0, at), item, ...without.slice(at)];
     });
     setExpanded(true);
   }, [index]);
@@ -97,14 +109,15 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     clearTimer();
+    if (!current || !isPlayableMedia(current)) return;
     // Real embeds own playback — don't fake scrub/auto-advance.
     const liveEmbed = ["bandcamp", "soundcloud", "twitch", "youtube", "vimeo"].includes(
-      current?.embed?.provider ?? "",
+      current.embed?.provider ?? "",
     );
     const nativeOrUrl =
-      Boolean(current?.src) ||
+      Boolean(current.src) ||
       /youtube\.com|youtu\.be|vimeo\.com\/\d+|bandcamp\.com|soundcloud\.com|twitch\.tv/i.test(
-        current?.externalUrl ?? "",
+        current.externalUrl ?? "",
       );
     if (!playing || liveEmbed || nativeOrUrl) return;
     timer.current = window.setInterval(() => {
@@ -117,7 +130,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       });
     }, 120);
     return clearTimer;
-  }, [playing, next, current?.id, current?.embed?.provider, current?.externalUrl, current?.src]);
+  }, [playing, next, current]);
 
   const state = useMemo(
     () => ({
