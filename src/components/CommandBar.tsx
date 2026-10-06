@@ -13,6 +13,8 @@ const COMMANDS = [
   { cmd: "support", hint: "E" },
   { cmd: "footprint", hint: "F" },
   { cmd: "play", hint: "▶" },
+  { cmd: "next", hint: "⏭" },
+  { cmd: "queue", hint: "Q" },
 ] as const;
 
 type CommandBarProps = {

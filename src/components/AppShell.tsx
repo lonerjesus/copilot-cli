@@ -32,7 +32,7 @@ function ShellInner() {
   const [searchCategory, setSearchCategory] = useState<CategoryId | "all">("all");
   const [searchSubcategory, setSearchSubcategory] = useState<SubcategoryId | "all">("all");
   const [browseKey, setBrowseKey] = useState(0);
-  const { toggle, setExpanded } = usePlayerState();
+  const { toggle, setExpanded, next } = usePlayerState();
   const { openId, closeMagazine } = useMagazine();
   const { user, logout, refresh } = useAuth();
 
@@ -94,6 +94,16 @@ function ShellInner() {
         toggle();
         return;
       }
+      if (cmd === "next") {
+        setExpanded(true);
+        next();
+        return;
+      }
+      if (cmd === "queue") {
+        setExpanded(true);
+        openBayTo("stream");
+        return;
+      }
       if (cmd === "footprint") {
         router.push("/footprint");
         return;
@@ -110,7 +120,7 @@ function ShellInner() {
       const id = map[cmd];
       if (id) openBayTo(id);
     },
-    [openBayTo, router, setExpanded, toggle],
+    [openBayTo, router, setExpanded, toggle, next],
   );
 
   return (

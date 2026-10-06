@@ -67,11 +67,13 @@ function NativeMedia({
   src,
   title,
   playing,
+  onEnded,
 }: {
   kind: "audio" | "video";
   src: string;
   title: string;
   playing: boolean;
+  onEnded?: () => void;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -96,13 +98,14 @@ function NativeMedia({
         controls
         playsInline
         title={title}
+        onEnded={() => onEnded?.()}
       />
     );
   }
 
   return (
     <div className="deck__native-audio">
-      <audio ref={audioRef} src={src} controls title={title} />
+      <audio ref={audioRef} src={src} controls title={title} onEnded={() => onEnded?.()} />
       <div className={`deck__visual deck__visual--mini ${playing ? "is-playing" : ""}`} aria-hidden>
         <div className="deck__orb" />
         <div className="deck__bars">
@@ -124,6 +127,7 @@ function EmbedStage({
   src,
   poster,
   playing,
+  onEnded,
 }: {
   provider?: string;
   id?: string;
@@ -133,6 +137,7 @@ function EmbedStage({
   src?: string;
   poster?: string;
   playing: boolean;
+  onEnded?: () => void;
 }) {
   const [resolvedBandcampId, setResolvedBandcampId] = useState<string | null>(null);
   const isBandcamp = provider === "bandcamp" || Boolean(url && /bandcamp\.com/i.test(url));
@@ -166,7 +171,7 @@ function EmbedStage({
   }, [isBandcamp, bandcampId, url]);
 
   if (src && (kind === "audio" || kind === "video")) {
-    return <NativeMedia kind={kind} src={src} title={title} playing={playing} />;
+    return <NativeMedia kind={kind} src={src} title={title} playing={playing} onEnded={onEnded} />;
   }
 
   const channel = twitchChannel(url, provider === "twitch" ? id : undefined);
@@ -321,9 +326,11 @@ export function PlayerDock() {
     playing,
     expanded,
     progress,
+    upNext,
     toggle,
     next,
     prev,
+    playItem,
     setExpanded,
     setProgress,
   } = usePlayer();
@@ -359,6 +366,10 @@ export function PlayerDock() {
             src={current.src}
             poster={current.poster}
             playing={playing}
+            onEnded={() => {
+              track("next", { id: current.id, via: "ended" });
+              next();
+            }}
           />
         ) : (
           <div className="deck__visual" aria-hidden>
@@ -385,6 +396,26 @@ export function PlayerDock() {
                 </button>
               ) : null}
               <ContentPayActions catalogId={current.id} title={current.title} />
+              {upNext.length ? (
+                <div className="deck__upnext" aria-label="Up next">
+                  <p className="deck__upnext-label">UP NEXT · {upNext.length}</p>
+                  <ul className="deck__upnext-list">
+                    {upNext.slice(0, 6).map((item, i) => (
+                      <li key={item.id}>
+                        <button
+                          type="button"
+                          className="deck__upnext-item"
+                          onClick={() => playItem(item)}
+                        >
+                          <span className="deck__upnext-idx">{i + 1}</span>
+                          <span className="deck__upnext-title">{item.title}</span>
+                          <span className="deck__upnext-brand">{item.brand}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
             </>
           ) : (
             <>
@@ -408,6 +439,11 @@ export function PlayerDock() {
         <div className="deck__now">
           <span className={`deck__dot ${playing ? "is-live" : ""}`} />
           <span className="deck__label">{label}</span>
+          {upNext[0] ? (
+            <span className="deck__upnext-peek" title={upNext[0].title}>
+              next · {upNext[0].title}
+            </span>
+          ) : null}
         </div>
         <div className="deck__controls">
           <button type="button" onClick={prev} aria-label="Previous">

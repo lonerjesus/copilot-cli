@@ -770,9 +770,16 @@ a.drive .drive__face {
   letter-spacing: 0.08em;
 }
 
-.row__head span {
+.row__head span,
+.row__hint {
   color: var(--muted);
   font-size: 0.75rem;
+}
+
+.row__hint {
+  display: block;
+  margin-top: 0.2rem;
+  letter-spacing: 0.04em;
 }
 
 .row__track {
@@ -790,6 +797,151 @@ a.drive .drive__face {
 
 .row__track:focus-visible {
   outline: 1px solid var(--phosphor-dim);
+}
+
+/* Apple TV–style featured shelf */
+.row--featured {
+  margin-bottom: 1.85rem;
+}
+
+.featured {
+  margin-bottom: 0.85rem;
+}
+
+.featured__card {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 0;
+  border: 1px solid var(--line-hot);
+  background:
+    linear-gradient(120deg, color-mix(in oklab, var(--phosphor) 8%, transparent), transparent 42%),
+    linear-gradient(160deg, var(--panel-2), var(--panel));
+  padding: 0;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.featured__card:hover,
+.featured__card.is-active,
+.featured__card:focus-visible {
+  border-color: var(--phosphor-dim);
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--phosphor) 28%, transparent);
+}
+
+.featured__art {
+  position: relative;
+  min-height: clamp(180px, 32vw, 280px);
+  overflow: hidden;
+  border-right: 1px solid var(--line);
+}
+
+.featured__play {
+  position: absolute;
+  inset: auto auto 0.75rem 0.75rem;
+  z-index: 2;
+  width: 2.6rem;
+  height: 2.6rem;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--phosphor);
+  background: color-mix(in oklab, var(--void) 55%, transparent);
+  color: var(--phosphor);
+  font-size: 0.95rem;
+}
+
+.featured__meta {
+  display: grid;
+  align-content: center;
+  gap: 0.45rem;
+  padding: 1rem 1.1rem;
+  min-width: 0;
+}
+
+.featured__eyebrow {
+  margin: 0;
+  color: var(--amber);
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.featured__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.25rem, 3.2vw, 1.85rem);
+  letter-spacing: 0.04em;
+  line-height: 1.15;
+}
+
+.featured__sub,
+.featured__blurb,
+.featured__cta {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.featured__cta {
+  color: var(--phosphor-dim);
+  letter-spacing: 0.08em;
+  text-transform: lowercase;
+  margin-top: 0.35rem;
+}
+
+.row--featured .row__track {
+  grid-auto-columns: minmax(180px, 220px);
+}
+
+.tile__playhint {
+  position: absolute;
+  inset: auto auto 0.45rem 0.45rem;
+  z-index: 2;
+  width: 1.7rem;
+  height: 1.7rem;
+  display: grid;
+  place-items: center;
+  border: 1px solid color-mix(in oklab, var(--phosphor) 45%, var(--line));
+  background: color-mix(in oklab, var(--void) 60%, transparent);
+  color: var(--phosphor);
+  font-size: 0.7rem;
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+
+.tile:hover .tile__playhint,
+.tile--active .tile__playhint,
+.tile:focus-visible .tile__playhint {
+  opacity: 1;
+}
+
+.tile__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.tile__next {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--steel);
+  padding: 0.35rem 0.55rem;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  text-transform: lowercase;
+}
+
+.tile__next:hover {
+  border-color: var(--phosphor-dim);
+  color: var(--phosphor);
+}
+
+.tile-wrap--featured .tile__art {
+  height: 148px;
 }
 
 .tile {
@@ -2074,6 +2226,83 @@ a.drive .drive__face {
   min-width: 0;
 }
 
+.deck__upnext-peek {
+  display: none;
+  color: var(--muted);
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 14rem;
+}
+
+@media (min-width: 900px) {
+  .deck__upnext-peek {
+    display: inline;
+  }
+}
+
+.deck__upnext {
+  margin-top: 0.85rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--line);
+}
+
+.deck__upnext-label {
+  margin: 0 0 0.45rem;
+  color: var(--phosphor-dim);
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+}
+
+.deck__upnext-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.3rem;
+}
+
+.deck__upnext-item {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1.4rem 1fr auto;
+  gap: 0.45rem;
+  align-items: baseline;
+  border: 1px solid transparent;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  padding: 0.35rem 0.4rem;
+  cursor: pointer;
+}
+
+.deck__upnext-item:hover,
+.deck__upnext-item:focus-visible {
+  border-color: var(--line-hot);
+  background: color-mix(in oklab, var(--panel-2) 80%, transparent);
+}
+
+.deck__upnext-idx {
+  color: var(--muted);
+  font-size: 0.68rem;
+}
+
+.deck__upnext-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.78rem;
+}
+
+.deck__upnext-brand {
+  color: var(--steel);
+  font-size: 0.65rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 .deck__dot {
   width: 0.5rem;
   height: 0.5rem;
@@ -3264,6 +3493,16 @@ a.drive .drive__face {
     padding-inline: calc(var(--page-x) * 0.35);
   }
 
+  .featured__card {
+    grid-template-columns: 1fr;
+  }
+
+  .featured__art {
+    min-height: 200px;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
   .tile__art {
     height: 118px;
   }
@@ -3397,6 +3636,10 @@ a.drive .drive__face {
 
   .btn:hover {
     transform: none;
+  }
+
+  .tile__playhint {
+    opacity: 0.85;
   }
 }
 

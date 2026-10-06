@@ -6,6 +6,7 @@ type Signal =
   | "enter_stream"
   | "play"
   | "next"
+  | "queue_next"
   | "magazine_open"
   | "category_filter"
   | "command"
