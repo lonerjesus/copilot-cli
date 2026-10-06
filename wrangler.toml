@@ -36,7 +36,7 @@ EXACT_NAME_POLICY = "1"
 AGE_GATE_REQUIRED = "1"
 ACCOUNT_GATE = "1"
 # Owner-only /admin clearance (must match the signed-in account email).
-ADMIN_EMAIL = "kendrickkamaunegasi@gmail.com"
+ADMIN_EMAIL = "357itsumi@proton.me"
 
 # Durable auth/commerce store (kamaunegasi-auth KV namespace).
 [[kv_namespaces]]
@@ -51,7 +51,7 @@ SITE_DOMAIN = "www.kamaunegasi.net"
 EXACT_NAME_POLICY = "1"
 AGE_GATE_REQUIRED = "1"
 ACCOUNT_GATE = "1"
-ADMIN_EMAIL = "kendrickkamaunegasi@gmail.com"
+ADMIN_EMAIL = "357itsumi@proton.me"
 
 [[previews.kv_namespaces]]
 binding = "AUTH_KV"
