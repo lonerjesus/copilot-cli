@@ -25,8 +25,9 @@ function AdminInner() {
         <p className="section__eyebrow">denied</p>
         <h1>NO CLEARANCE</h1>
         <p className="admin-gate__hint">
-          Signed in as <strong>{user?.email ?? "unknown"}</strong>. Admin only opens for the
-          owner email set as <code>ADMIN_EMAIL</code> on the Worker — then refresh.
+          Signed in as <strong>{user?.email ?? "guest"}</strong>. Only the owner account
+          gets admin — sign in as that email, then use the topbar <strong>admin</strong> link
+          (no special URL).
         </p>
         <div className="admin-gate__actions">
           <Link className="btn btn--ghost" href="/">
