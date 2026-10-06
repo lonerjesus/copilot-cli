@@ -1901,6 +1901,307 @@ a.drive .drive__face {
   font-size: 0.8rem;
 }
 
+.admin__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 1.25rem 0 0.5rem;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 0.35rem;
+}
+
+.admin__tab {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  padding: 0.55rem 0.85rem;
+  font: inherit;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 0.78rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.admin__tab.is-active {
+  color: var(--text);
+  box-shadow: inset 0 -2px 0 var(--phosphor);
+}
+
+.admin__tab-count {
+  font-size: 0.68rem;
+  color: var(--phosphor);
+}
+
+.admin__compose {
+  margin-top: 1rem;
+  display: grid;
+  gap: 1rem;
+  max-width: 40rem;
+}
+
+.admin__drop {
+  border: 1px dashed color-mix(in oklab, var(--line) 40%, var(--phosphor) 35%);
+  background:
+    linear-gradient(
+      160deg,
+      color-mix(in oklab, var(--panel) 88%, transparent),
+      color-mix(in oklab, var(--void) 92%, var(--phosphor) 4%)
+    );
+  min-height: 11rem;
+  display: grid;
+  place-content: center;
+  gap: 0.35rem;
+  text-align: center;
+  padding: 1.5rem 1rem;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.admin__drop.is-over,
+.admin__drop:focus-visible {
+  border-color: var(--phosphor);
+  outline: none;
+}
+
+.admin__drop.has-file {
+  border-style: solid;
+}
+
+.admin__drop-title {
+  margin: 0;
+  font-family: var(--font-display);
+  letter-spacing: 0.06em;
+  font-size: 1.05rem;
+}
+
+.admin__drop-sub {
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--muted);
+  word-break: break-all;
+  max-width: 28rem;
+}
+
+.admin__drop-hint {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+
+.admin__file-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.admin__form--compose {
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+
+.admin__advanced-toggle {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: left;
+  padding: 0.25rem 0;
+  cursor: pointer;
+}
+
+.admin__advanced {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.85rem;
+  border: 1px solid var(--line);
+  background: color-mix(in oklab, var(--panel) 92%, transparent);
+}
+
+.admin__compose-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  justify-content: flex-end;
+}
+
+.admin__library,
+.admin__analytics,
+.admin__data {
+  margin-top: 1.25rem;
+}
+
+.admin__panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.admin__panel-head h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  letter-spacing: 0.08em;
+}
+
+.admin__library-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.admin__library-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: start;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.admin__library-actions {
+  display: flex;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.admin__edit {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: inherit;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.admin__stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.admin__stat {
+  border: 1px solid var(--line);
+  padding: 0.85rem 0.9rem;
+  background: color-mix(in oklab, var(--panel) 90%, transparent);
+  display: grid;
+  gap: 0.25rem;
+}
+
+.admin__stat strong {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  letter-spacing: 0.04em;
+}
+
+.admin__stat span {
+  color: var(--muted);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin__analytics-cols,
+.admin__data-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 1.25rem;
+}
+
+.admin__analytics h3,
+.admin__data h3 {
+  margin: 0 0 0.65rem;
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  letter-spacing: 0.1em;
+}
+
+.admin__kv,
+.admin__data-table,
+.admin__recent ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.admin__kv li,
+.admin__data-table li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: baseline;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 0.4rem;
+  font-size: 0.82rem;
+}
+
+.admin__kv li span:first-child,
+.admin__data-table strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin__data-table li {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.admin__data-table span {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.admin__recent {
+  margin-top: 1.5rem;
+}
+
+.admin__recent li {
+  display: grid;
+  grid-template-columns: 8rem 8rem 1fr;
+  gap: 0.75rem;
+  font-size: 0.78rem;
+  border-bottom: 1px solid var(--line);
+  padding: 0.4rem 0;
+}
+
+.admin__recent li span {
+  color: var(--muted);
+}
+
+@media (max-width: 720px) {
+  .admin__layout {
+    grid-template-columns: 1fr;
+  }
+
+  .admin__row {
+    grid-template-columns: 1fr;
+  }
+
+  .admin__recent li {
+    grid-template-columns: 1fr;
+    gap: 0.15rem;
+  }
+}
+
 .admin-gate {
   min-height: 70vh;
   display: grid;

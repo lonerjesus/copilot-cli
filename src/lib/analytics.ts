@@ -47,6 +47,18 @@ export function track(signal: Signal, meta?: AnalyticsEvent["meta"]) {
   const events = read();
   events.push({ signal, at: Date.now(), meta });
   write(events);
+  // Best-effort beacon for the owner analytics tab (ignore network failures).
+  try {
+    void fetch("/api/analytics", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ signal, meta }),
+      keepalive: true,
+    });
+  } catch {
+    /* offline / private */
+  }
 }
 
 export function engagementSummary() {

@@ -356,3 +356,60 @@ export function publicUser(user: StoredUser, opts?: { isAdmin?: boolean }) {
     isAdmin: Boolean(opts?.isAdmin),
   };
 }
+
+/** Owner dashboard aggregates — never exposes password hashes. */
+export async function getAdminStats() {
+  const store = await readStore();
+  const purchaseCounts = new Map<string, number>();
+  let purchaseEvents = 0;
+  for (const user of store.users) {
+    for (const id of user.purchasedCatalogIds) {
+      purchaseEvents += 1;
+      purchaseCounts.set(id, (purchaseCounts.get(id) ?? 0) + 1);
+    }
+  }
+  const topPurchased = [...purchaseCounts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 12)
+    .map(([catalogId, buyers]) => ({ catalogId, buyers }));
+
+  const donationCents = store.donations.reduce((sum, d) => sum + d.cents, 0);
+  const recentDonations = [...store.donations]
+    .sort((a, b) => b.at.localeCompare(a.at))
+    .slice(0, 20)
+    .map((d) => {
+      const member = store.users.find((u) => u.id === d.userId);
+      return {
+        id: d.id,
+        cents: d.cents,
+        at: d.at,
+        mode: d.mode,
+        displayName: member?.displayName ?? "member",
+        email: member?.email ?? "",
+      };
+    });
+
+  const members = store.users
+    .map((u) => ({
+      id: u.id,
+      email: u.email,
+      displayName: u.displayName,
+      createdAt: u.createdAt,
+      purchasedCount: u.purchasedCatalogIds.length,
+      donatedCentsTotal: u.donatedCentsTotal,
+      online: Boolean(u.activeSessionId),
+    }))
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+
+  return {
+    memberCount: members.length,
+    onlineCount: members.filter((m) => m.online).length,
+    donationCount: store.donations.length,
+    donationCents,
+    purchaseEvents,
+    uniquePurchasedPieces: purchaseCounts.size,
+    topPurchased,
+    recentDonations,
+    members,
+  };
+}

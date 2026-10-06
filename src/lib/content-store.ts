@@ -346,6 +346,60 @@ export async function deleteUpload(id: string): Promise<boolean> {
   return true;
 }
 
+export async function updateUpload(
+  id: string,
+  patch: Partial<CreateContentInput>,
+): Promise<UploadedContent | null> {
+  const items = await readUploads();
+  const idx = items.findIndex((i) => i.id === id);
+  if (idx < 0) return null;
+  const current = items[idx]!;
+
+  const mergedRaw = {
+    title: patch.title ?? current.title,
+    subtitle: patch.subtitle !== undefined ? patch.subtitle : current.subtitle,
+    brand: patch.brand ?? current.brand,
+    kind: patch.kind ?? current.kind,
+    category: patch.category ?? current.category,
+    subcategory: patch.subcategory ?? current.subcategory,
+    platform: patch.platform ?? current.platform,
+    externalUrl: patch.externalUrl ?? current.externalUrl,
+    poster: patch.poster !== undefined ? patch.poster : current.poster,
+    src: patch.src !== undefined ? patch.src : current.src,
+    duration: patch.duration !== undefined ? patch.duration : current.duration,
+    tags: patch.tags ?? current.tags,
+    blurb: patch.blurb ?? current.blurb,
+    body: patch.body !== undefined ? patch.body : current.body,
+    paywalled: patch.paywalled !== undefined ? patch.paywalled : current.paywalled,
+    embed: patch.embed !== undefined ? patch.embed : current.embed,
+  };
+
+  const validated = validateCreateInput(mergedRaw);
+  const next: UploadedContent = {
+    ...current,
+    title: validated.title,
+    subtitle: validated.subtitle,
+    brand: validated.brand,
+    kind: validated.kind,
+    category: validated.category,
+    subcategory: validated.subcategory,
+    platform: validated.platform,
+    externalUrl: validated.externalUrl,
+    poster: validated.poster,
+    src: validated.src,
+    duration: validated.duration,
+    tags: validated.tags?.length ? validated.tags : current.tags,
+    blurb: validated.blurb,
+    body: validated.body,
+    paywalled: validated.paywalled !== false,
+    embed: validated.embed,
+  };
+
+  items[idx] = next;
+  await writeUploads(items);
+  return next;
+}
+
 export async function findUpload(id: string): Promise<UploadedContent | undefined> {
   const items = await readUploads();
   return items.find((i) => i.id === id);
