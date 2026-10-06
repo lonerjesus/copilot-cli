@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { AgeGate } from "@/components/AgeGate";
 import { AuthProvider, useAuth } from "@/components/AuthContext";
 import { MagazineProvider, useMagazine } from "@/components/MagazineContext";
@@ -7,8 +8,9 @@ import { MagazineReader } from "@/components/MagazineReader";
 import { FootprintArchive } from "@/components/FootprintArchive";
 import { PlayerDock } from "@/components/player/PlayerDock";
 import { PlayerProvider } from "@/components/player/PlayerContext";
+import { SiteFooter } from "@/components/SiteFooter";
 import type { FootprintItem } from "@/lib/feed";
-import { PRIMARY_NAME, SITE } from "@/data/identity";
+import { SITE } from "@/data/identity";
 
 function FootprintInner({ footprint }: { footprint: FootprintItem[] }) {
   const { user, logout } = useAuth();
@@ -25,22 +27,22 @@ function FootprintInner({ footprint }: { footprint: FootprintItem[] }) {
           18+
         </p>
         <header className="topbar">
-          <a className="topbar__brand" href="/">
+          <Link className="topbar__brand" href="/">
             <span className="topbar__mark">KN</span>
             <span>
               <strong>{SITE.title}</strong>
               <small>{SITE.domain}</small>
             </span>
-          </a>
+          </Link>
           <nav className="topbar__nav" aria-label="Primary">
-            <a href="/">home</a>
-            <a href="/#stream">stream</a>
-            <a href="/#browse">browse</a>
-            <a href="/footprint" aria-current="page">
+            <Link href="/">home</Link>
+            <Link href="/#stream">stream</Link>
+            <Link href="/#browse">browse</Link>
+            <Link href="/footprint" aria-current="page">
               footprint
-            </a>
-            <a href="/#support">support</a>
-            {user?.isAdmin ? <a href="/admin">admin</a> : null}
+            </Link>
+            <Link href="/#support">support</Link>
+            {user?.isAdmin ? <Link href="/admin">admin</Link> : null}
           </nav>
           <div className="topbar__account">
             <span className="topbar__user" title={user?.email}>
@@ -56,11 +58,7 @@ function FootprintInner({ footprint }: { footprint: FootprintItem[] }) {
           <FootprintArchive initial={footprint} />
         </main>
 
-        <footer className="footer">
-          <p>
-            © {new Date().getFullYear()} {PRIMARY_NAME}
-          </p>
-        </footer>
+        <SiteFooter />
 
         <PlayerDock />
         <MagazineReader catalogId={openId} onClose={closeMagazine} />

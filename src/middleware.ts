@@ -105,5 +105,11 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
+  // Apply security headers to app routes + brand static assets (OG / favicon).
+  // Other image extensions stay out of middleware for cache locality.
+  matcher: [
+    "/((?!_next/static|_next/image|.*\\.(?:jpg|jpeg|gif|webp)$).*)",
+    "/og.png",
+    "/favicon.svg",
+  ],
 };

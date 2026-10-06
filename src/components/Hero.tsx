@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { SITE } from "@/data/identity";
 import { usePlayerState } from "@/components/player/PlayerContext";
 import { getQueue } from "@/data/catalog";
@@ -17,6 +18,10 @@ export function Hero() {
 
       <div className="hero__content">
         <h1 className="hero__brand">{SITE.title}</h1>
+        <p className="hero__tagline">{SITE.tagline}</p>
+        <p className="hero__commerce">
+          House downloads via Stripe · fetched streams stay free
+        </p>
         <div className="hero__cta">
           <button
             type="button"
@@ -30,9 +35,9 @@ export function Hero() {
           >
             {playing ? "▶" : "stream"}
           </button>
-          <a className="btn btn--ghost" href="/footprint">
+          <Link className="btn btn--ghost" href="/footprint">
             F:
-          </a>
+          </Link>
         </div>
       </div>
     </section>

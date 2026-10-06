@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { isAdminEmail } from "@/lib/admin";
+import { isValidEmail, normalizeEmail } from "@/lib/auth/email";
 import {
   AuthStoreUnavailableError,
   createUser,
@@ -32,13 +33,16 @@ export async function POST(request: NextRequest) {
   if (!body.email || !body.password) {
     return jsonError("Email and password required", 400);
   }
+  if (!isValidEmail(body.email)) {
+    return jsonError("Valid email required", 400);
+  }
   if (!body.birthDate) {
     return jsonError("Birth date required for your personal cosmogram", 400);
   }
 
   try {
     const user = await createUser({
-      email: body.email,
+      email: normalizeEmail(body.email),
       password: body.password,
       displayName: body.displayName ?? "",
       birthDate: body.birthDate,

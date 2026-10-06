@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { isValidEmail, normalizeEmail } from "@/lib/auth/email";
 import { jsonError } from "@/lib/commerce/checkout";
 
 /**
@@ -15,8 +16,8 @@ export async function POST(request: NextRequest) {
   }
   if (body.website) return jsonError("Rejected", 400);
 
-  const email = body.email?.trim().toLowerCase() ?? "";
-  if (!email || !email.includes("@") || email.length > 254) {
+  const email = normalizeEmail(body.email ?? "");
+  if (!isValidEmail(email)) {
     return jsonError("Valid email required", 400);
   }
 
