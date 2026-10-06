@@ -1,6 +1,7 @@
 import type { CatalogItem, MediaKind } from "@/data/catalog";
 import type { CategoryId, SubcategoryId } from "@/data/taxonomy";
 import { getSubcategory } from "@/data/taxonomy";
+import { ALIASES } from "@/data/identity";
 import { AuthStoreUnavailableError } from "@/lib/auth/store";
 
 /**
@@ -16,6 +17,8 @@ export type UploadedContent = CatalogItem & {
 };
 
 const UPLOADS_KEY = "catalog-uploads-v1";
+
+const ALLOWED_BRANDS = new Set(ALIASES.map((a) => a.name));
 
 type AuthKv = {
   get(key: string): Promise<string | null>;
@@ -180,6 +183,7 @@ export function validateCreateInput(raw: unknown): CreateContentInput {
 
   if (!title || title.length > 160) throw new Error("invalid_title");
   if (!brand || brand.length > 80) throw new Error("invalid_brand");
+  if (!ALLOWED_BRANDS.has(brand)) throw new Error("invalid_brand");
   if (!KINDS.includes(kind)) throw new Error("invalid_kind");
   if (!category || !subcategory) throw new Error("invalid_taxonomy");
   if (!getSubcategory(category, subcategory)) throw new Error("invalid_taxonomy");
@@ -189,46 +193,33 @@ export function validateCreateInput(raw: unknown): CreateContentInput {
   const mediaCandidate = externalUrlRaw || srcRaw;
   if (!mediaCandidate) throw new Error("invalid_url");
 
-  let url: URL;
-  try {
-    url = new URL(mediaCandidate);
-  } catch {
-    throw new Error("invalid_url");
+  function assertMediaRef(value: string, err: string): string {
+    if (value.startsWith("/api/media/house/") && !value.includes("..")) {
+      return value;
+    }
+    try {
+      const parsed = new URL(value);
+      if (parsed.protocol !== "https:") throw new Error(err);
+      return parsed.toString();
+    } catch {
+      throw new Error(err);
+    }
   }
-  if (url.protocol !== "https:") throw new Error("invalid_url");
 
-  let externalUrl = url.toString();
+  let externalUrl = assertMediaRef(mediaCandidate, "invalid_url");
   if (externalUrlRaw) {
-    try {
-      const eu = new URL(externalUrlRaw);
-      if (eu.protocol !== "https:") throw new Error("invalid_url");
-      externalUrl = eu.toString();
-    } catch {
-      throw new Error("invalid_url");
-    }
+    externalUrl = assertMediaRef(externalUrlRaw, "invalid_url");
   }
 
-  const poster = o.poster ? String(o.poster).trim() : undefined;
-  if (poster) {
-    try {
-      const p = new URL(poster);
-      if (p.protocol !== "https:") throw new Error("invalid_poster");
-    } catch {
-      throw new Error("invalid_poster");
-    }
+  const posterRaw = o.poster ? String(o.poster).trim() : undefined;
+  let poster: string | undefined;
+  if (posterRaw) {
+    poster = assertMediaRef(posterRaw, "invalid_poster");
   }
 
   const body = o.body ? String(o.body).slice(0, 50_000) : undefined;
   const subtitle = o.subtitle ? String(o.subtitle).trim().slice(0, 200) : undefined;
-  const src = srcRaw || undefined;
-  if (src) {
-    try {
-      const s = new URL(src);
-      if (s.protocol !== "https:") throw new Error("invalid_src");
-    } catch {
-      throw new Error("invalid_src");
-    }
-  }
+  const src = srcRaw ? assertMediaRef(srcRaw, "invalid_src") : undefined;
 
   const tags = Array.isArray(o.tags)
     ? o.tags.map((t) => String(t).trim()).filter(Boolean).slice(0, 12)

@@ -1962,9 +1962,15 @@ a.drive .drive__face {
 }
 
 .admin__drop.is-over,
-.admin__drop:focus-visible {
+.admin__drop:focus-within {
   border-color: var(--phosphor);
   outline: none;
+}
+
+.admin__drop.is-busy {
+  opacity: 0.72;
+  cursor: wait;
+  pointer-events: none;
 }
 
 .admin__drop.has-file {
@@ -1997,8 +2003,12 @@ a.drive .drive__face {
   position: absolute;
   width: 1px;
   height: 1px;
-  opacity: 0;
-  pointer-events: none;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .admin__form--compose {
@@ -2199,6 +2209,21 @@ a.drive .drive__face {
   .admin__recent li {
     grid-template-columns: 1fr;
     gap: 0.15rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin__library-list li {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin__library-actions {
+    justify-content: flex-end;
+  }
+
+  .admin__tab {
+    min-height: 2.5rem;
   }
 }
 

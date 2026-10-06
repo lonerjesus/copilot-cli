@@ -11,8 +11,10 @@ import {
   type FormEvent,
 } from "react";
 import { CATEGORIES, type CategoryId, type SubcategoryId } from "@/data/taxonomy";
+import { ALIASES } from "@/data/identity";
 import type { MediaKind } from "@/data/catalog";
 import type { UploadedContent } from "@/lib/content-store";
+import { ALLOWED_MEDIA_TYPES, MAX_MEDIA_BYTES, validateUploadFile } from "@/lib/media-store";
 
 type Tab = "compose" | "library" | "analytics" | "data";
 
@@ -189,6 +191,16 @@ export function AdminStation() {
   const [stats, setStats] = useState<StatsPayload | null>(null);
   const [statsError, setStatsError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
+  const fileInputId = "admin-media-file";
+
+  const brandOptions = useMemo(
+    () =>
+      ALIASES.map((a) => ({
+        value: a.name,
+        label: a.short ? `${a.name} (${a.short})` : a.name,
+      })),
+    [],
+  );
 
   const category = useMemo(
     () => CATEGORIES.find((c) => c.id === form.category),
@@ -267,6 +279,7 @@ export function AdminStation() {
   };
 
   const uploadFile = async (file: File, role: "media" | "poster") => {
+    validateUploadFile(file, role);
     const body = new FormData();
     body.append("file", file);
     body.append("role", role);
@@ -282,16 +295,15 @@ export function AdminStation() {
   };
 
   const ingestFile = async (file: File) => {
+    if (busy) return;
     setError("");
     setOk("");
     setBusy(true);
     try {
       const nextPreset = presetFromFile(file);
       applyPreset(nextPreset);
-      const url = await uploadFile(
-        file,
-        nextPreset.kind === "still" ? "media" : "media",
-      );
+      validateUploadFile(file, "media");
+      const url = await uploadFile(file, "media");
       setForm((f) => ({
         ...f,
         kind: nextPreset.kind,
@@ -319,9 +331,10 @@ export function AdminStation() {
     if (file) void ingestFile(file);
   };
 
-  const onDrop = (event: DragEvent<HTMLDivElement>) => {
+  const onDrop = (event: DragEvent<HTMLLabelElement>) => {
     event.preventDefault();
     setDragOver(false);
+    if (busy) return;
     const file = event.dataTransfer.files?.[0];
     if (file) void ingestFile(file);
   };
@@ -497,8 +510,7 @@ export function AdminStation() {
       <header className="admin__head">
         <h1 id="admin-title">ADMIN</h1>
         <p className="admin__lead">
-          Drop a file to publish — like Tumblr / Substack. Edit the library, read analytics, export
-          data.
+          Drop a file to publish — compose, library, analytics, export. Files live on Cloudflare.
         </p>
       </header>
 
@@ -536,30 +548,26 @@ export function AdminStation() {
           </div>
 
           {preset !== "essay" ? (
-            <div
-              className={`admin__drop ${dragOver ? "is-over" : ""} ${form.src ? "has-file" : ""}`}
+            <label
+              htmlFor={fileInputId}
+              className={`admin__drop ${dragOver ? "is-over" : ""} ${form.src ? "has-file" : ""} ${busy ? "is-busy" : ""}`}
               onDragOver={(e) => {
                 e.preventDefault();
-                setDragOver(true);
+                if (!busy) setDragOver(true);
               }}
               onDragLeave={() => setDragOver(false)}
               onDrop={onDrop}
-              role="button"
-              tabIndex={0}
-              onClick={() => fileRef.current?.click()}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  fileRef.current?.click();
-                }
-              }}
-              aria-label="Drop media file or click to choose"
+              aria-busy={busy}
             >
               <input
+                id={fileInputId}
                 ref={fileRef}
                 type="file"
                 className="admin__file-hidden"
-                accept={activePreset.accept || "video/*,audio/*,image/*"}
+                accept={
+                  activePreset.accept ||
+                  [...ALLOWED_MEDIA_TYPES.media].join(",")
+                }
                 disabled={busy}
                 onChange={onPickFile}
               />
@@ -567,17 +575,19 @@ export function AdminStation() {
                 <>
                   <p className="admin__drop-title">Ready</p>
                   <p className="admin__drop-sub">{form.src.replace(/^https?:\/\/[^/]+/, "")}</p>
-                  <p className="admin__drop-hint">Drop another file to replace</p>
+                  <p className="admin__drop-hint">Drop another file to replace · up to {Math.floor(MAX_MEDIA_BYTES / (1024 * 1024))} MB</p>
                 </>
               ) : (
                 <>
                   <p className="admin__drop-title">
                     {busy ? "Uploading…" : "Drop video, photo, or audio"}
                   </p>
-                  <p className="admin__drop-hint">or click to choose · Cloudflare R2</p>
+                  <p className="admin__drop-hint">
+                    or click to choose · up to {Math.floor(MAX_MEDIA_BYTES / (1024 * 1024))} MB · Cloudflare
+                  </p>
                 </>
               )}
-            </div>
+            </label>
           ) : null}
 
           <form className="admin__form admin__form--compose" onSubmit={submit}>
@@ -662,12 +672,17 @@ export function AdminStation() {
                   </label>
                   <label>
                     <span>brand</span>
-                    <input
+                    <select
                       required
-                      maxLength={80}
                       value={form.brand}
                       onChange={(e) => setForm({ ...form, brand: e.target.value })}
-                    />
+                    >
+                      {brandOptions.map((b) => (
+                        <option key={b.value} value={b.value}>
+                          {b.label}
+                        </option>
+                      ))}
+                    </select>
                   </label>
                 </div>
                 <div className="admin__row">

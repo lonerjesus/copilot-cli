@@ -1,9 +1,10 @@
-import { SITE } from "@/data/identity";
-
-/** R2 object store for house media binaries (video / audio / stills). */
+/**
+ * House media binaries (video / audio / stills).
+ * Prefer MEDIA_R2 when bound; otherwise AUTH_KV chunks; local `.data/media/` in dev.
+ */
 
 export class MediaStoreUnavailableError extends Error {
-  constructor(message = "Media store unavailable — bind MEDIA_R2 on Workers or use local dev") {
+  constructor(message = "Media store unavailable — bind AUTH_KV (or MEDIA_R2) for Workers") {
     super(message);
     this.name = "MediaStoreUnavailableError";
   }
@@ -25,9 +26,17 @@ type R2Object = {
   size?: number;
 };
 
-const HOUSE_PREFIX = "house/";
+type AuthKv = {
+  get(key: string, type?: "text" | "arrayBuffer"): Promise<string | ArrayBuffer | null>;
+  put(key: string, value: string | ArrayBuffer): Promise<void>;
+  delete(key: string): Promise<void>;
+};
 
-const ALLOWED_TYPES: Record<string, string[]> = {
+const HOUSE_PREFIX = "house/";
+const KV_PREFIX = "media-bin:";
+const KV_CHUNK = 3 * 1024 * 1024;
+
+export const ALLOWED_MEDIA_TYPES: Record<"media" | "poster", string[]> = {
   media: [
     "video/mp4",
     "video/webm",
@@ -49,27 +58,23 @@ const ALLOWED_TYPES: Record<string, string[]> = {
 /** 95 MiB — stay under typical Worker request limits. */
 export const MAX_MEDIA_BYTES = 95 * 1024 * 1024;
 
-function siteOrigin(): string {
-  const fromEnv = process.env.SITE_URL?.replace(/\/$/, "");
-  if (fromEnv) return fromEnv;
-  const domain = process.env.SITE_DOMAIN || SITE.domain;
-  return `https://${domain}`;
-}
-
 export function buildMediaUrl(key: string): string {
   const encoded = key
     .split("/")
     .map((part) => encodeURIComponent(part))
     .join("/");
-  return `${siteOrigin()}/api/media/${encoded}`;
+  // Same-origin path so local + production players hit this Worker.
+  return `/api/media/${encoded}`;
 }
 
 export function mediaKeyFromUrl(url: string): string | null {
   try {
-    const u = new URL(url);
+    const path = url.startsWith("/")
+      ? url
+      : new URL(url).pathname;
     const prefix = "/api/media/";
-    if (!u.pathname.startsWith(prefix)) return null;
-    const rest = u.pathname.slice(prefix.length);
+    if (!path.startsWith(prefix)) return null;
+    const rest = path.slice(prefix.length);
     const key = decodeURIComponent(rest);
     if (!key.startsWith(HOUSE_PREFIX) || key.includes("..")) return null;
     return key;
@@ -97,6 +102,15 @@ function isR2Bucket(value: unknown): value is R2Bucket {
   );
 }
 
+function isAuthKv(value: unknown): value is AuthKv {
+  return (
+    !!value &&
+    typeof value === "object" &&
+    typeof (value as AuthKv).get === "function" &&
+    typeof (value as AuthKv).put === "function"
+  );
+}
+
 async function getMediaR2(): Promise<R2Bucket | null> {
   try {
     const { getCloudflareContext } = await import("@opennextjs/cloudflare");
@@ -112,7 +126,19 @@ async function getMediaR2(): Promise<R2Bucket | null> {
   }
 }
 
-type Backend = "r2" | "fs";
+async function getAuthKv(): Promise<AuthKv | null> {
+  try {
+    const { getCloudflareContext } = await import("@opennextjs/cloudflare");
+    const ctx = await getCloudflareContext({ async: true });
+    const raw = (ctx.env as { AUTH_KV?: unknown }).AUTH_KV;
+    if (raw != null && !isAuthKv(raw)) return null;
+    return (raw as AuthKv) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+type Backend = "r2" | "kv" | "fs";
 let backend: Backend | null = null;
 
 async function resolveBackend(): Promise<Backend> {
@@ -120,6 +146,11 @@ async function resolveBackend(): Promise<Backend> {
   const r2 = await getMediaR2();
   if (r2) {
     backend = "r2";
+    return backend;
+  }
+  const kv = await getAuthKv();
+  if (kv) {
+    backend = "kv";
     return backend;
   }
   if (process.env.NODE_ENV === "production") {
@@ -148,15 +179,76 @@ function localPathForKey(key: string): string {
 }
 
 export function validateUploadFile(
-  file: File,
+  file: { type: string; size: number },
   role: "media" | "poster",
 ): { contentType: string } {
-  const allowed = ALLOWED_TYPES[role];
+  const allowed = ALLOWED_MEDIA_TYPES[role];
   const type = (file.type || "application/octet-stream").toLowerCase();
   if (!allowed.includes(type)) throw new Error("invalid_type");
   if (file.size <= 0) throw new Error("empty_file");
   if (file.size > MAX_MEDIA_BYTES) throw new Error("file_too_large");
   return { contentType: type };
+}
+
+async function putKvMedia(key: string, data: ArrayBuffer, contentType: string): Promise<void> {
+  const kv = await getAuthKv();
+  if (!kv) throw new MediaStoreUnavailableError();
+  const bytes = new Uint8Array(data);
+  const parts = Math.max(1, Math.ceil(bytes.byteLength / KV_CHUNK));
+  await kv.put(
+    `${KV_PREFIX}${key}:meta`,
+    JSON.stringify({ contentType, size: bytes.byteLength, parts }),
+  );
+  for (let i = 0; i < parts; i++) {
+    const slice = bytes.subarray(i * KV_CHUNK, Math.min(bytes.byteLength, (i + 1) * KV_CHUNK));
+    const copy = slice.buffer.slice(slice.byteOffset, slice.byteOffset + slice.byteLength);
+    await kv.put(`${KV_PREFIX}${key}:${i}`, copy as ArrayBuffer);
+  }
+}
+
+async function getKvMedia(key: string): Promise<{
+  body: Uint8Array;
+  contentType: string;
+  size: number;
+} | null> {
+  const kv = await getAuthKv();
+  if (!kv) throw new MediaStoreUnavailableError();
+  const metaRaw = await kv.get(`${KV_PREFIX}${key}:meta`, "text");
+  if (!metaRaw || typeof metaRaw !== "string") return null;
+  let meta: { contentType: string; size: number; parts: number };
+  try {
+    meta = JSON.parse(metaRaw) as { contentType: string; size: number; parts: number };
+  } catch {
+    return null;
+  }
+  const out = new Uint8Array(meta.size);
+  let offset = 0;
+  for (let i = 0; i < meta.parts; i++) {
+    const part = await kv.get(`${KV_PREFIX}${key}:${i}`, "arrayBuffer");
+    if (!part || !(part instanceof ArrayBuffer)) return null;
+    const chunk = new Uint8Array(part);
+    out.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return { body: out, contentType: meta.contentType, size: meta.size };
+}
+
+async function deleteKvMedia(key: string): Promise<void> {
+  const kv = await getAuthKv();
+  if (!kv) return;
+  const metaRaw = await kv.get(`${KV_PREFIX}${key}:meta`, "text");
+  let parts = 0;
+  if (typeof metaRaw === "string") {
+    try {
+      parts = (JSON.parse(metaRaw) as { parts?: number }).parts ?? 0;
+    } catch {
+      parts = 0;
+    }
+  }
+  await kv.delete(`${KV_PREFIX}${key}:meta`);
+  for (let i = 0; i < parts; i++) {
+    await kv.delete(`${KV_PREFIX}${key}:${i}`);
+  }
 }
 
 export async function putHouseMedia(
@@ -170,6 +262,10 @@ export async function putHouseMedia(
     const r2 = await getMediaR2();
     if (!r2) throw new MediaStoreUnavailableError();
     await r2.put(key, data, { httpMetadata: { contentType } });
+    return;
+  }
+  if (mode === "kv") {
+    await putKvMedia(key, data, contentType);
     return;
   }
   const path = await import("node:path");
@@ -198,6 +294,9 @@ export async function getHouseMedia(key: string): Promise<{
       size: obj.size,
     };
   }
+  if (mode === "kv") {
+    return getKvMedia(key);
+  }
   const path = await import("node:path");
   const { readFile } = await import("node:fs/promises");
   const rel = localPathForKey(key);
@@ -222,6 +321,10 @@ export async function deleteHouseMedia(key: string): Promise<void> {
     const r2 = await getMediaR2();
     if (!r2) throw new MediaStoreUnavailableError();
     await r2.delete(key);
+    return;
+  }
+  if (mode === "kv") {
+    await deleteKvMedia(key);
     return;
   }
   const path = await import("node:path");

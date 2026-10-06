@@ -38,14 +38,9 @@ ACCOUNT_GATE = "1"
 # Owner-only /admin clearance (must match the signed-in account email).
 ADMIN_EMAIL = "357itsumi@proton.me"
 
-# House media binaries (admin uploads). Bucket is created by scripts/ensure-r2-bucket.sh
-# during `npm run build` on Workers Builds (or manually: npm run cf:ensure-r2).
-[[r2_buckets]]
-binding = "MEDIA_R2"
-bucket_name = "kamaunegasi-media"
-preview_bucket_name = "kamaunegasi-media"
-
 # Durable auth/commerce store (kamaunegasi-auth KV namespace).
+# House media binaries use AUTH_KV chunks by default. Optional R2: create
+# kamaunegasi-media, then add [[r2_buckets]] MEDIA_R2 (see README).
 [[kv_namespaces]]
 binding = "AUTH_KV"
 id = "de9274dc7ff04729958e7c83eaebe84f"
@@ -59,10 +54,6 @@ EXACT_NAME_POLICY = "1"
 AGE_GATE_REQUIRED = "1"
 ACCOUNT_GATE = "1"
 ADMIN_EMAIL = "357itsumi@proton.me"
-
-[[previews.r2_buckets]]
-binding = "MEDIA_R2"
-bucket_name = "kamaunegasi-media"
 
 [[previews.kv_namespaces]]
 binding = "AUTH_KV"
