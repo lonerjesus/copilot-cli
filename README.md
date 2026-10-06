@@ -74,4 +74,4 @@ Streetpolitik · GrownAssKids (GAK) · Black Oh-My · BLKDTY Music LLC · Kendri
 - `/` focus command bar
 - `j` / `k` move footprint cursor
 - Tab then Enter on **Skip to content** for a11y jump
-- commands: `stream` · `categories` · `magazine` · `cosmogram` · `footprint` · `support` · `play` · `brands` · `help`
+- commands: `stream` · `categories` · `magazine` · `cosmogram` · `footprint` · `support` · `play` · `help`

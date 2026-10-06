@@ -782,6 +782,12 @@ a.drive .drive__face {
   letter-spacing: 0.04em;
 }
 
+.stream__empty {
+  margin: 1rem 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
 .row__track {
   display: grid;
   grid-auto-flow: column;
@@ -1657,6 +1663,36 @@ a.drive .drive__face {
   font-family: var(--font-display);
   font-size: clamp(1.7rem, 3.5vw, 2.3rem);
   letter-spacing: 0.06em;
+}
+
+.admin__lead {
+  margin: 0.35rem 0 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.admin__presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1rem 0 0.25rem;
+}
+
+.admin__preset {
+  appearance: none;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: inherit;
+  padding: 0.45rem 0.95rem;
+  font: inherit;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.admin__preset.is-active {
+  background: color-mix(in oklab, var(--panel) 70%, var(--ink) 8%);
+  border-color: color-mix(in oklab, var(--line) 40%, var(--ink));
 }
 
 .admin__aside {

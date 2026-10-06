@@ -8,8 +8,16 @@ export const DEV_AUTH_SECRET = "kn-dev-auth-secret-change-me";
 
 export type SessionPayload = {
   uid: string;
+  /** Single active login — must match StoredUser.activeSessionId */
+  sid: string;
   exp: number;
 };
+
+export function newSessionId(): string {
+  const bytes = new Uint8Array(18);
+  crypto.getRandomValues(bytes);
+  return bytesToBase64Url(bytes);
+}
 
 function getSecret(): string {
   const secret = process.env.AUTH_SECRET?.trim();
@@ -51,9 +59,11 @@ export async function signBody(body: string): Promise<string> {
   return bytesToBase64Url(sig);
 }
 
-export async function encodeSession(uid: string): Promise<string> {
+export async function encodeSession(uid: string, sid: string): Promise<string> {
   const exp = Math.floor(Date.now() / 1000) + MAX_AGE_SEC;
-  const body = bytesToBase64Url(new TextEncoder().encode(JSON.stringify({ uid, exp })));
+  const body = bytesToBase64Url(
+    new TextEncoder().encode(JSON.stringify({ uid, sid, exp })),
+  );
   const sig = await signBody(body);
   return `${body}.${sig}`;
 }
@@ -80,6 +90,7 @@ export async function parseSessionToken(
     const json = new TextDecoder().decode(base64UrlToBytes(body));
     const payload = JSON.parse(json) as SessionPayload;
     if (!payload.uid || typeof payload.exp !== "number") return null;
+    if (typeof payload.sid !== "string" || !payload.sid) return null;
     if (payload.exp < Math.floor(Date.now() / 1000)) return null;
     return payload;
   } catch {

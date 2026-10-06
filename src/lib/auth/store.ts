@@ -20,6 +20,8 @@ export type StoredUser = {
   createdAt: string;
   purchasedCatalogIds: string[];
   donatedCentsTotal: number;
+  /** Only one login at a time — must match session cookie `sid`. */
+  activeSessionId?: string;
 };
 
 export type AuthStore = {
@@ -269,6 +271,27 @@ export async function authenticateUser(
   if (!user) return null;
   if (!verifyPassword(password, user.passwordSalt, user.passwordHash)) return null;
   return user;
+}
+
+/** Bind the sole active login session (invalidates any prior device). */
+export async function setActiveSession(
+  userId: string,
+  sessionId: string,
+): Promise<StoredUser | null> {
+  const store = await readStore();
+  const user = store.users.find((u) => u.id === userId);
+  if (!user) return null;
+  user.activeSessionId = sessionId;
+  await writeStore(store);
+  return user;
+}
+
+export async function clearActiveSession(userId: string): Promise<void> {
+  const store = await readStore();
+  const user = store.users.find((u) => u.id === userId);
+  if (!user) return;
+  delete user.activeSessionId;
+  await writeStore(store);
 }
 
 export async function grantPurchase(userId: string, catalogId: string): Promise<StoredUser | null> {

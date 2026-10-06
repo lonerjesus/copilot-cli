@@ -3,10 +3,16 @@ import type { NextRequest, NextResponse } from "next/server";
 import {
   encodeSession,
   MAX_AGE_SEC,
+  newSessionId,
   parseSessionToken,
   SESSION_COOKIE,
 } from "@/lib/auth/token";
-import { findUserById, type StoredUser } from "@/lib/auth/store";
+import {
+  clearActiveSession,
+  findUserById,
+  setActiveSession,
+  type StoredUser,
+} from "@/lib/auth/store";
 
 export { SESSION_COOKIE } from "@/lib/auth/token";
 
@@ -22,8 +28,11 @@ export function sessionCookieOptions(token: string) {
   };
 }
 
+/** Issue a fresh session — replaces any prior login for this account. */
 export async function attachSession(response: NextResponse, userId: string): Promise<NextResponse> {
-  const token = await encodeSession(userId);
+  const sid = newSessionId();
+  await setActiveSession(userId, sid);
+  const token = await encodeSession(userId, sid);
   response.cookies.set(sessionCookieOptions(token));
   return response;
 }
@@ -41,19 +50,40 @@ export function clearSession(response: NextResponse): NextResponse {
   return response;
 }
 
+async function userFromPayload(
+  payload: { uid: string; sid: string } | null,
+): Promise<StoredUser | null> {
+  if (!payload) return null;
+  const user = await findUserById(payload.uid);
+  if (!user) return null;
+  // One login at a time — cookie sid must match the stored active session.
+  if (!user.activeSessionId || user.activeSessionId !== payload.sid) return null;
+  return user;
+}
+
 export async function getSessionUserFromRequest(
   request: NextRequest,
 ): Promise<StoredUser | null> {
   const token = request.cookies.get(SESSION_COOKIE)?.value;
   const payload = await parseSessionToken(token);
-  if (!payload) return null;
-  return findUserById(payload.uid);
+  return userFromPayload(payload);
 }
 
 export async function getSessionUser(): Promise<StoredUser | null> {
   const jar = await cookies();
   const token = jar.get(SESSION_COOKIE)?.value;
   const payload = await parseSessionToken(token);
-  if (!payload) return null;
-  return findUserById(payload.uid);
+  return userFromPayload(payload);
+}
+
+/** Clear cookie + revoke active session id (logout). */
+export async function endSession(response: NextResponse, userId?: string | null): Promise<NextResponse> {
+  if (userId) {
+    try {
+      await clearActiveSession(userId);
+    } catch {
+      /* still clear cookie */
+    }
+  }
+  return clearSession(response);
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { startTransition, useDeferredValue, useEffect, useMemo, useState } from "react";
-import { CATALOG, isPaywalled, type CatalogItem, type MediaKind } from "@/data/catalog";
+import { CATALOG, houseCatalog, isPaywalled, type CatalogItem, type MediaKind } from "@/data/catalog";
 import {
   CATEGORIES,
   getCategory,
@@ -43,7 +43,7 @@ export function CategoryBrowser({
   const [platform, setPlatform] = useState<string | "all">("all");
   const [brand, setBrand] = useState<string | "all">("all");
   const [sort, setSort] = useState<SortMode>("newest");
-  const [live, setLive] = useState<CatalogItem[]>(CATALOG);
+  const [live, setLive] = useState<CatalogItem[]>(() => houseCatalog(CATALOG));
 
   useEffect(() => {
     let alive = true;
@@ -52,7 +52,7 @@ export function CategoryBrowser({
         const res = await fetch("/api/catalog");
         if (!res.ok) return;
         const data = (await res.json()) as { items?: CatalogItem[] };
-        if (alive && data.items?.length) setLive(data.items);
+        if (alive && data.items?.length) setLive(houseCatalog(data.items));
       } catch {
         /* seed */
       }
