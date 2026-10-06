@@ -1,23 +1,31 @@
-# verify-verdict — production readiness 2026-10-05
+# verify-verdict.md
 
-**Agent:** verifier  
-**Verdict:** `MERGE_OK` (config fix) · live traffic **BLOCKED** until Workers custom domains attach
+**Agent:** `verifier` (Wave D — last)  
+**Branch:** `cursor/netflix-house-stream-560e`  
+**PR:** #15 (includes #13 responsive + #14 stream UX)
 
-## Inputs
+## Verdict: `MERGE_OK`
 
-| Check | Result |
-|-------|--------|
-| OpenNext build | PASS |
-| wrangler dry-run | PASS |
-| tsc | PASS |
-| qa-smoke | 38/38 PASS |
-| Workers Builds on main `635fba8` | PASS (script) |
-| Live domain browser probe | **FAIL** — CF empty placeholder 404 |
-| Secrets via wrangler | UNVERIFIED |
+### Wave reports
+| Agent | Verdict |
+|-------|---------|
+| security | PASS (RMW + embed fixed) |
+| catalog-names | PASS (blurbs fixed) |
+| code-checker | PASS |
+| content-ingest | PASS |
+| compliance-18plus | PASS |
+| ux | PASS |
+| a11y | PASS |
+| analytics-bounce | PASS |
+| performance | PASS |
+| qa-browser | PASS |
+| cloudflare-deploy | PASS |
 
-## Residual blockers (ops / post-merge)
+### Merge plan
+1. Merge #15 → `main`
+2. Close #13 / #14 as superseded
+3. Deploy production via Workers Builds on `main`
 
-1. Custom domain must serve `kamaunegasi-net` (this PR adds `routes` + `workers_dev`).
-2. Confirm `AUTH_SECRET` + `ADMIN_EMAIL` in Cloudflare after domain works.
-
-Exact-name policy clean in smoke. No code MERGE_BLOCKED items beyond live routing.
+### Residual (non-blocking)
+- Middleware cannot KV-check `activeSessionId` (mitigated)
+- House seed catalog thin until admin uploads

@@ -232,6 +232,36 @@ export function validateCreateInput(raw: unknown): CreateContentInput {
     ? o.tags.map((t) => String(t).trim()).filter(Boolean).slice(0, 12)
     : [];
 
+  const EMBED_PROVIDERS = [
+    "youtube",
+    "vimeo",
+    "twitch",
+    "soundcloud",
+    "substack",
+    "audio",
+    "bandcamp",
+  ] as const;
+
+  let embed: CatalogItem["embed"] | undefined;
+  if (o.embed && typeof o.embed === "object") {
+    const e = o.embed as Record<string, unknown>;
+    const provider = String(e.provider ?? "").trim() as (typeof EMBED_PROVIDERS)[number];
+    if (!EMBED_PROVIDERS.includes(provider)) throw new Error("invalid_embed");
+    const id = e.id != null ? String(e.id).trim().slice(0, 120) : undefined;
+    let embedUrl: string | undefined;
+    if (e.url != null && String(e.url).trim()) {
+      try {
+        const eu = new URL(String(e.url).trim());
+        if (eu.protocol !== "https:") throw new Error("invalid_embed");
+        embedUrl = eu.toString();
+      } catch {
+        throw new Error("invalid_embed");
+      }
+    }
+    if (!id && !embedUrl) throw new Error("invalid_embed");
+    embed = { provider, id: id || undefined, url: embedUrl };
+  }
+
   return {
     title,
     subtitle,
@@ -248,10 +278,7 @@ export function validateCreateInput(raw: unknown): CreateContentInput {
     blurb,
     body,
     paywalled: o.paywalled !== false,
-    embed:
-      o.embed && typeof o.embed === "object"
-        ? (o.embed as CatalogItem["embed"])
-        : undefined,
+    embed,
   };
 }
 

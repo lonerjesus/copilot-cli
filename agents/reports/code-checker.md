@@ -3,16 +3,14 @@
 **Agent:** `code-checker`  
 **Verdict:** `PASS`
 
-## Must-fix (done this pass)
+## Must-fix (done)
+- [x] Atomic auth-store RMW (`updateStore`)
+- [x] Embed provider + HTTPS validation
+- [x] Catalog blurb exact-name fixes
 - [x] Clear superseded session cookie on `/api/auth/me` 401
-- [x] AuthContext logout on 401 so middleware stops treating client as authed
-- [x] Empty stream CTA points to Footprint
-- [x] `tsc --noEmit` clean
-- [x] House/fetched helpers (`isHouseMedia` / `isFetchedMedia`) consistent between catalog API + Footprint
+- [x] AuthContext logout on 401
+- [x] Empty stream CTA → Footprint
 
-## Residual risk
-- Seed house catalog thin until admin uploads — shelves hide when empty (by design)
-- Middleware sid-store check still deferred (SEC-5)
-
-## Smoke expectations
-`session-exclusive-old` 401 · `session-exclusive-new` 200 · `home-no-names-bay` · `footprint-outside-media`
+## Residual
+- Seed house catalog thin until admin uploads
+- Middleware sid-store check deferred
