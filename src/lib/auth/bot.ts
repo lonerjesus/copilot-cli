@@ -25,6 +25,7 @@ export const PUBLIC_PATHS = new Set([
   "/og.png",
   "/api/auth/register",
   "/api/auth/login",
+  "/api/auth/forgot-password",
   "/api/auth/logout",
   "/api/auth/me",
   "/api/commerce/webhook",

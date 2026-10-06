@@ -1,6 +1,6 @@
-# Security headers for Cloudflare Pages–style static deploys.
-# Workers / OpenNext runtime headers come from src/lib/security-headers.ts
-# (middleware + next.config). Keep Cache-Control rules here only.
+# Cloudflare Pages–style static cache only.
+# App security headers: middleware → src/lib/security-headers.ts (single source).
+# Do not re-add CSP/HSTS/XFO here or in CF Transform Rules for the Worker.
 
 /api/*
   Cache-Control: private, no-store

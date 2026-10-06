@@ -28,6 +28,8 @@ export function AccessGate() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [forgotOpen, setForgotOpen] = useState(false);
+  const [forgotBusy, setForgotBusy] = useState(false);
+  const [forgotStatus, setForgotStatus] = useState("");
 
   const nextPath = useMemo(() => {
     if (typeof window === "undefined") return "/";
@@ -43,6 +45,35 @@ export function AccessGate() {
           ? `${password.length}/${MIN_PASSWORD_LENGTH} — keep going.`
           : `${password.length} characters · ready.`
       : null;
+
+  const requestPasswordReset = async () => {
+    setForgotStatus("");
+    setForgotBusy(true);
+    try {
+      const res = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ email, website }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        message?: string;
+      };
+      if (!res.ok) {
+        setForgotStatus(data.error ?? "Request failed");
+        return;
+      }
+      setForgotStatus(
+        data.message ??
+          "If an account exists for that email, a reset link will be sent when email reset is enabled.",
+      );
+    } catch {
+      setForgotStatus("Network error");
+    } finally {
+      setForgotBusy(false);
+    }
+  };
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -89,7 +120,8 @@ export function AccessGate() {
         <p className="access__tagline">{SITE.tagline}</p>
         <p className="access__copy">Account required.</p>
         <p className="access__commerce">
-          Stream fetched platform media free as a member. House uploads download via Stripe.
+          House downloads checkout via Stripe after sign-in. Fetched platform streams stay free for
+          members.
         </p>
 
         <div className="access__tabs" role="tablist" aria-label="Account mode">
@@ -212,15 +244,33 @@ export function AccessGate() {
                 type="button"
                 className="access__forgot-toggle"
                 aria-expanded={forgotOpen}
-                onClick={() => setForgotOpen((v) => !v)}
+                onClick={() => {
+                  setForgotOpen((v) => !v);
+                  setForgotStatus("");
+                }}
               >
                 Forgot password?
               </button>
               {forgotOpen ? (
-                <p className="access__forgot-stub" role="status">
-                  Email password reset is not live yet. If you are locked out, contact the house
-                  operator — full reset lands in the Auth pack.
-                </p>
+                <div className="access__forgot-panel">
+                  <p className="access__forgot-stub" role="status">
+                    Email reset is not live yet (Auth pack). You can still POST the stub with the
+                    email above — we never confirm whether an account exists.
+                  </p>
+                  <button
+                    type="button"
+                    className="btn"
+                    disabled={forgotBusy || !email.trim()}
+                    onClick={() => void requestPasswordReset()}
+                  >
+                    {forgotBusy ? "sending…" : "request reset stub"}
+                  </button>
+                  {forgotStatus ? (
+                    <p className="access__hint" role="status">
+                      {forgotStatus}
+                    </p>
+                  ) : null}
+                </div>
               ) : null}
             </div>
           ) : null}

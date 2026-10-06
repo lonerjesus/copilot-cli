@@ -2919,6 +2919,16 @@ a.drive .drive__face {
   padding: 0.65rem 0.75rem;
 }
 
+.access__forgot-panel {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.access__forgot-panel .btn {
+  width: auto;
+  justify-self: start;
+}
+
 .access__legal {
   display: flex;
   flex-wrap: wrap;
@@ -3008,6 +3018,14 @@ a.drive .drive__face {
   margin: 1.5rem 0 0;
   font-size: 0.78rem;
   letter-spacing: 0.06em;
+}
+
+.legal__disclaimer {
+  margin: 1.25rem 0 0;
+  color: var(--steel);
+  font-size: 0.72rem;
+  line-height: 1.45;
+  letter-spacing: 0.02em;
 }
 
 .legal__back a {

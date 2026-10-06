@@ -58,6 +58,11 @@ export default function PrivacyPage() {
           </p>
         </section>
 
+        <p className="legal__disclaimer">
+          This page is house policy language for product clarity — not a substitute for counsel
+          review.
+        </p>
+
         <p className="legal__back">
           <Link href="/access">← Back to access</Link>
         </p>

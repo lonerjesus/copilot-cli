@@ -1,7 +1,10 @@
 /**
- * Single source of truth for HTTP security headers.
- * Consumed by middleware (edge) and next.config.ts (static/build).
- * Do not redeclare these values elsewhere.
+ * App security headers — emitted once by middleware only.
+ *
+ * Cloudflare (Workers / OpenNext): do not also set these in next.config
+ * `headers()`, `public/_headers`, or CF Transform Rules for the same paths,
+ * or browsers will see duplicates. CF bot fight / managed challenge headers
+ * remain platform-owned and are separate from this list.
  */
 
 export const SECURITY_HEADERS: Record<string, string> = {
@@ -31,8 +34,3 @@ export const SECURITY_HEADERS: Record<string, string> = {
     "upgrade-insecure-requests",
   ].join("; "),
 };
-
-/** Shape expected by `next.config.ts` `headers()`. */
-export function nextConfigSecurityHeaderList(): { key: string; value: string }[] {
-  return Object.entries(SECURITY_HEADERS).map(([key, value]) => ({ key, value }));
-}

@@ -40,6 +40,17 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  if (pathname.startsWith("/api/auth/forgot-password")) {
+    if (botty) {
+      return withSecurity(NextResponse.json({ error: "forbidden" }, { status: 403 }));
+    }
+    if (!rateLimitAllow(`forgot:${ip}`, 6, 60_000)) {
+      return withSecurity(
+        NextResponse.json({ error: "rate_limited" }, { status: 429 }),
+      );
+    }
+  }
+
   if (pathname.startsWith("/api/") && !isPublic) {
     if (botty && !sessionOk) {
       return withSecurity(NextResponse.json({ error: "forbidden" }, { status: 403 }));

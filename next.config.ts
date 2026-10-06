@@ -1,6 +1,5 @@
 import type { NextConfig } from "next";
 import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
-import { nextConfigSecurityHeaderList } from "./src/lib/security-headers";
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
@@ -26,11 +25,9 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ["next/font/google"],
   },
+  // Security headers live in middleware (src/lib/security-headers.ts) only.
+  // Keep cache hints here for static assets that skip the middleware matcher.
   headers: async () => [
-    {
-      source: "/:path*",
-      headers: nextConfigSecurityHeaderList(),
-    },
     {
       source: "/_next/static/:path*",
       headers: [
