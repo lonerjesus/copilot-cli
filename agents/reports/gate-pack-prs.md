@@ -2,7 +2,7 @@
 
 | Pack | Branch | PR | Status | Notes |
 |------|--------|----|--------|-------|
-| Gate | `cursor/gate-pack` | (see below) | draft | Rebuilt from scratch on `lonerjesus/copilot-cli`. Spec store `bc-01a103a1-…` was not mounted in this Cloud Agent environment; implemented from kickoff checklist + live `main`. |
+| Gate | `cursor/gate-pack` | [#10](https://github.com/lonerjesus/copilot-cli/pull/10) | draft | Rebuilt from scratch on `lonerjesus/copilot-cli`. Spec store `bc-01a103a1-…` was not mounted in this Cloud Agent environment; implemented from kickoff checklist + live `main`. |
 
 ## Gate pack contents
 
