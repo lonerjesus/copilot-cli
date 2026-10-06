@@ -1,5 +1,6 @@
 import type { CatalogItem, MediaKind } from "@/data/catalog";
 import type { CategoryId, SubcategoryId } from "@/data/taxonomy";
+import { getSubcategory } from "@/data/taxonomy";
 import { AuthStoreUnavailableError } from "@/lib/auth/store";
 
 /**
@@ -181,6 +182,7 @@ export function validateCreateInput(raw: unknown): CreateContentInput {
   if (!brand || brand.length > 80) throw new Error("invalid_brand");
   if (!KINDS.includes(kind)) throw new Error("invalid_kind");
   if (!category || !subcategory) throw new Error("invalid_taxonomy");
+  if (!getSubcategory(category, subcategory)) throw new Error("invalid_taxonomy");
   if (!platform || platform.length > 40) throw new Error("invalid_platform");
   if (!blurb || blurb.length > 600) throw new Error("invalid_blurb");
 
@@ -321,7 +323,8 @@ export async function createUpload(
     externalUrl: input.externalUrl,
     src: input.src,
     poster: input.poster,
-    source: input.paywalled === false ? "fetched" : "uploaded",
+    source: "uploaded",
+    paywalled: input.paywalled !== false,
     embed: input.embed,
     tags: input.tags?.length ? input.tags : [input.kind, input.brand],
     blurb: input.blurb,

@@ -1,11 +1,18 @@
 "use client";
 
-import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type ReactNode,
+} from "react";
 import {
   CATALOG,
   STREAM_ROWS,
   houseCatalog,
-  isHouseMedia,
   isPaywalled,
   streamRowMatches,
   type CatalogItem,
@@ -43,6 +50,7 @@ function Tile({
         className={`tile ${active ? "tile--active" : ""} ${featured ? "tile--featured" : ""}`}
         onClick={onPlay}
         aria-pressed={active}
+        aria-label={`${item.kind === "essay" && canMagazine ? "Open" : "Play"} ${item.title}`}
       >
         <div className={`tile__art tile__art--${item.kind}`} aria-hidden>
           <MediaPoster item={item} className="tile__poster" label={kindGlyph(item.kind)} />
@@ -71,12 +79,18 @@ function Tile({
               onQueueNext();
             }}
             title="Play next"
+            aria-label={`Play ${item.title} next`}
           >
             + next
           </button>
         ) : null}
         {canMagazine && onMagazine ? (
-          <button type="button" className="tile__mag" onClick={onMagazine}>
+          <button
+            type="button"
+            className="tile__mag"
+            onClick={onMagazine}
+            aria-label={`Open magazine for ${item.title}`}
+          >
             mag
           </button>
         ) : null}
@@ -156,26 +170,50 @@ export function StreamDeck({ compact = false }: { compact?: boolean }) {
   const [live, setLive] = useState<CatalogItem[]>(() => houseCatalog(CATALOG));
 
   useEffect(() => {
-    let alive = true;
+    const controller = new AbortController();
     const load = async () => {
       try {
-        const res = await fetch("/api/catalog");
+        const res = await fetch("/api/catalog", { signal: controller.signal });
         if (!res.ok) return;
         const data = (await res.json()) as { items?: CatalogItem[] };
-        if (alive && data.items?.length) {
-          setLive(houseCatalog(data.items.filter(isHouseMedia)));
-        }
-      } catch {
+        if (data.items?.length) setLive(houseCatalog(data.items));
+      } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") return;
         /* seed */
       }
     };
     void load();
-    return () => {
-      alive = false;
-    };
+    return () => controller.abort();
   }, []);
 
   const house = live;
+
+  const shelves = useMemo(
+    () =>
+      STREAM_ROWS.map((row) => ({
+        row,
+        items: rowItems(row.id, row.itemIds, house),
+      })),
+    [house],
+  );
+
+  const activate = useCallback(
+    (item: CatalogItem, queue: CatalogItem[], via: string) => {
+      track("enter_stream", { id: item.id, via });
+      if ((item.kind === "essay" || item.kind === "still") && hasMagazine(item.id)) {
+        openMagazine(item.id);
+        return;
+      }
+      if (item.kind === "essay" && !item.src && !item.embed) {
+        if (hasMagazine(item.id)) {
+          openMagazine(item.id);
+          return;
+        }
+      }
+      playItem(item, queue);
+    },
+    [hasMagazine, openMagazine, playItem],
+  );
 
   return (
     <section
@@ -190,15 +228,17 @@ export function StreamDeck({ compact = false }: { compact?: boolean }) {
         </header>
       ) : null}
 
-      {STREAM_ROWS.map((row) => {
-        const items = rowItems(row.id, row.itemIds, house);
-        if (!items.length) return null;
+      {shelves.map(({ row, items }) => {
         const featured = row.id === "now";
-        const hero = featured ? items[0] : null;
+        const hero = featured && items.length ? items[0] : null;
         const shelfItems = featured ? items.slice(1) : items;
+        const empty = items.length === 0;
 
         return (
-          <div key={row.id} className={`row ${featured ? "row--featured" : ""}`}>
+          <div
+            key={row.id}
+            className={`row ${featured ? "row--featured" : ""} ${empty ? "row--empty" : ""}`}
+          >
             <div className="row__head">
               <div>
                 <h3>{featured ? "FEATURED" : row.title}</h3>
@@ -206,15 +246,19 @@ export function StreamDeck({ compact = false }: { compact?: boolean }) {
               </div>
             </div>
 
+            {empty ? (
+              <p className="row__empty">
+                No {row.title.toLowerCase()} yet — house uploads land here.
+              </p>
+            ) : null}
+
             {hero ? (
               <div className="featured">
                 <button
                   type="button"
                   className={`featured__card ${current?.id === hero.id ? "is-active" : ""}`}
-                  onClick={() => {
-                    track("enter_stream", { id: hero.id, via: "featured" });
-                    playItem(hero, items);
-                  }}
+                  onClick={() => activate(hero, items, "featured")}
+                  aria-label={`${hasMagazine(hero.id) && hero.kind === "essay" ? "Open magazine" : "Play"} ${hero.title}`}
                 >
                   <div className={`featured__art tile__art--${hero.kind}`} aria-hidden>
                     <MediaPoster item={hero} className="tile__poster" label={kindGlyph(hero.kind)} />
@@ -229,7 +273,11 @@ export function StreamDeck({ compact = false }: { compact?: boolean }) {
                     <h4 className="featured__title">{hero.title}</h4>
                     {hero.subtitle ? <p className="featured__sub">{hero.subtitle}</p> : null}
                     <p className="featured__blurb">{hero.blurb}</p>
-                    <p className="featured__cta">press play · queue follows</p>
+                    <p className="featured__cta">
+                      {hasMagazine(hero.id) && hero.kind === "essay"
+                        ? "open magazine · house reading"
+                        : "press play · queue follows"}
+                    </p>
                   </div>
                 </button>
               </div>
@@ -243,10 +291,7 @@ export function StreamDeck({ compact = false }: { compact?: boolean }) {
                       item={item}
                       featured={featured}
                       active={current?.id === item.id}
-                      onPlay={() => {
-                        track("enter_stream", { id: item.id, via: "shelf" });
-                        playItem(item, items);
-                      }}
+                      onPlay={() => activate(item, items, "shelf")}
                       onQueueNext={() => {
                         track("queue_next", { id: item.id });
                         queueNext(item);

@@ -46,21 +46,20 @@ export function CategoryBrowser({
   const [live, setLive] = useState<CatalogItem[]>(() => houseCatalog(CATALOG));
 
   useEffect(() => {
-    let alive = true;
+    const controller = new AbortController();
     const load = async () => {
       try {
-        const res = await fetch("/api/catalog");
+        const res = await fetch("/api/catalog", { signal: controller.signal });
         if (!res.ok) return;
         const data = (await res.json()) as { items?: CatalogItem[] };
-        if (alive && data.items?.length) setLive(houseCatalog(data.items));
-      } catch {
+        if (data.items?.length) setLive(houseCatalog(data.items));
+      } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") return;
         /* seed */
       }
     };
     void load();
-    return () => {
-      alive = false;
-    };
+    return () => controller.abort();
   }, []);
 
   const deferredQuery = useDeferredValue(query);

@@ -226,6 +226,7 @@ export function AdminStation() {
             key={p.id}
             type="button"
             className={`admin__preset ${preset === p.id ? "is-active" : ""}`}
+            aria-pressed={preset === p.id}
             onClick={() => applyPreset(p)}
           >
             {p.label}

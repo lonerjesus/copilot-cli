@@ -3,11 +3,13 @@
 import Link from "next/link";
 import { SITE } from "@/data/identity";
 import { usePlayerState } from "@/components/player/PlayerContext";
+import { useMagazine } from "@/components/MagazineContext";
 import { getQueue } from "@/data/catalog";
 import { track } from "@/lib/analytics";
 
 export function Hero() {
   const { playItem, playing, current } = usePlayerState();
+  const { openMagazine, hasMagazine } = useMagazine();
 
   return (
     <section className="hero hero--compact" aria-label="Hero">
@@ -30,13 +32,18 @@ export function Hero() {
               const queue = getQueue();
               const item = current ?? queue[0];
               track("enter_stream", { id: item?.id ?? "empty" });
+              if (!item) return;
+              if (item.kind === "essay" && hasMagazine(item.id)) {
+                openMagazine(item.id);
+                return;
+              }
               playItem(item, queue);
             }}
           >
             {playing ? "▶" : "stream"}
           </button>
-          <Link className="btn btn--ghost" href="/footprint">
-            F:
+          <Link className="btn btn--ghost" href="/footprint" aria-label="Footprint archive">
+            E:
           </Link>
         </div>
       </div>

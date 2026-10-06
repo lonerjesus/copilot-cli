@@ -99,7 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (state.loading) return;
     if (state.user) return;
-    router.replace("/access");
+    router.replace("/access?reason=session");
   }, [state.loading, state.user, router]);
 
   const refresh = useCallback(async () => {
@@ -109,7 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(async () => {
     await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" });
     emit({ user: null, loading: false, version: snapshot.version + 1 });
-    router.push("/access");
+    router.push("/access?reason=logout");
   }, [router]);
 
   const owns = useCallback(
