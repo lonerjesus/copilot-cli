@@ -24,9 +24,18 @@ function AdminInner() {
       <main className="admin-gate">
         <p className="section__eyebrow">denied</p>
         <h1>NO CLEARANCE</h1>
-        <Link className="btn btn--ghost" href="/">
-          home
-        </Link>
+        <p className="admin-gate__hint">
+          Signed in as <strong>{user?.email ?? "unknown"}</strong>. Admin only opens for the
+          owner email set as <code>ADMIN_EMAIL</code> on the Worker — then refresh.
+        </p>
+        <div className="admin-gate__actions">
+          <Link className="btn btn--ghost" href="/">
+            home
+          </Link>
+          <button type="button" className="btn btn--ghost" onClick={() => void logout()}>
+            sign out
+          </button>
+        </div>
       </main>
     );
   }

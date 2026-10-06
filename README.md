@@ -55,7 +55,7 @@ Before go-live:
 2. Durable auth KV — production + Preview `preview_id` are set in `wrangler.toml` (`AUTH_KV`). Optional: create an isolated preview namespace with `npx wrangler kv namespace create AUTH_KV --preview` and replace `preview_id`.
 3. Optional Stripe: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`
 4. Custom domains — `wrangler.toml` declares `www.kamaunegasi.net` + apex via `routes` (`custom_domain = true`). After deploy, confirm both hostnames under the Worker’s Custom Domains (live must not show Cloudflare’s “There is nothing here yet”).
-5. Var: `ADMIN_EMAIL` (owner account for `/admin`)
+5. Var: `ADMIN_EMAIL` (owner account for `/admin` — set in `wrangler.toml` / CF vars)
 
 Local Cloudflare preview:
 
