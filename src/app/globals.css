@@ -872,6 +872,18 @@ a.drive .drive__face {
 .media-poster--empty {
   display: grid;
   place-items: center;
+  background:
+    radial-gradient(ellipse at 30% 20%, color-mix(in oklab, var(--phosphor) 18%, transparent), transparent 55%),
+    linear-gradient(145deg, #0c100d, #151a12 48%, #0a0d0a);
+}
+
+.media-poster__fallback {
+  font-size: clamp(2rem, 8vw, 3.2rem);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: color-mix(in oklab, var(--phosphor) 55%, var(--steel));
+  text-shadow: 0 0 24px color-mix(in oklab, var(--phosphor) 35%, transparent);
+  user-select: none;
 }
 
 .media-poster__label {
