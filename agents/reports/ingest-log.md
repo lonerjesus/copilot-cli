@@ -1,11 +1,14 @@
-# ingest-log
+# ingest-log — check-netflix-house
 
-**Agent:** content-ingest  
-**Verdict:** PASS
+**Agent:** `content-ingest`  
+**Verdict:** `PASS` (reorganize only — no new third-party nodes)
 
-Endpoint: `GET /api/ingest`
+## Changes
+| Action | Detail |
+|--------|--------|
+| STREAM_ROWS | Replaced platform shelves with house Netflix rows (Featured / Videos / Music / Photos / Reading) |
+| Footprint | `catalogToFootprint` filters to `isFetchedMedia` only |
+| Seed uploads | `qtoss-vol1`, `qtoss-vol2` remain house (`source: uploaded`) |
 
-- Audits every `PLATFORMS` entry against `CATALOG` by platform id **and** URL prefix.
-- Substack RSS live check retained.
-- Uncovered platform ids returned when catalog references unknown platforms.
-- QA asserts agent field + exact `357Itsumi` / `Streetpolitik` markers.
+## Policy
+exact-house-names-only · no invented platforms

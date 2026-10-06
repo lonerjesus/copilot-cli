@@ -66,6 +66,12 @@ async function fetchMe() {
   try {
     const res = await fetch("/api/auth/me", { credentials: "same-origin" });
     if (!res.ok) {
+      // Clear superseded / expired cookie so middleware stops treating us as authed.
+      if (res.status === 401) {
+        await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" }).catch(
+          () => undefined,
+        );
+      }
       emit({ user: null, loading: false, version: snapshot.version + 1 });
       return;
     }

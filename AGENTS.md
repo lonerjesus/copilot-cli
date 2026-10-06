@@ -12,8 +12,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 Permanent multi-agent protocol for **www.kamaunegasi.net**:
 
-- [`agents/ROSTER.md`](./agents/ROSTER.md) — 11 specialists + exact-name policy
+- [`agents/ROSTER.md`](./agents/ROSTER.md) — specialists + exact-name policy (+ `code-checker`)
 - [`agents/RUNBOOK.md`](./agents/RUNBOOK.md) — wave order + trigger matrix
 - [`agents/squad.json`](./agents/squad.json) — machine-readable roster
+- [`agents/checkers/`](./agents/checkers/) — task code-checker packs (responsive · stream · Netflix house · deploy)
 
 **Verifier always runs last.** Exact house names only — never invent third-party identities.

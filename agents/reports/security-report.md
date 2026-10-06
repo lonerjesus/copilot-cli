@@ -1,24 +1,21 @@
-# security-report — 2026-10-04 full audit
+# security-report — check-netflix-house
 
-**Agent:** security  
-**Verdict:** PASS (code) · OPS remaining
+**Agent:** `security`  
+**Branch:** `cursor/netflix-house-stream-560e`  
+**Verdict:** `PASS` (with residual note)
 
-### PASS
-- Account gate (`middleware.ts` + `PUBLIC_PATHS`)
-- Session HMAC Web Crypto parity (`token.ts`)
-- Bot UA deny + rate limit + honeypot + `safeInternalPath`
-- Download 402 until owned; webhook fail-closed without secret
-- Cookie flags httpOnly / SameSite=Lax / secure in production
-- CSP + X-Robots-Tag noindex; robots disallow-all
-- Auth store fail-closed without AUTH_KV/FS in production (`store.ts`)
-- `/api/ingest` read-only GET; `/api/oembed` host allowlist
-- Analytics first-party `localStorage` only
+## Findings
 
-### WARN
-- Rate-limit Map is per-isolate on Workers
-- Shared webhook header secret (not Stripe signature)
-- Bot UA spoofable (session remains real gate)
+| ID | Severity | Status | Note |
+|----|----------|--------|------|
+| SEC-1 | High | PASS | Session exclusivity: `sid` in HMAC token + `activeSessionId` on user; mismatch → null session |
+| SEC-2 | Medium | PASS | `/api/auth/me` clears stale cookie on 401; client logout on kick |
+| SEC-3 | Medium | PASS | Admin upload URLs require `https:` for externalUrl/src/poster |
+| SEC-4 | Low | PASS | Catalog API still auth-gated; house-only filter is authorization-neutral (not a leak) |
+| SEC-5 | Info | WARN | Middleware cannot validate `activeSessionId` without KV; HMAC-valid superseded cookies pass page gate until `/api/auth/me` — mitigated by cookie clear + AuthContext redirect |
 
-### OPS (required before production traffic)
-- Bind `AUTH_KV` in `wrangler.toml` after `wrangler kv namespace create AUTH_KV`
-- `wrangler secret put AUTH_SECRET` (≥16 chars)
+## Deps
+No new dependencies.
+
+## Required fixes
+None blocking.
