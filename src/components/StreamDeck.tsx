@@ -19,7 +19,7 @@ import {
   streamRowMatches,
   type CatalogItem,
 } from "@/data/catalog";
-import { kindGlyph } from "@/lib/format";
+import { kindGlyph, kindLabel } from "@/lib/format";
 import { usePlayerState } from "@/components/player/PlayerContext";
 import { useMagazine } from "@/components/MagazineContext";
 import { MediaPoster } from "@/components/MediaPoster";
@@ -29,27 +29,17 @@ function Tile({
   item,
   active,
   featured = false,
-  onPlay,
+  onActivate,
   onQueueNext,
-  onMagazine,
-  canMagazine,
 }: {
   item: CatalogItem;
   active: boolean;
   featured?: boolean;
-  onPlay: () => void;
+  onActivate: () => void;
   onQueueNext?: () => void;
-  onMagazine?: () => void;
-  canMagazine?: boolean;
 }) {
   const paid = isPaywalled(item);
   const playable = isPlayableMedia(item);
-  const openLabel =
-    item.kind === "essay" || item.kind === "still"
-      ? canMagazine
-        ? "Open"
-        : "View"
-      : "Play";
   return (
     <div
       className={`tile-wrap ${active ? "tile-wrap--active" : ""} ${featured ? "tile-wrap--featured" : ""}`}
@@ -57,9 +47,9 @@ function Tile({
       <button
         type="button"
         className={`tile ${active ? "tile--active" : ""} ${featured ? "tile--featured" : ""}`}
-        onClick={onPlay}
-        aria-pressed={active}
-        aria-label={`${openLabel} ${item.title}`}
+        onClick={onActivate}
+        aria-pressed={playable ? active : undefined}
+        aria-label={`${playable ? "Play" : "Open"} ${item.title}`}
       >
         <div className={`tile__art tile__art--${item.kind}`} aria-hidden>
           <MediaPoster item={item} className="tile__poster" label={kindGlyph(item.kind)} />
@@ -74,13 +64,13 @@ function Tile({
         <div className="tile__meta">
           <h3 className="tile__title">{item.title}</h3>
           <p className="tile__sub">
-            {item.kind}
-            {item.duration ? ` · ${item.duration}` : ""}
+            {kindLabel(item.kind)}
+            {playable && item.duration ? ` · ${item.duration}` : ""}
           </p>
         </div>
       </button>
-      <div className="tile__actions">
-        {onQueueNext ? (
+      {playable && onQueueNext ? (
+        <div className="tile__actions">
           <button
             type="button"
             className="tile__next"
@@ -93,18 +83,8 @@ function Tile({
           >
             + next
           </button>
-        ) : null}
-        {canMagazine && onMagazine ? (
-          <button
-            type="button"
-            className="tile__mag"
-            onClick={onMagazine}
-            aria-label={`Open magazine for ${item.title}`}
-          >
-            mag
-          </button>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -266,7 +246,7 @@ export function StreamDeck({ compact = false }: { compact?: boolean }) {
                     isPlayableMedia(hero)
                       ? "Play"
                       : hasMagazine(hero.id)
-                        ? "Open magazine"
+                        ? "Open"
                         : "Open"
                   } ${hero.title}`}
                 >
@@ -276,15 +256,11 @@ export function StreamDeck({ compact = false }: { compact?: boolean }) {
                       <span className="featured__play" aria-hidden>
                         ▶
                       </span>
-                    ) : (
-                      <span className="featured__open" aria-hidden>
-                        {kindGlyph(hero.kind)}
-                      </span>
-                    )}
+                    ) : null}
                   </div>
                   <div className="featured__meta">
                     <p className="featured__eyebrow">
-                      {kindGlyph(hero.kind)} {hero.kind}
+                      {kindGlyph(hero.kind)} {kindLabel(hero.kind)}
                     </p>
                     <h4 className="featured__title">{hero.title}</h4>
                     {hero.subtitle ? <p className="featured__sub">{hero.subtitle}</p> : null}
@@ -296,7 +272,7 @@ export function StreamDeck({ compact = false }: { compact?: boolean }) {
                     <p className="featured__cta">
                       {isPlayableMedia(hero)
                         ? "play · queue"
-                        : hero.kind === "essay"
+                        : hero.kind === "writing"
                           ? hasMagazine(hero.id)
                             ? "open · read"
                             : "open · note"
@@ -315,7 +291,7 @@ export function StreamDeck({ compact = false }: { compact?: boolean }) {
                       item={item}
                       featured={featured}
                       active={current?.id === item.id}
-                      onPlay={() => activate(item, items, "shelf")}
+                      onActivate={() => activate(item, items, "shelf")}
                       onQueueNext={
                         isPlayableMedia(item)
                           ? () => {
@@ -324,8 +300,6 @@ export function StreamDeck({ compact = false }: { compact?: boolean }) {
                             }
                           : undefined
                       }
-                      canMagazine={hasMagazine(item.id)}
-                      onMagazine={() => openMagazine(item.id)}
                     />
                   </div>
                 ))}

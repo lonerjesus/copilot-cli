@@ -21,16 +21,18 @@ function posterItem(item: FootprintItem, catalog: CatalogItem[]): CatalogItem {
       item.id === `catalog:${c.id}`,
   );
   if (hit) return hit;
-  const kind = (["video", "audio", "vlog", "essay", "still", "live"].includes(item.kind)
-    ? item.kind
-    : "essay") as MediaKind;
+  const kind = (["video", "audio", "vlog", "writing", "essay", "still", "live"].includes(item.kind)
+    ? item.kind === "essay"
+      ? "writing"
+      : item.kind
+    : "writing") as MediaKind;
   return {
     id: item.id,
     title: item.title,
     brand: item.brand ?? item.platformLabel,
     kind,
     category: "writing",
-    subcategory: "essays",
+    subcategory: "notes",
     publishedAt: item.publishedAt,
     platform: item.platform,
     externalUrl: item.url,

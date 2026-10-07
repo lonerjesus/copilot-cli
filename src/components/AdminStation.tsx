@@ -12,14 +12,18 @@ import {
 } from "react";
 import { CATEGORIES, type CategoryId, type SubcategoryId } from "@/data/taxonomy";
 import { SITE } from "@/data/identity";
-import type { MediaKind } from "@/data/catalog";
+import { normalizeMediaKind, type MediaKind } from "@/data/catalog";
+import { normalizeSubcategoryId } from "@/data/taxonomy";
 import type { UploadedContent } from "@/lib/content-store";
 import {
   ALLOWED_MEDIA_TYPES,
   MAX_MEDIA_BYTES,
+  SINGLE_SHOT_MAX_BYTES,
+  UPLOAD_CHUNK_BYTES,
   uploadErrorMessage,
   validateUploadFile,
 } from "@/lib/media-store";
+import { MAX_TICKER_CHARS } from "@/lib/ticker-store";
 import {
   IconAnalytics,
   IconCompose,
@@ -36,7 +40,7 @@ import type { ComponentType } from "react";
 type Tab = "compose" | "library" | "analytics" | "data";
 
 type UploadPreset = {
-  id: "video" | "photo" | "music" | "essay";
+  id: "video" | "photo" | "music" | "writing";
   label: string;
   Icon: ComponentType<{ className?: string }>;
   kind: MediaKind;
@@ -78,14 +82,14 @@ const PRESETS: UploadPreset[] = [
     accept: "audio/*",
   },
   {
-    id: "essay",
-    label: "Note",
+    id: "writing",
+    label: "Writing",
     Icon: IconNote,
-    kind: "essay",
+    kind: "writing",
     category: "writing",
-    subcategory: "essays",
-    blurbHint: "House note",
-    accept: "",
+    subcategory: "notes",
+    blurbHint: "House writing",
+    accept: "video/*,audio/*,.mp4,.mov,.webm,.mp3,.wav",
   },
 ];
 
@@ -220,6 +224,11 @@ export function AdminStation() {
   const [advanced, setAdvanced] = useState(false);
   const [stats, setStats] = useState<StatsPayload | null>(null);
   const [statsError, setStatsError] = useState("");
+  const [tickerText, setTickerText] = useState("");
+  const [tickerEnabled, setTickerEnabled] = useState(false);
+  const [tickerBusy, setTickerBusy] = useState(false);
+  const [tickerMsg, setTickerMsg] = useState("");
+  const [uploadProgress, setUploadProgress] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
   const posterRef = useRef<HTMLInputElement>(null);
   const fileInputId = "admin-media-file";
@@ -258,6 +267,20 @@ export function AdminStation() {
     }
   }, []);
 
+  const loadTicker = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/ticker", { credentials: "same-origin" });
+      if (!res.ok) return;
+      const data = (await res.json()) as {
+        ticker?: { text?: string; enabled?: boolean };
+      };
+      setTickerText(data.ticker?.text ?? "");
+      setTickerEnabled(Boolean(data.ticker?.enabled));
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   useEffect(() => {
     const controller = new AbortController();
     fetch("/api/admin/content", {
@@ -284,7 +307,10 @@ export function AdminStation() {
 
   const openTab = (next: Tab) => {
     setTab(next);
-    if (next === "analytics" || next === "data") void loadStats();
+    if (next === "analytics" || next === "data") {
+      void loadStats();
+      void loadTicker();
+    }
   };
 
   const applyPreset = (next: UploadPreset) => {
@@ -295,32 +321,101 @@ export function AdminStation() {
       category: next.category,
       subcategory: next.subcategory,
       platform: "house",
-      paywalled: next.id === "essay" ? f.paywalled : true,
+      paywalled: next.id === "writing" ? f.paywalled : true,
       tags: f.tags || next.id,
     }));
   };
 
   const uploadFile = async (file: File, role: "media" | "poster") => {
-    // Pre-read bytes so empty/`image/jpg` MIME from phones can be sniffed.
     const bytes = await file.arrayBuffer();
     const { contentType } = validateUploadFile(file, role, bytes);
-    const body = new FormData();
-    body.append(
-      "file",
-      new File([bytes], file.name || "upload.bin", { type: contentType }),
-    );
-    body.append("role", role);
-    const res = await fetch("/api/admin/media", {
+
+    // Small files — single Worker request.
+    if (file.size <= SINGLE_SHOT_MAX_BYTES) {
+      setUploadProgress("");
+      const body = new FormData();
+      body.append(
+        "file",
+        new File([bytes], file.name || "upload.bin", { type: contentType }),
+      );
+      body.append("role", role);
+      const res = await fetch("/api/admin/media", {
+        method: "POST",
+        credentials: "same-origin",
+        body,
+      });
+      const data = (await res.json().catch(() => ({}))) as { error?: string; url?: string };
+      if (!res.ok) {
+        throw new Error(uploadErrorMessage(data.error ?? "upload_failed", role));
+      }
+      if (!data.url) throw new Error("upload failed");
+      return data.url;
+    }
+
+    // Large blogs / long AV — chunked path (up to MAX_MEDIA_BYTES).
+    setUploadProgress("starting large upload…");
+    const initRes = await fetch("/api/admin/media/init", {
       method: "POST",
       credentials: "same-origin",
-      body,
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        filename: file.name || "upload.bin",
+        contentType,
+        size: file.size,
+        role,
+      }),
     });
-    const data = (await res.json().catch(() => ({}))) as { error?: string; url?: string };
-    if (!res.ok) {
-      throw new Error(uploadErrorMessage(data.error ?? "upload_failed", role));
+    const initData = (await initRes.json().catch(() => ({}))) as {
+      error?: string;
+      uploadId?: string;
+      totalChunks?: number;
+      chunkBytes?: number;
+    };
+    if (!initRes.ok || !initData.uploadId) {
+      throw new Error(uploadErrorMessage(initData.error ?? "upload_failed", role));
     }
-    if (!data.url) throw new Error("upload failed");
-    return data.url;
+
+    const chunkBytes = initData.chunkBytes ?? UPLOAD_CHUNK_BYTES;
+    const totalChunks = initData.totalChunks ?? Math.ceil(file.size / chunkBytes);
+    for (let i = 0; i < totalChunks; i++) {
+      const start = i * chunkBytes;
+      const end = Math.min(file.size, start + chunkBytes);
+      const slice = bytes.slice(start, end);
+      setUploadProgress(`uploading ${i + 1}/${totalChunks}`);
+      const part = new FormData();
+      part.append("uploadId", initData.uploadId);
+      part.append("index", String(i));
+      part.append(
+        "chunk",
+        new File([slice], `part-${i}.bin`, { type: "application/octet-stream" }),
+      );
+      const partRes = await fetch("/api/admin/media/chunk", {
+        method: "POST",
+        credentials: "same-origin",
+        body: part,
+      });
+      const partData = (await partRes.json().catch(() => ({}))) as { error?: string };
+      if (!partRes.ok) {
+        throw new Error(uploadErrorMessage(partData.error ?? "upload_failed", role));
+      }
+    }
+
+    setUploadProgress("finishing…");
+    const doneRes = await fetch("/api/admin/media/complete", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ uploadId: initData.uploadId }),
+    });
+    const doneData = (await doneRes.json().catch(() => ({}))) as {
+      error?: string;
+      url?: string;
+    };
+    if (!doneRes.ok || !doneData.url) {
+      throw new Error(uploadErrorMessage(doneData.error ?? "upload_failed", role));
+    }
+    setUploadProgress("");
+    return doneData.url;
   };
 
   const ingestFile = async (file: File) => {
@@ -329,20 +424,24 @@ export function AdminStation() {
     setOk("");
     setBusy(true);
     try {
-      const nextPreset = presetFromFile(file);
-      applyPreset(nextPreset);
+      // Writing compose can attach long AV without leaving the Writing preset.
+      const keepWriting = preset === "writing";
+      const nextPreset = keepWriting
+        ? PRESETS.find((p) => p.id === "writing")!
+        : presetFromFile(file);
+      if (!keepWriting) applyPreset(nextPreset);
       const url = await uploadFile(file, "media");
       setForm((f) => ({
         ...f,
-        kind: nextPreset.kind,
-        category: nextPreset.category,
-        subcategory: nextPreset.subcategory,
+        kind: keepWriting ? "writing" : nextPreset.kind,
+        category: keepWriting ? "writing" : nextPreset.category,
+        subcategory: keepWriting ? f.subcategory || "notes" : nextPreset.subcategory,
         title: f.title.trim() || titleFromFilename(file.name),
         src: url,
         externalUrl: f.externalUrl.trim() || url,
-        poster: nextPreset.kind === "still" ? url : f.poster,
-        tags: f.tags || nextPreset.id,
-        paywalled: true,
+        poster: !keepWriting && nextPreset.kind === "still" ? url : f.poster,
+        tags: f.tags || (keepWriting ? "writing" : nextPreset.id),
+        paywalled: keepWriting ? f.paywalled : true,
       }));
       setOk("file ready — add a title if needed, then publish");
     } catch (err) {
@@ -350,6 +449,7 @@ export function AdminStation() {
         err instanceof Error ? uploadErrorMessage(err.message, "media") : "upload failed",
       );
     } finally {
+      setUploadProgress("");
       setBusy(false);
     }
   };
@@ -431,16 +531,17 @@ export function AdminStation() {
     setTab("compose");
     setEditingId(item.id);
     setAdvanced(true);
+    const kind = normalizeMediaKind(item.kind);
     const match =
-      PRESETS.find((p) => p.kind === item.kind) ??
+      PRESETS.find((p) => p.kind === kind) ??
       PRESETS.find((p) => p.id === "video")!;
     setPreset(match.id);
     setForm({
       title: item.title,
       subtitle: item.subtitle ?? "",
-      kind: item.kind,
+      kind,
       category: item.category,
-      subcategory: item.subcategory,
+      subcategory: normalizeSubcategoryId(item.subcategory),
       platform: item.platform,
       externalUrl: item.externalUrl,
       poster: item.poster ?? "",
@@ -460,7 +561,7 @@ export function AdminStation() {
     setBusy(true);
     try {
       const mediaUrl = form.src.trim() || form.externalUrl.trim();
-      if (!mediaUrl && form.kind !== "essay") {
+      if (!mediaUrl && form.kind !== "writing") {
         setError("drop a file or paste a media url");
         return;
       }
@@ -612,48 +713,54 @@ export function AdminStation() {
             ))}
           </div>
 
-          {preset !== "essay" ? (
-            <label
-              htmlFor={fileInputId}
-              className={`admin__drop ${dragOver ? "is-over" : ""} ${form.src ? "has-file" : ""} ${busy ? "is-busy" : ""}`}
-              onDragOver={(e) => {
-                e.preventDefault();
-                if (!busy) setDragOver(true);
-              }}
-              onDragLeave={() => setDragOver(false)}
-              onDrop={onDrop}
-              aria-busy={busy}
-            >
-              <input
-                id={fileInputId}
-                ref={fileRef}
-                type="file"
-                className="admin__file-hidden"
-                accept={
-                  activePreset.accept ||
-                  [...ALLOWED_MEDIA_TYPES.media].join(",")
-                }
-                disabled={busy}
-                onChange={onPickFile}
-              />
-              {form.src ? (
-                <>
-                  <p className="admin__drop-title">Ready</p>
-                  <p className="admin__drop-sub">{form.src.replace(/^https?:\/\/[^/]+/, "")}</p>
-                  <p className="admin__drop-hint">Drop another file to replace · up to {Math.floor(MAX_MEDIA_BYTES / (1024 * 1024))} MB</p>
-                </>
-              ) : (
-                <>
-                  <p className="admin__drop-title">
-                    {busy ? "Uploading…" : "Drop video, photo, or audio"}
-                  </p>
-                  <p className="admin__drop-hint">
-                    or click to choose · up to {Math.floor(MAX_MEDIA_BYTES / (1024 * 1024))} MB · Cloudflare
-                  </p>
-                </>
-              )}
-            </label>
-          ) : null}
+          <label
+            htmlFor={fileInputId}
+            className={`admin__drop ${dragOver ? "is-over" : ""} ${form.src ? "has-file" : ""} ${busy ? "is-busy" : ""}`}
+            onDragOver={(e) => {
+              e.preventDefault();
+              if (!busy) setDragOver(true);
+            }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={onDrop}
+            aria-busy={busy}
+          >
+            <input
+              id={fileInputId}
+              ref={fileRef}
+              type="file"
+              className="admin__file-hidden"
+              accept={
+                activePreset.accept ||
+                [...ALLOWED_MEDIA_TYPES.media].join(",")
+              }
+              disabled={busy}
+              onChange={onPickFile}
+            />
+            {form.src ? (
+              <>
+                <p className="admin__drop-title">Ready</p>
+                <p className="admin__drop-sub">{form.src.replace(/^https?:\/\/[^/]+/, "")}</p>
+                <p className="admin__drop-hint">
+                  Drop another file to replace · up to{" "}
+                  {Math.floor(MAX_MEDIA_BYTES / (1024 * 1024))} MB
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="admin__drop-title">
+                  {busy
+                    ? uploadProgress || "Uploading…"
+                    : preset === "writing"
+                      ? "Drop long-form video / audio (optional)"
+                      : "Drop video, photo, or audio"}
+                </p>
+                <p className="admin__drop-hint">
+                  or click · up to {Math.floor(MAX_MEDIA_BYTES / (1024 * 1024))} MB
+                  (chunked over 85 MB)
+                </p>
+              </>
+            )}
+          </label>
 
           <form className="admin__form admin__form--compose" onSubmit={submit}>
             <label>
@@ -684,7 +791,7 @@ export function AdminStation() {
                 placeholder="tags, comma, separated"
               />
             </label>
-            {preset === "essay" ? (
+            {preset === "writing" ? (
               <label>
                 <span>body</span>
                 <textarea
@@ -781,7 +888,7 @@ export function AdminStation() {
                       value={form.kind}
                       onChange={(e) => setForm({ ...form, kind: e.target.value as MediaKind })}
                     >
-                      {(["video", "still", "audio", "vlog", "essay", "live"] as MediaKind[]).map(
+                      {(["video", "still", "audio", "vlog", "writing", "live"] as MediaKind[]).map(
                         (k) => (
                           <option key={k} value={k}>
                             {k}
@@ -790,15 +897,17 @@ export function AdminStation() {
                       )}
                     </select>
                   </label>
-                  <label>
-                    <span>duration</span>
-                    <input
-                      maxLength={24}
-                      placeholder="3:21"
-                      value={form.duration}
-                      onChange={(e) => setForm({ ...form, duration: e.target.value })}
-                    />
-                  </label>
+                  {form.kind === "writing" || form.kind === "still" ? null : (
+                    <label>
+                      <span>duration</span>
+                      <input
+                        maxLength={24}
+                        placeholder="3:21"
+                        value={form.duration}
+                        onChange={(e) => setForm({ ...form, duration: e.target.value })}
+                      />
+                    </label>
+                  )}
                 </div>
                 <div className="admin__row">
                   <label>
@@ -856,7 +965,7 @@ export function AdminStation() {
                     placeholder="https://… or /api/media/house/…"
                   />
                 </label>
-                {preset !== "essay" ? (
+                {preset !== "writing" ? (
                   <label>
                     <span>body notes</span>
                     <textarea
@@ -1056,6 +1165,77 @@ export function AdminStation() {
               export JSON
             </button>
           </header>
+
+          <section className="admin__ticker-panel">
+            <h3>Site ticker</h3>
+            <p className="admin__aside">
+              Scrolls under the 18+ banner on the member site. Leave blank / off to hide.
+            </p>
+            <label>
+              <span>ticker text</span>
+              <input
+                maxLength={MAX_TICKER_CHARS}
+                value={tickerText}
+                onChange={(e) => setTickerText(e.target.value)}
+                placeholder="Drop announcement…"
+              />
+            </label>
+            <label className="admin__check">
+              <input
+                type="checkbox"
+                checked={tickerEnabled}
+                onChange={(e) => setTickerEnabled(e.target.checked)}
+              />
+              <span>show ticker on site</span>
+            </label>
+            <button
+              type="button"
+              className="btn btn--primary"
+              disabled={tickerBusy}
+              onClick={() => {
+                void (async () => {
+                  setTickerBusy(true);
+                  setTickerMsg("");
+                  try {
+                    const res = await fetch("/api/admin/ticker", {
+                      method: "PUT",
+                      credentials: "same-origin",
+                      headers: { "content-type": "application/json" },
+                      body: JSON.stringify({
+                        text: tickerText,
+                        enabled: tickerEnabled,
+                      }),
+                    });
+                    const data = (await res.json().catch(() => ({}))) as {
+                      error?: string;
+                      ticker?: { text?: string; enabled?: boolean };
+                    };
+                    if (!res.ok) {
+                      setTickerMsg(data.error ?? "save_failed");
+                      return;
+                    }
+                    setTickerText(data.ticker?.text ?? "");
+                    setTickerEnabled(Boolean(data.ticker?.enabled));
+                    setTickerMsg("ticker saved");
+                  } catch {
+                    setTickerMsg("network_error");
+                  } finally {
+                    setTickerBusy(false);
+                  }
+                })();
+              }}
+            >
+              {tickerBusy ? "saving…" : "save ticker"}
+            </button>
+            {tickerMsg ? (
+              <p
+                className={`admin__msg ${tickerMsg.includes("saved") ? "" : "admin__msg--err"}`}
+              >
+                {tickerMsg}
+              </p>
+            ) : null}
+          </section>
+
           {statsError ? (
             <p className="admin__msg admin__msg--err">{statsError}</p>
           ) : !stats ? (

@@ -15,6 +15,7 @@ import { AuthProvider, useAuth } from "@/components/AuthContext";
 import { DonatePanel } from "@/components/DonatePanel";
 import { SiteFooter } from "@/components/SiteFooter";
 import { BrandMark, BrandWatermark } from "@/components/BrandMark";
+import { SiteTicker } from "@/components/SiteTicker";
 import {
   IconAdmin,
   IconBrowse,
@@ -76,6 +77,7 @@ function ShellInner() {
         <p className="agebanner" role="note">
           18+
         </p>
+        <SiteTicker />
 
         <div className="shell__rail-layout">
           <aside className="rail" aria-label="Menu">

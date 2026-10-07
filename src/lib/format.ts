@@ -30,6 +30,7 @@ export function kindGlyph(kind: string): string {
       return "♫";
     case "vlog":
       return "◎";
+    case "writing":
     case "essay":
       return "¶";
     case "still":
@@ -39,6 +40,12 @@ export function kindGlyph(kind: string): string {
     default:
       return "›";
   }
+}
+
+/** UI label for catalog kinds (legacy essay → writing). */
+export function kindLabel(kind: string): string {
+  if (kind === "essay") return "writing";
+  return kind;
 }
 
 /** Decode common HTML entities from RSS / scraped summaries. */
