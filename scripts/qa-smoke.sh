@@ -37,6 +37,9 @@ echo "$access_html" | grep -q 'portfolio · vlog · stream' && echo "PASS  acces
 echo "$access_html" | grep -qi 'forgot password' && echo "PASS  access-forgot-stub" && pass=$((pass+1)) || { echo "FAIL  access-forgot-stub"; fail=$((fail+1)); }
 echo "$access_html" | grep -q '/privacy' && echo "PASS  access-privacy-link" && pass=$((pass+1)) || { echo "FAIL  access-privacy-link"; fail=$((fail+1)); }
 echo "$access_html" | grep -q '/terms' && echo "PASS  access-terms-link" && pass=$((pass+1)) || { echo "FAIL  access-terms-link"; fail=$((fail+1)); }
+echo "$access_html" | grep -qiE 'magcloud|quarantined|fetched platform' \
+  && { echo "FAIL  access-no-magcloud-fetched"; fail=$((fail+1)); } \
+  || { echo "PASS  access-no-magcloud-fetched"; pass=$((pass+1)); }
 
 # forgot-password stub — generic 200, no account probe; bots denied
 forgot_code="$(curl -s -o /tmp/kn-forgot.json -w '%{http_code}' -A "$UA" -X POST "$BASE/api/auth/forgot-password" \
@@ -80,9 +83,16 @@ check "ingest-authed" "$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" -b "$JA
 check "catalog-authed" "$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" -b "$JAR" "$BASE/api/catalog")"
 check "catalog-auth" "$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" "$BASE/api/catalog")" "401"
 
-# download uploaded (paywalled) without purchase → 402
-dl="$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" -b "$JAR" "$BASE/api/commerce/download?id=qtoss-vol1")"
-check "download-paywall" "$dl" "402"
+catalog="$(curl -s -A "$UA" -b "$JAR" "$BASE/api/catalog")"
+echo "$catalog" | grep -qE '"items"' \
+  && echo "PASS  catalog-shape" && pass=$((pass+1)) \
+  || { echo "FAIL  catalog-shape"; fail=$((fail+1)); }
+echo "$catalog" | grep -qiE 'magcloud|qtoss|quarantined' \
+  && { echo "FAIL  catalog-no-magcloud"; fail=$((fail+1)); } \
+  || { echo "PASS  catalog-no-magcloud"; pass=$((pass+1)); }
+
+# Seed MagCloud rows removed — unknown id → 404
+check "download-seed-gone" "$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" -b "$JAR" "$BASE/api/commerce/download?id=qtoss-vol1")" "404"
 
 # fetched outside catalog removed
 check "download-fetched-gone" "$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" -b "$JAR" "$BASE/api/commerce/download?id=bandcamp-30over9-good-sloppy")" "404"
@@ -90,14 +100,6 @@ check "download-fetched-gone" "$(curl -s -o /dev/null -w '%{http_code}' -A "$UA"
 # webhook must fail closed without secret
 wh="$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" -X POST "$BASE/api/commerce/webhook" -H 'content-type: application/json' -d '{"type":"checkout.session.completed"}')"
 check "webhook-fail-closed" "$wh" "503"
-
-# purchase (demo mode) then download
-buy="$(curl -s -A "$UA" -b "$JAR" -X POST "$BASE/api/commerce/purchase" \
-  -H 'content-type: application/json' \
-  -d '{"catalogId":"qtoss-vol1"}')"
-echo "$buy" | grep -qE '"mode"|"alreadyOwned"' && echo "PASS  purchase-demo" && pass=$((pass+1)) || { echo "FAIL  purchase-demo"; fail=$((fail+1)); }
-
-check "download-owned" "$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" -b "$JAR" "$BASE/api/commerce/download?id=qtoss-vol1")"
 
 don="$(curl -s -A "$UA" -b "$JAR" -X POST "$BASE/api/donate" \
   -H 'content-type: application/json' \
@@ -109,14 +111,17 @@ echo "$robots" | grep -qi 'Disallow: /' && echo "PASS  robots-disallow-all" && p
 
 home="$(curl -s -A "$UA" -b "$JAR" "$BASE/")"
 echo "$home" | grep -qi '18+' && echo "PASS  compliance-18plus-marker" && pass=$((pass+1)) || { echo "FAIL  compliance-18plus-marker"; fail=$((fail+1)); }
-echo "$home" | grep -q 'rail__nav\|shell--rail' && echo "PASS  home-rail-menu" && pass=$((pass+1)) || { echo "FAIL  home-rail-menu"; fail=$((fail+1)); }
+echo "$home" | grep -q 'shell__rail-layout\|rail__nav\|shell--rail' && echo "PASS  home-rail-menu" && pass=$((pass+1)) || { echo "FAIL  home-rail-menu"; fail=$((fail+1)); }
 echo "$home" | grep -q 'stream' && echo "PASS  home-stream-nav" && pass=$((pass+1)) || { echo "FAIL  home-stream-nav"; fail=$((fail+1)); }
 echo "$home" | grep -q 'browse' && echo "PASS  home-browse-nav" && pass=$((pass+1)) || { echo "FAIL  home-browse-nav"; fail=$((fail+1)); }
 echo "$home" | grep -q 'data-age-gate' && echo "PASS  age-gate-flag" && pass=$((pass+1)) || { echo "FAIL  age-gate-flag"; fail=$((fail+1)); }
 echo "$home" | grep -q '/privacy' && echo "PASS  home-privacy-link" && pass=$((pass+1)) || { echo "FAIL  home-privacy-link"; fail=$((fail+1)); }
-echo "$home" | grep -qE 'magcloud|QUARANTINED|tile__poster|NOW' \
-  && echo "PASS  home-media-posters" && pass=$((pass+1)) \
-  || { echo "FAIL  home-media-posters"; fail=$((fail+1)); }
+echo "$home" | grep -qiE 'magcloud|quarantined|qtoss|footprint' \
+  && { echo "FAIL  home-no-magcloud-footprint"; fail=$((fail+1)); } \
+  || { echo "PASS  home-no-magcloud-footprint"; pass=$((pass+1)); }
+echo "$home" | grep -q 'stream__empty\|Empty' \
+  && echo "PASS  home-empty-stream" && pass=$((pass+1)) \
+  || { echo "FAIL  home-empty-stream"; fail=$((fail+1)); }
 echo "$home" | grep -q 'id="names"\|cosmo-hero\|cosmogram' && { echo "FAIL  home-no-names-chart"; fail=$((fail+1)); } || { echo "PASS  home-no-names-chart"; pass=$((pass+1)); }
 
 # Footprint archive removed
@@ -133,7 +138,7 @@ check "session-exclusive-new" "$(curl -s -o /dev/null -w '%{http_code}' -A "$UA"
 rm -f "$JAR"
 JAR="$JAR2"
 
-# Admin station — non-admin forbidden; admin can publish
+# Admin station — non-admin forbidden; admin can publish + commerce path
 check "admin-page-authed" "$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" -b "$JAR" "$BASE/admin")"
 check "admin-api-forbidden" "$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" -b "$JAR" "$BASE/api/admin/content")" "403"
 
@@ -153,14 +158,31 @@ if [[ -n "${ADMIN_EMAIL:-}" ]]; then
     -H 'content-type: application/json' \
     -d '{"title":"QA Admin Vlog","brand":"Telling Show Of Love","kind":"vlog","category":"vlog","subcategory":"season","platform":"house","externalUrl":"https://www.kamaunegasi.net/","blurb":"Admin station publish smoke.","paywalled":true}')"
   echo "$pub" | grep -q '"id"' && echo "PASS  admin-publish" && pass=$((pass+1)) || { echo "FAIL  admin-publish"; fail=$((fail+1)); }
+  CID="$(printf '%s' "$pub" | sed -n 's/.*"id"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)"
+  if [[ -n "$CID" ]]; then
+    check "download-paywall" "$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" -b "$JAR" "$BASE/api/commerce/download?id=$CID")" "402"
+    buy="$(curl -s -A "$UA" -b "$JAR" -X POST "$BASE/api/commerce/purchase" \
+      -H 'content-type: application/json' \
+      -d "{\"catalogId\":\"$CID\"}")"
+    echo "$buy" | grep -qE '"mode"|"alreadyOwned"' && echo "PASS  purchase-demo" && pass=$((pass+1)) || { echo "FAIL  purchase-demo"; fail=$((fail+1)); }
+    check "download-owned" "$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" -b "$JAR" "$BASE/api/commerce/download?id=$CID")"
+  else
+    echo "FAIL  purchase-demo (no catalog id)"; fail=$((fail+1))
+    echo "FAIL  download-owned (no catalog id)"; fail=$((fail+1))
+  fi
   rm -f "$AJAR"
 else
   echo "SKIP  admin-publish (ADMIN_EMAIL unset)"
+  echo "SKIP  purchase-demo (ADMIN_EMAIL unset)"
+  echo "SKIP  download-owned (ADMIN_EMAIL unset)"
 fi
 
 ingest="$(curl -s -A "$UA" -b "$JAR" "$BASE/api/ingest")"
 echo "$ingest" | grep -q '357Itsumi' && echo "PASS  ingest-exact-357Itsumi" && pass=$((pass+1)) || { echo "FAIL  ingest-exact-357Itsumi"; fail=$((fail+1)); }
 echo "$ingest" | grep -q 'Streetpolitik' && echo "PASS  ingest-exact-Streetpolitik" && pass=$((pass+1)) || { echo "FAIL  ingest-exact-Streetpolitik"; fail=$((fail+1)); }
+echo "$ingest" | grep -qi 'magcloud' \
+  && { echo "FAIL  ingest-no-magcloud"; fail=$((fail+1)); } \
+  || { echo "PASS  ingest-no-magcloud"; pass=$((pass+1)); }
 
 echo "== result: $pass passed · $fail failed =="
 [[ "$fail" -eq 0 ]]

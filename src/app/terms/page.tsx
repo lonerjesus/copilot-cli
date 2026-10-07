@@ -37,10 +37,7 @@ export default function TermsPage() {
           <h2>Media &amp; commerce</h2>
           <ul>
             <li>
-              Fetched platform media (linked hosts) may be streamed and saved free for members.
-            </li>
-            <li>
-              New house uploads require a purchase (Stripe) before download. Ownership is per piece.
+              House uploads require a purchase (Stripe) before download. Ownership is per piece.
             </li>
             <li>Redistribution, resale, or public re-hosting of house files is prohibited.</li>
           </ul>

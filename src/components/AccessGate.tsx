@@ -132,10 +132,7 @@ export function AccessGate() {
         </h1>
         <p className="access__tagline">{SITE.tagline}</p>
         <p className="access__copy">Account required.</p>
-        <p className="access__commerce">
-          House downloads checkout via Stripe after sign-in. Fetched platform streams stay free for
-          members.
-        </p>
+        <p className="access__commerce">House downloads checkout via Stripe after sign-in.</p>
         {sessionNotice ? (
           <p className="access__notice" role="status" aria-live="polite">
             {sessionNotice}

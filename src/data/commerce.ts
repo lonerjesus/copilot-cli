@@ -20,8 +20,6 @@ export function formatUsd(cents: number): string {
 
 export function contentPriceCents(catalogId: string, override?: number): number {
   if (typeof override === "number" && override >= 0) return override;
-  // MagCloud chapbooks slightly higher
-  if (catalogId.startsWith("qtoss-")) return 699;
   if (catalogId.startsWith("bandcamp-") || catalogId.startsWith("bc-")) return 299;
   return DEFAULT_CONTENT_PRICE_CENTS;
 }

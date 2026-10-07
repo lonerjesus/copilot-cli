@@ -71,78 +71,80 @@ function ShellInner() {
           18+
         </p>
 
-        <aside className="rail" aria-label="Menu">
-          <Link className="rail__brand" href="#stream" onClick={() => go("stream")}>
-            <BrandMark size={28} priority className="rail__logo" />
-            <strong>{SITE.title}</strong>
-          </Link>
+        <div className="shell__rail-layout">
+          <aside className="rail" aria-label="Menu">
+            <Link className="rail__brand" href="#stream" onClick={() => go("stream")}>
+              <BrandMark size={28} priority className="rail__logo" />
+              <strong>{SITE.title}</strong>
+            </Link>
 
-          <nav className="rail__nav">
-            {nav.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className={view === item.id ? "is-active" : undefined}
-                aria-current={view === item.id ? "page" : undefined}
-                onClick={() => go(item.id)}
-              >
-                {item.label}
+            <nav className="rail__nav">
+              {nav.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={view === item.id ? "is-active" : undefined}
+                  aria-current={view === item.id ? "page" : undefined}
+                  onClick={() => go(item.id)}
+                >
+                  {item.label}
+                </button>
+              ))}
+              {user?.isAdmin ? (
+                <Link href="/admin" onClick={() => setMenuOpen(false)}>
+                  admin
+                </Link>
+              ) : null}
+            </nav>
+
+            <div className="rail__foot">
+              <span className="rail__user" title={user?.email}>
+                {user?.displayName ?? "·"}
+              </span>
+              <button type="button" className="rail__out" onClick={() => void logout()}>
+                out
               </button>
-            ))}
-            {user?.isAdmin ? (
-              <Link href="/admin" onClick={() => setMenuOpen(false)}>
-                admin
-              </Link>
-            ) : null}
-          </nav>
+            </div>
+          </aside>
 
-          <div className="rail__foot">
-            <span className="rail__user" title={user?.email}>
-              {user?.displayName ?? "·"}
-            </span>
-            <button type="button" className="rail__out" onClick={() => void logout()}>
-              out
-            </button>
-          </div>
-        </aside>
-
-        <button
-          type="button"
-          className="rail-toggle"
-          aria-expanded={menuOpen}
-          aria-controls="main"
-          onClick={() => setMenuOpen((v) => !v)}
-        >
-          {menuOpen ? "×" : "☰"}
-        </button>
-        {menuOpen ? (
           <button
             type="button"
-            className="rail-scrim"
-            aria-label="Close menu"
-            onClick={() => setMenuOpen(false)}
-          />
-        ) : null}
+            className="rail-toggle"
+            aria-expanded={menuOpen}
+            aria-controls="main"
+            onClick={() => setMenuOpen((v) => !v)}
+          >
+            {menuOpen ? "×" : "☰"}
+          </button>
+          {menuOpen ? (
+            <button
+              type="button"
+              className="rail-scrim"
+              aria-label="Close menu"
+              onClick={() => setMenuOpen(false)}
+            />
+          ) : null}
 
-        <div className="rail__stage">
-          <main id="main" tabIndex={-1} className="stage">
-            {view === "stream" ? (
-              <>
-                <Hero
-                  onStream={() => {
-                    setExpanded(true);
-                    toggle();
-                  }}
-                />
-                <StreamDeck compact />
-              </>
-            ) : null}
+          <div className="rail__stage">
+            <main id="main" tabIndex={-1} className="stage">
+              {view === "stream" ? (
+                <>
+                  <Hero
+                    onStream={() => {
+                      setExpanded(true);
+                      toggle();
+                    }}
+                  />
+                  <StreamDeck compact />
+                </>
+              ) : null}
 
-            {view === "browse" ? <CategoryBrowser compact /> : null}
+              {view === "browse" ? <CategoryBrowser compact /> : null}
 
-            {view === "support" ? <DonatePanel compact /> : null}
-          </main>
-          <SiteFooter />
+              {view === "support" ? <DonatePanel compact /> : null}
+            </main>
+            <SiteFooter />
+          </div>
         </div>
 
         <PlayerDock />

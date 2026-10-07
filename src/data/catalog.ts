@@ -31,7 +31,6 @@ export function isPaywalled(item: CatalogItem): boolean {
   if (typeof item.paywalled === "boolean") return item.paywalled;
   if (item.source === "uploaded") return true;
   if (item.source === "fetched") return false;
-  if (item.platform === "magcloud" || item.id.startsWith("qtoss-")) return true;
   return false;
 }
 
@@ -71,48 +70,15 @@ export type StreamRow = {
   itemIds: string[];
 };
 
-/** House originals only — no fetched outside posts. */
-export const CATALOG: CatalogItem[] = [
-  {
-    id: "qtoss-vol1",
-    title: "QUARANTINED THOUGHTS OF A STREET STATISTIC VOL. 1",
-    subtitle: "EVIL …",
-    brand: "Streetpolitik",
-    kind: "essay",
-    category: "writing",
-    subcategory: "essays",
-    publishedAt: "2013-05-24",
-    platform: "magcloud",
-    source: "uploaded",
-    externalUrl: "https://www.magcloud.com/user/streetpolitik",
-    poster: "https://api.magcloud.com/Avatar/streetpolitik/Large",
-    tags: ["QUARANTINED THOUGHTS OF A STREET STATISTIC", "Streetpolitik", "chapbook"],
-    blurb: "Vol. 1",
-  },
-  {
-    id: "qtoss-vol2",
-    title: "QUARANTINED THOUGHTS OF A STREET STATISTIC VOL. 2",
-    subtitle: "AWAKE…",
-    brand: "Streetpolitik",
-    kind: "essay",
-    category: "writing",
-    subcategory: "essays",
-    publishedAt: "2013-05-24",
-    platform: "magcloud",
-    source: "uploaded",
-    externalUrl: "https://www.magcloud.com/user/streetpolitik",
-    poster: "https://api.magcloud.com/Avatar/streetpolitik/Large",
-    tags: ["QUARANTINED THOUGHTS OF A STREET STATISTIC", "Streetpolitik", "chapbook"],
-    blurb: "Vol. 2",
-  },
-];
+/** House originals only — seed empty; admin publishes fill the stream. */
+export const CATALOG: CatalogItem[] = [];
 
 export const STREAM_ROWS: StreamRow[] = [
-  { id: "now", title: "NOW", hint: "", itemIds: ["qtoss-vol1", "qtoss-vol2"] },
+  { id: "now", title: "NOW", hint: "", itemIds: [] },
   { id: "video", title: "VIDEO", hint: "", itemIds: [] },
   { id: "music", title: "MUSIC", hint: "", itemIds: [] },
   { id: "photos", title: "PHOTO", hint: "", itemIds: [] },
-  { id: "writing", title: "READ", hint: "", itemIds: ["qtoss-vol1", "qtoss-vol2"] },
+  { id: "writing", title: "READ", hint: "", itemIds: [] },
 ];
 
 export function streamRowMatches(rowId: string, item: CatalogItem): boolean {

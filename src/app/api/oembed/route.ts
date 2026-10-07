@@ -11,8 +11,6 @@ const ALLOWED_HOSTS = new Set([
   "www.youtube.com",
   "youtube.com",
   "youtu.be",
-  "www.magcloud.com",
-  "magcloud.com",
   "podcasts.apple.com",
   "357itsumi.bandcamp.com",
   "bandcamp.com",
