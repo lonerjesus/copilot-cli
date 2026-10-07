@@ -111,7 +111,7 @@ echo "$robots" | grep -qi 'Disallow: /' && echo "PASS  robots-disallow-all" && p
 
 home="$(curl -s -A "$UA" -b "$JAR" "$BASE/")"
 echo "$home" | grep -qi '18+' && echo "PASS  compliance-18plus-marker" && pass=$((pass+1)) || { echo "FAIL  compliance-18plus-marker"; fail=$((fail+1)); }
-echo "$home" | grep -q 'rail__nav\|shell--rail' && echo "PASS  home-rail-menu" && pass=$((pass+1)) || { echo "FAIL  home-rail-menu"; fail=$((fail+1)); }
+echo "$home" | grep -q 'shell__rail-layout\|rail__nav\|shell--rail' && echo "PASS  home-rail-menu" && pass=$((pass+1)) || { echo "FAIL  home-rail-menu"; fail=$((fail+1)); }
 echo "$home" | grep -q 'stream' && echo "PASS  home-stream-nav" && pass=$((pass+1)) || { echo "FAIL  home-stream-nav"; fail=$((fail+1)); }
 echo "$home" | grep -q 'browse' && echo "PASS  home-browse-nav" && pass=$((pass+1)) || { echo "FAIL  home-browse-nav"; fail=$((fail+1)); }
 echo "$home" | grep -q 'data-age-gate' && echo "PASS  age-gate-flag" && pass=$((pass+1)) || { echo "FAIL  age-gate-flag"; fail=$((fail+1)); }
