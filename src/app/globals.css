@@ -2011,6 +2011,39 @@ a.drive .drive__face {
   border: 0;
 }
 
+.admin__thumb {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.admin__thumb-label {
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.admin__drop--thumb {
+  min-height: 8.5rem;
+  padding: 1.1rem 0.85rem;
+}
+
+.admin__thumb-preview {
+  width: min(100%, 12rem);
+  max-height: 8rem;
+  object-fit: cover;
+  border: 1px solid var(--line);
+  margin: 0 auto 0.35rem;
+  display: block;
+  background: var(--void);
+}
+
+.admin__thumb-clear {
+  justify-self: start;
+  font-size: 0.72rem;
+  padding: 0.35rem 0.65rem;
+}
+
 .admin__form--compose {
   border: 0;
   background: transparent;

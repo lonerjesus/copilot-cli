@@ -187,11 +187,14 @@ export function AdminStation() {
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [dragOver, setDragOver] = useState(false);
+  const [posterDragOver, setPosterDragOver] = useState(false);
   const [advanced, setAdvanced] = useState(false);
   const [stats, setStats] = useState<StatsPayload | null>(null);
   const [statsError, setStatsError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
+  const posterRef = useRef<HTMLInputElement>(null);
   const fileInputId = "admin-media-file";
+  const posterInputId = "admin-poster-file";
 
   const brandOptions = useMemo(
     () =>
@@ -337,6 +340,42 @@ export function AdminStation() {
     if (busy) return;
     const file = event.dataTransfer.files?.[0];
     if (file) void ingestFile(file);
+  };
+
+  const ingestPoster = async (file: File) => {
+    if (busy) return;
+    setError("");
+    setOk("");
+    setBusy(true);
+    try {
+      validateUploadFile(file, "poster");
+      const url = await uploadFile(file, "poster");
+      setForm((f) => ({ ...f, poster: url }));
+      setOk("thumbnail ready");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "upload_failed");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const onPickPoster = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (file) void ingestPoster(file);
+  };
+
+  const onDropPoster = (event: DragEvent<HTMLLabelElement>) => {
+    event.preventDefault();
+    setPosterDragOver(false);
+    if (busy) return;
+    const file = event.dataTransfer.files?.[0];
+    if (file) void ingestPoster(file);
+  };
+
+  const clearPoster = () => {
+    setForm((f) => ({ ...f, poster: "" }));
+    setOk("");
   };
 
   const onCategory = (id: CategoryId) => {
@@ -626,6 +665,60 @@ export function AdminStation() {
               </label>
             ) : null}
 
+            <div className="admin__thumb">
+              <span className="admin__thumb-label">thumbnail</span>
+              <label
+                htmlFor={posterInputId}
+                className={`admin__drop admin__drop--thumb ${posterDragOver ? "is-over" : ""} ${form.poster ? "has-file" : ""} ${busy ? "is-busy" : ""}`}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  if (!busy) setPosterDragOver(true);
+                }}
+                onDragLeave={() => setPosterDragOver(false)}
+                onDrop={onDropPoster}
+                aria-busy={busy}
+              >
+                <input
+                  id={posterInputId}
+                  ref={posterRef}
+                  type="file"
+                  className="admin__file-hidden"
+                  accept={[...ALLOWED_MEDIA_TYPES.poster].join(",")}
+                  disabled={busy}
+                  onChange={onPickPoster}
+                />
+                {form.poster ? (
+                  <>
+                    <img className="admin__thumb-preview" src={form.poster} alt="" />
+                    <p className="admin__drop-title">Thumbnail ready</p>
+                    <p className="admin__drop-sub">
+                      {form.poster.replace(/^https?:\/\/[^/]+/, "")}
+                    </p>
+                    <p className="admin__drop-hint">Drop another image to replace</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="admin__drop-title">
+                      {busy ? "Uploading…" : "Drop thumbnail image"}
+                    </p>
+                    <p className="admin__drop-hint">
+                      or click · jpeg / png / webp / gif
+                    </p>
+                  </>
+                )}
+              </label>
+              {form.poster ? (
+                <button
+                  type="button"
+                  className="btn btn--ghost admin__thumb-clear"
+                  onClick={clearPoster}
+                  disabled={busy}
+                >
+                  clear thumbnail
+                </button>
+              ) : null}
+            </div>
+
             <label className="admin__check">
               <input
                 type="checkbox"
@@ -734,11 +827,12 @@ export function AdminStation() {
                 </label>
                 <div className="admin__row">
                   <label>
-                    <span>poster url</span>
+                    <span>poster url (optional — upload above preferred)</span>
                     <input
                       type="url"
                       value={form.poster}
                       onChange={(e) => setForm({ ...form, poster: e.target.value })}
+                      placeholder="https://… or /api/media/house/…"
                     />
                   </label>
                   <label>
