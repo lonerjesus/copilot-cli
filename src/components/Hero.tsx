@@ -11,9 +11,14 @@ export function Hero({ onStream }: { onStream?: () => void }) {
         <div className="hero__noise" />
       </div>
       <div className="hero__content">
-        <BrandMark size={120} priority className="hero__logo" />
+        <BrandMark size={120} priority className="hero__logo hero__logo--pulse" />
         <h1 className="sr-only">{SITE.title}</h1>
-        <button type="button" className="btn btn--primary" onClick={onStream}>
+        <button
+          type="button"
+          className="btn btn--primary hero__play"
+          onClick={onStream}
+          aria-label="Play stream"
+        >
           ▶
         </button>
       </div>

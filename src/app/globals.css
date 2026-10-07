@@ -381,6 +381,35 @@ body:has(.agebanner) .topbar {
   color: var(--phosphor);
 }
 
+.topbar--admin .topbar__brand {
+  gap: 0;
+}
+
+.topbar__nav--icons {
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.topbar__nav--icons a {
+  display: grid;
+  place-content: center;
+  width: 2.35rem;
+  height: 2.35rem;
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.topbar__nav--icons a[aria-current="page"],
+.topbar__nav--icons a:hover {
+  color: var(--phosphor);
+}
+
+.topbar__nav-icon {
+  width: 1.15rem;
+  height: 1.15rem;
+  display: block;
+}
+
 /* Hero — one composition, brand first, full-bleed atmosphere */
 .hero {
   position: relative;
@@ -848,6 +877,24 @@ a.drive .drive__face {
   margin: 1rem 0 0;
   color: var(--muted);
   font-size: 0.9rem;
+}
+
+.stream__empty--upscale {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-top: 1.5rem;
+  padding: 1rem 1.1rem;
+  border: 1px dashed color-mix(in oklab, var(--line) 50%, var(--phosphor) 25%);
+  background: color-mix(in oklab, var(--panel) 55%, transparent);
+  letter-spacing: 0.03em;
+  animation: empty-rise 0.55s ease both;
+}
+
+.stream__empty-mark {
+  color: var(--phosphor);
+  font-size: 1.15rem;
+  line-height: 1;
 }
 
 .row__empty {
@@ -1762,8 +1809,15 @@ a.drive .drive__face {
 }
 
 .admin__preset-icon {
-  font-size: 1.05rem;
-  line-height: 1;
+  width: 1.2rem;
+  height: 1.2rem;
+  display: block;
+}
+
+.admin__tab-icon {
+  width: 1.15rem;
+  height: 1.15rem;
+  display: block;
 }
 
 .admin__preset.is-active {
@@ -1933,14 +1987,14 @@ a.drive .drive__face {
   justify-content: center;
 }
 
-.admin__tab-icon {
-  font-size: 1.05rem;
-  line-height: 1;
-}
-
 .admin__tab.is-active {
   color: var(--phosphor);
   box-shadow: inset 0 -2px 0 var(--phosphor);
+}
+
+.admin__tab.is-active .admin__tab-icon,
+.admin__preset.is-active .admin__preset-icon {
+  filter: drop-shadow(0 0 6px color-mix(in oklab, var(--phosphor) 45%, transparent));
 }
 
 .admin__tab-count {
@@ -1953,6 +2007,7 @@ a.drive .drive__face {
   display: grid;
   gap: 1rem;
   max-width: 40rem;
+  animation: compose-in 0.45s ease both;
 }
 
 .admin__drop {
@@ -3057,6 +3112,28 @@ a.drive .drive__face {
     opacity: 1;
     transform: none;
     filter: none;
+  }
+}
+
+@keyframes compose-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes empty-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
   }
 }
 
@@ -4243,8 +4320,20 @@ a.drive .drive__face {
 }
 
 .rail__nav-icon {
-  font-size: 1.15rem;
-  line-height: 1;
+  width: 1.25rem;
+  height: 1.25rem;
+  display: block;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.rail__nav button:hover .rail__nav-icon,
+.rail__nav a:hover .rail__nav-icon {
+  transform: translateY(-1px);
+}
+
+.rail__nav button.is-active .rail__nav-icon,
+.rail__nav a[aria-current="page"] .rail__nav-icon {
+  transform: scale(1.06);
 }
 
 .rail__nav button.is-active,
@@ -4321,6 +4410,20 @@ a.drive .drive__face {
 .hero--minimal .hero__logo {
   width: clamp(4.5rem, 12vw, 7.5rem);
   height: auto;
+}
+
+.hero--minimal .hero__logo--pulse {
+  animation: brand-in 0.7s ease both;
+}
+
+.hero--minimal .hero__play {
+  animation: compose-in 0.55s ease 0.12s both;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hero--minimal .hero__play:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--phosphor) 40%, transparent);
 }
 
 .footer--compact {

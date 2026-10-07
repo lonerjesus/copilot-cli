@@ -267,11 +267,17 @@ export function StreamDeck({ compact = false }: { compact?: boolean }) {
                     </p>
                     <h4 className="featured__title">{hero.title}</h4>
                     {hero.subtitle ? <p className="featured__sub">{hero.subtitle}</p> : null}
-                    <p className="featured__blurb">{hero.blurb}</p>
+                    {hero.blurb &&
+                    hero.blurb.trim().toLowerCase() !== (hero.subtitle ?? "").trim().toLowerCase() &&
+                    hero.blurb.trim().toLowerCase() !== hero.title.trim().toLowerCase() ? (
+                      <p className="featured__blurb">{hero.blurb}</p>
+                    ) : null}
                     <p className="featured__cta">
-                      {hasMagazine(hero.id) && hero.kind === "essay"
-                        ? "open magazine · house reading"
-                        : "press play · queue follows"}
+                      {hero.kind === "essay"
+                        ? hasMagazine(hero.id)
+                          ? "open · read"
+                          : "open · note"
+                        : "play · queue"}
                     </p>
                   </div>
                 </button>
@@ -307,7 +313,12 @@ export function StreamDeck({ compact = false }: { compact?: boolean }) {
       })}
 
       {house.length === 0 ? (
-        <p className="stream__empty">Empty — next drop soon.</p>
+        <p className="stream__empty stream__empty--upscale">
+          <span className="stream__empty-mark" aria-hidden>
+            ◈
+          </span>
+          <span>Empty shelf — publish the next drop from admin.</span>
+        </p>
       ) : null}
     </section>
   );

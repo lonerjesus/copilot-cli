@@ -15,13 +15,24 @@ import { SITE } from "@/data/identity";
 import type { MediaKind } from "@/data/catalog";
 import type { UploadedContent } from "@/lib/content-store";
 import { ALLOWED_MEDIA_TYPES, MAX_MEDIA_BYTES, validateUploadFile } from "@/lib/media-store";
+import {
+  IconAnalytics,
+  IconCompose,
+  IconData,
+  IconLibrary,
+  IconMusic,
+  IconNote,
+  IconPhoto,
+  IconVideo,
+} from "@/components/NavIcons";
+import type { ComponentType } from "react";
 
 type Tab = "compose" | "library" | "analytics" | "data";
 
 type UploadPreset = {
   id: "video" | "photo" | "music" | "essay";
   label: string;
-  icon: string;
+  Icon: ComponentType<{ className?: string }>;
   kind: MediaKind;
   category: CategoryId;
   subcategory: SubcategoryId;
@@ -33,7 +44,7 @@ const PRESETS: UploadPreset[] = [
   {
     id: "video",
     label: "Video",
-    icon: "▶",
+    Icon: IconVideo,
     kind: "video",
     category: "video",
     subcategory: "archive",
@@ -43,7 +54,7 @@ const PRESETS: UploadPreset[] = [
   {
     id: "photo",
     label: "Photo",
-    icon: "▣",
+    Icon: IconPhoto,
     kind: "still",
     category: "visuals",
     subcategory: "stills",
@@ -53,7 +64,7 @@ const PRESETS: UploadPreset[] = [
   {
     id: "music",
     label: "Music",
-    icon: "♪",
+    Icon: IconMusic,
     kind: "audio",
     category: "audio",
     subcategory: "music",
@@ -63,7 +74,7 @@ const PRESETS: UploadPreset[] = [
   {
     id: "essay",
     label: "Note",
-    icon: "¶",
+    Icon: IconNote,
     kind: "essay",
     category: "writing",
     subcategory: "essays",
@@ -72,11 +83,15 @@ const PRESETS: UploadPreset[] = [
   },
 ];
 
-const ADMIN_TABS: { id: Tab; label: string; icon: string }[] = [
-  { id: "compose", label: "Compose", icon: "✎" },
-  { id: "library", label: "Library", icon: "▤" },
-  { id: "analytics", label: "Analytics", icon: "▦" },
-  { id: "data", label: "Data", icon: "⇩" },
+const ADMIN_TABS: {
+  id: Tab;
+  label: string;
+  Icon: ComponentType<{ className?: string }>;
+}[] = [
+  { id: "compose", label: "Compose", Icon: IconCompose },
+  { id: "library", label: "Library", Icon: IconLibrary },
+  { id: "analytics", label: "Analytics", Icon: IconAnalytics },
+  { id: "data", label: "Data", Icon: IconData },
 ];
 
 type FormState = {
@@ -551,9 +566,7 @@ export function AdminStation() {
             title={t.label}
             onClick={() => openTab(t.id)}
           >
-            <span className="admin__tab-icon" aria-hidden>
-              {t.icon}
-            </span>
+            <t.Icon className="admin__tab-icon" />
             {t.id === "library" && !loading ? (
               <span className="admin__tab-count">{items.length}</span>
             ) : null}
@@ -574,9 +587,7 @@ export function AdminStation() {
                 title={p.label}
                 onClick={() => applyPreset(p)}
               >
-                <span className="admin__preset-icon" aria-hidden>
-                  {p.icon}
-                </span>
+                <p.Icon className="admin__preset-icon" />
               </button>
             ))}
           </div>
