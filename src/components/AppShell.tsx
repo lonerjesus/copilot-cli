@@ -52,10 +52,10 @@ function ShellInner() {
     window.history.replaceState(null, "", `#${id}`);
   }, []);
 
-  const nav: { id: ViewId; label: string }[] = [
-    { id: "stream", label: "stream" },
-    { id: "browse", label: "browse" },
-    { id: "support", label: "support" },
+  const nav: { id: ViewId; label: string; icon: string }[] = [
+    { id: "stream", label: "stream", icon: "▶" },
+    { id: "browse", label: "browse", icon: "▦" },
+    { id: "support", label: "support", icon: "♦" },
   ];
 
   return (
@@ -73,9 +73,13 @@ function ShellInner() {
 
         <div className="shell__rail-layout">
           <aside className="rail" aria-label="Menu">
-            <Link className="rail__brand" href="#stream" onClick={() => go("stream")}>
+            <Link
+              className="rail__brand"
+              href="#stream"
+              onClick={() => go("stream")}
+              aria-label={SITE.title}
+            >
               <BrandMark size={28} priority className="rail__logo" />
-              <strong>{SITE.title}</strong>
             </Link>
 
             <nav className="rail__nav">
@@ -85,14 +89,25 @@ function ShellInner() {
                   type="button"
                   className={view === item.id ? "is-active" : undefined}
                   aria-current={view === item.id ? "page" : undefined}
+                  aria-label={item.label}
+                  title={item.label}
                   onClick={() => go(item.id)}
                 >
-                  {item.label}
+                  <span className="rail__nav-icon" aria-hidden>
+                    {item.icon}
+                  </span>
                 </button>
               ))}
               {user?.isAdmin ? (
-                <Link href="/admin" onClick={() => setMenuOpen(false)}>
-                  admin
+                <Link
+                  href="/admin"
+                  onClick={() => setMenuOpen(false)}
+                  aria-label="admin"
+                  title="admin"
+                >
+                  <span className="rail__nav-icon" aria-hidden>
+                    ⚙
+                  </span>
                 </Link>
               ) : null}
             </nav>

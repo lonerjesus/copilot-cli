@@ -63,7 +63,6 @@ function Tile({
           {paid ? <span className="tile__badge">pay</span> : null}
         </div>
         <div className="tile__meta">
-          <p className="tile__brand">{item.brand}</p>
           <h3 className="tile__title">{item.title}</h3>
           <p className="tile__sub">
             {item.kind}
@@ -264,7 +263,7 @@ export function StreamDeck({ compact = false }: { compact?: boolean }) {
                   </div>
                   <div className="featured__meta">
                     <p className="featured__eyebrow">
-                      {kindGlyph(hero.kind)} {hero.kind} · {hero.platform}
+                      {kindGlyph(hero.kind)} {hero.kind}
                     </p>
                     <h4 className="featured__title">{hero.title}</h4>
                     {hero.subtitle ? <p className="featured__sub">{hero.subtitle}</p> : null}

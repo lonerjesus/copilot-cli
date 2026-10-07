@@ -364,10 +364,10 @@ export function CategoryBrowser({
                           {isPaywalled(item) ? <span className="tile__badge">pay</span> : null}
                         </div>
                         <div className="tile__meta">
-                          <p className="tile__brand">{item.brand}</p>
                           <h4 className="tile__title">{item.title}</h4>
                           <p className="tile__sub">
-                            {item.subcategory} · {item.kind} · {item.platform}
+                            {item.kind}
+                            {item.duration ? ` · ${item.duration}` : ""}
                           </p>
                         </div>
                       </button>

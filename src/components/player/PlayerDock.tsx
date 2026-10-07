@@ -348,7 +348,7 @@ export function PlayerDock() {
 
   const label = useMemo(() => {
     if (!current) return "NO SIGNAL";
-    return `${current.brand} — ${current.title}`;
+    return current.title;
   }, [current]);
 
   const isTheater =
@@ -419,7 +419,6 @@ export function PlayerDock() {
                         >
                           <span className="deck__upnext-idx">{i + 1}</span>
                           <span className="deck__upnext-title">{item.title}</span>
-                          <span className="deck__upnext-brand">{item.brand}</span>
                         </button>
                       </li>
                     ))}

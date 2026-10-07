@@ -156,7 +156,7 @@ if [[ -n "${ADMIN_EMAIL:-}" ]]; then
   check "admin-api-ok" "$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" -b "$AJAR" "$BASE/api/admin/content")"
   pub="$(curl -s -A "$UA" -b "$AJAR" -X POST "$BASE/api/admin/content" \
     -H 'content-type: application/json' \
-    -d '{"title":"QA Admin Vlog","brand":"Telling Show Of Love","kind":"vlog","category":"vlog","subcategory":"season","platform":"house","externalUrl":"https://www.kamaunegasi.net/","blurb":"Admin station publish smoke.","paywalled":true}')"
+    -d '{"title":"QA Admin Vlog","subtitle":"smoke","kind":"vlog","category":"vlog","subcategory":"season","platform":"house","externalUrl":"https://www.kamaunegasi.net/","tags":["qa","smoke"],"paywalled":true}')"
   echo "$pub" | grep -q '"id"' && echo "PASS  admin-publish" && pass=$((pass+1)) || { echo "FAIL  admin-publish"; fail=$((fail+1)); }
   CID="$(printf '%s' "$pub" | sed -n 's/.*"id"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)"
   if [[ -n "$CID" ]]; then

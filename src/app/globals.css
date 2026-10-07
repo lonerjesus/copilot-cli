@@ -1752,16 +1752,24 @@ a.drive .drive__face {
   border: 1px solid var(--line);
   background: transparent;
   color: inherit;
-  padding: 0.45rem 0.95rem;
+  width: 2.75rem;
+  height: 2.75rem;
+  display: grid;
+  place-content: center;
+  padding: 0;
   font: inherit;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
   cursor: pointer;
+}
+
+.admin__preset-icon {
+  font-size: 1.05rem;
+  line-height: 1;
 }
 
 .admin__preset.is-active {
   background: color-mix(in oklab, var(--panel) 70%, var(--ink) 8%);
   border-color: color-mix(in oklab, var(--line) 40%, var(--ink));
+  color: var(--phosphor);
 }
 
 .admin__aside {
@@ -1915,19 +1923,23 @@ a.drive .drive__face {
   border: 0;
   background: transparent;
   color: var(--muted);
-  padding: 0.55rem 0.85rem;
+  padding: 0.55rem 0.7rem;
   font: inherit;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  font-size: 0.78rem;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.35rem;
+  min-width: 2.5rem;
+  justify-content: center;
+}
+
+.admin__tab-icon {
+  font-size: 1.05rem;
+  line-height: 1;
 }
 
 .admin__tab.is-active {
-  color: var(--text);
+  color: var(--phosphor);
   box-shadow: inset 0 -2px 0 var(--phosphor);
 }
 
@@ -4197,15 +4209,10 @@ a.drive .drive__face {
 .rail__brand {
   display: flex;
   align-items: center;
-  gap: 0.55rem;
+  justify-content: center;
   text-decoration: none;
   color: inherit;
-}
-
-.rail__brand strong {
-  font-family: var(--font-display);
-  font-size: 0.78rem;
-  letter-spacing: 0.08em;
+  padding: 0.25rem 0;
 }
 
 .rail__logo {
@@ -4214,8 +4221,9 @@ a.drive .drive__face {
 
 .rail__nav {
   display: grid;
-  gap: 0.2rem;
+  gap: 0.35rem;
   flex: 1;
+  justify-items: stretch;
 }
 
 .rail__nav button,
@@ -4224,20 +4232,25 @@ a.drive .drive__face {
   border: 0;
   background: transparent;
   color: var(--muted);
-  text-align: left;
+  text-align: center;
   font: inherit;
-  font-size: 0.95rem;
-  letter-spacing: 0.04em;
-  padding: 0.55rem 0.7rem;
+  padding: 0.65rem 0.5rem;
   text-decoration: none;
   cursor: pointer;
   border-radius: 0;
+  display: grid;
+  place-content: center;
+}
+
+.rail__nav-icon {
+  font-size: 1.15rem;
+  line-height: 1;
 }
 
 .rail__nav button.is-active,
 .rail__nav button[aria-current="page"],
 .rail__nav a[aria-current="page"] {
-  color: var(--text);
+  color: var(--phosphor);
   background: color-mix(in oklab, var(--panel) 80%, var(--phosphor) 8%);
   box-shadow: inset 2px 0 0 var(--phosphor);
 }
