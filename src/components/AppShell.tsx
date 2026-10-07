@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ComponentType } from "react";
 import Link from "next/link";
 import { AgeGate } from "@/components/AgeGate";
 import { BootSequence } from "@/components/BootSequence";
@@ -15,6 +15,12 @@ import { AuthProvider, useAuth } from "@/components/AuthContext";
 import { DonatePanel } from "@/components/DonatePanel";
 import { SiteFooter } from "@/components/SiteFooter";
 import { BrandMark, BrandWatermark } from "@/components/BrandMark";
+import {
+  IconAdmin,
+  IconBrowse,
+  IconStream,
+  IconSupport,
+} from "@/components/NavIcons";
 import { SITE } from "@/data/identity";
 
 type ViewId = "stream" | "browse" | "support";
@@ -52,10 +58,10 @@ function ShellInner() {
     window.history.replaceState(null, "", `#${id}`);
   }, []);
 
-  const nav: { id: ViewId; label: string; icon: string }[] = [
-    { id: "stream", label: "stream", icon: "▶" },
-    { id: "browse", label: "browse", icon: "▦" },
-    { id: "support", label: "support", icon: "♦" },
+  const nav: { id: ViewId; label: string; Icon: ComponentType<{ className?: string }> }[] = [
+    { id: "stream", label: "stream", Icon: IconStream },
+    { id: "browse", label: "browse", Icon: IconBrowse },
+    { id: "support", label: "support", Icon: IconSupport },
   ];
 
   return (
@@ -93,9 +99,7 @@ function ShellInner() {
                   title={item.label}
                   onClick={() => go(item.id)}
                 >
-                  <span className="rail__nav-icon" aria-hidden>
-                    {item.icon}
-                  </span>
+                  <item.Icon className="rail__nav-icon" />
                 </button>
               ))}
               {user?.isAdmin ? (
@@ -105,9 +109,7 @@ function ShellInner() {
                   aria-label="admin"
                   title="admin"
                 >
-                  <span className="rail__nav-icon" aria-hidden>
-                    ⚙
-                  </span>
+                  <IconAdmin className="rail__nav-icon" />
                 </Link>
               ) : null}
             </nav>

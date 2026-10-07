@@ -6,6 +6,7 @@ import { AuthProvider, useAuth } from "@/components/AuthContext";
 import { AdminStation } from "@/components/AdminStation";
 import { SiteFooter } from "@/components/SiteFooter";
 import { BrandMark, BrandWatermark } from "@/components/BrandMark";
+import { IconAdmin, IconHome } from "@/components/NavIcons";
 import { SITE } from "@/data/identity";
 
 function AdminInner() {
@@ -48,18 +49,16 @@ function AdminInner() {
         <p className="agebanner" role="note">
           18+
         </p>
-        <header className="topbar">
-          <Link className="topbar__brand" href="/">
+        <header className="topbar topbar--admin">
+          <Link className="topbar__brand" href="/" aria-label={SITE.title}>
             <BrandMark size={36} priority className="topbar__logo" />
-            <span>
-              <strong>{SITE.title}</strong>
-              <small>admin</small>
-            </span>
           </Link>
-          <nav className="topbar__nav" aria-label="Primary">
-            <Link href="/">home</Link>
-            <Link href="/admin" aria-current="page">
-              admin
+          <nav className="topbar__nav topbar__nav--icons" aria-label="Primary">
+            <Link href="/" aria-label="home" title="home">
+              <IconHome className="topbar__nav-icon" />
+            </Link>
+            <Link href="/admin" aria-current="page" aria-label="admin" title="admin">
+              <IconAdmin className="topbar__nav-icon" />
             </Link>
           </nav>
           <div className="topbar__account">
