@@ -1,7 +1,7 @@
 import type { CatalogItem, MediaKind } from "@/data/catalog";
 import type { CategoryId, SubcategoryId } from "@/data/taxonomy";
 import { getSubcategory } from "@/data/taxonomy";
-import { ALIASES } from "@/data/identity";
+import { SITE } from "@/data/identity";
 import { AuthStoreUnavailableError } from "@/lib/auth/store";
 
 /**
@@ -18,7 +18,8 @@ export type UploadedContent = CatalogItem & {
 
 const UPLOADS_KEY = "catalog-uploads-v1";
 
-const ALLOWED_BRANDS = new Set(ALIASES.map((a) => a.name));
+/** Single house brand — no alias picker on compose. */
+const HOUSE_BRAND = SITE.title;
 
 type AuthKv = {
   get(key: string): Promise<string | null>;
@@ -172,23 +173,23 @@ export function validateCreateInput(raw: unknown): CreateContentInput {
   if (!raw || typeof raw !== "object") throw new Error("invalid_body");
   const o = raw as Record<string, unknown>;
   const title = String(o.title ?? "").trim();
-  const brand = String(o.brand ?? "").trim();
+  const brand = HOUSE_BRAND;
   const kind = String(o.kind ?? "").trim() as MediaKind;
   const category = String(o.category ?? "").trim() as CategoryId;
   const subcategory = String(o.subcategory ?? "").trim() as SubcategoryId;
   const platform = String(o.platform ?? "").trim().toLowerCase();
   const externalUrlRaw = String(o.externalUrl ?? "").trim();
   const srcRaw = o.src ? String(o.src).trim() : "";
-  const blurb = String(o.blurb ?? "").trim();
+  const subtitle = o.subtitle ? String(o.subtitle).trim().slice(0, 200) : undefined;
+  const blurbRaw = String(o.blurb ?? "").trim();
+  const blurb = (blurbRaw || subtitle || title).slice(0, 600);
 
   if (!title || title.length > 160) throw new Error("invalid_title");
-  if (!brand || brand.length > 80) throw new Error("invalid_brand");
-  if (!ALLOWED_BRANDS.has(brand)) throw new Error("invalid_brand");
   if (!KINDS.includes(kind)) throw new Error("invalid_kind");
   if (!category || !subcategory) throw new Error("invalid_taxonomy");
   if (!getSubcategory(category, subcategory)) throw new Error("invalid_taxonomy");
   if (!platform || platform.length > 40) throw new Error("invalid_platform");
-  if (!blurb || blurb.length > 600) throw new Error("invalid_blurb");
+  if (!blurb) throw new Error("invalid_blurb");
 
   const mediaCandidate = externalUrlRaw || srcRaw;
   if (!mediaCandidate) throw new Error("invalid_url");
@@ -218,7 +219,6 @@ export function validateCreateInput(raw: unknown): CreateContentInput {
   }
 
   const body = o.body ? String(o.body).slice(0, 50_000) : undefined;
-  const subtitle = o.subtitle ? String(o.subtitle).trim().slice(0, 200) : undefined;
   const src = srcRaw ? assertMediaRef(srcRaw, "invalid_src") : undefined;
 
   const tags = Array.isArray(o.tags)

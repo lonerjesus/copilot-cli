@@ -11,7 +11,7 @@ import {
   type FormEvent,
 } from "react";
 import { CATEGORIES, type CategoryId, type SubcategoryId } from "@/data/taxonomy";
-import { ALIASES } from "@/data/identity";
+import { SITE } from "@/data/identity";
 import type { MediaKind } from "@/data/catalog";
 import type { UploadedContent } from "@/lib/content-store";
 import { ALLOWED_MEDIA_TYPES, MAX_MEDIA_BYTES, validateUploadFile } from "@/lib/media-store";
@@ -21,6 +21,7 @@ type Tab = "compose" | "library" | "analytics" | "data";
 type UploadPreset = {
   id: "video" | "photo" | "music" | "essay";
   label: string;
+  icon: string;
   kind: MediaKind;
   category: CategoryId;
   subcategory: SubcategoryId;
@@ -32,6 +33,7 @@ const PRESETS: UploadPreset[] = [
   {
     id: "video",
     label: "Video",
+    icon: "▶",
     kind: "video",
     category: "video",
     subcategory: "archive",
@@ -41,6 +43,7 @@ const PRESETS: UploadPreset[] = [
   {
     id: "photo",
     label: "Photo",
+    icon: "▣",
     kind: "still",
     category: "visuals",
     subcategory: "stills",
@@ -50,6 +53,7 @@ const PRESETS: UploadPreset[] = [
   {
     id: "music",
     label: "Music",
+    icon: "♪",
     kind: "audio",
     category: "audio",
     subcategory: "music",
@@ -59,6 +63,7 @@ const PRESETS: UploadPreset[] = [
   {
     id: "essay",
     label: "Note",
+    icon: "¶",
     kind: "essay",
     category: "writing",
     subcategory: "essays",
@@ -67,10 +72,16 @@ const PRESETS: UploadPreset[] = [
   },
 ];
 
+const ADMIN_TABS: { id: Tab; label: string; icon: string }[] = [
+  { id: "compose", label: "Compose", icon: "✎" },
+  { id: "library", label: "Library", icon: "▤" },
+  { id: "analytics", label: "Analytics", icon: "▦" },
+  { id: "data", label: "Data", icon: "⇩" },
+];
+
 type FormState = {
   title: string;
   subtitle: string;
-  brand: string;
   kind: MediaKind;
   category: CategoryId;
   subcategory: SubcategoryId;
@@ -79,7 +90,6 @@ type FormState = {
   poster: string;
   src: string;
   duration: string;
-  blurb: string;
   body: string;
   paywalled: boolean;
   tags: string;
@@ -88,7 +98,6 @@ type FormState = {
 const emptyForm = (): FormState => ({
   title: "",
   subtitle: "",
-  brand: "Telling Show Of Love",
   kind: "video",
   category: "video",
   subcategory: "archive",
@@ -97,7 +106,6 @@ const emptyForm = (): FormState => ({
   poster: "",
   src: "",
   duration: "",
-  blurb: "",
   body: "",
   paywalled: true,
   tags: "",
@@ -196,15 +204,6 @@ export function AdminStation() {
   const fileInputId = "admin-media-file";
   const posterInputId = "admin-poster-file";
 
-  const brandOptions = useMemo(
-    () =>
-      ALIASES.map((a) => ({
-        value: a.name,
-        label: a.short ? `${a.name} (${a.short})` : a.name,
-      })),
-    [],
-  );
-
   const category = useMemo(
     () => CATEGORIES.find((c) => c.id === form.category),
     [form.category],
@@ -276,7 +275,6 @@ export function AdminStation() {
       subcategory: next.subcategory,
       platform: "house",
       paywalled: next.id === "essay" ? f.paywalled : true,
-      blurb: f.blurb || next.blurbHint,
       tags: f.tags || next.id,
     }));
   };
@@ -313,7 +311,6 @@ export function AdminStation() {
         category: nextPreset.category,
         subcategory: nextPreset.subcategory,
         title: f.title.trim() || titleFromFilename(file.name),
-        blurb: f.blurb.trim() || nextPreset.blurbHint,
         src: url,
         externalUrl: f.externalUrl.trim() || url,
         poster: nextPreset.kind === "still" ? url : f.poster,
@@ -394,7 +391,6 @@ export function AdminStation() {
       kind: activePreset.kind,
       category: activePreset.category,
       subcategory: activePreset.subcategory,
-      blurb: activePreset.blurbHint,
       tags: activePreset.id,
     });
     setOk("");
@@ -412,7 +408,6 @@ export function AdminStation() {
     setForm({
       title: item.title,
       subtitle: item.subtitle ?? "",
-      brand: item.brand,
       kind: item.kind,
       category: item.category,
       subcategory: item.subcategory,
@@ -421,7 +416,6 @@ export function AdminStation() {
       poster: item.poster ?? "",
       src: item.src ?? "",
       duration: item.duration ?? "",
-      blurb: item.blurb,
       body: item.body ?? "",
       paywalled: item.paywalled !== false,
       tags: (item.tags ?? []).join(", "),
@@ -443,12 +437,14 @@ export function AdminStation() {
       const externalUrl =
         form.externalUrl.trim() ||
         mediaUrl ||
-        "https://www.kamaunegasi.net/";
+        SITE.url + "/";
+      const title = form.title.trim() || "Untitled";
+      const subtitle = form.subtitle.trim();
 
       const payload = {
-        title: form.title.trim() || "Untitled",
-        subtitle: form.subtitle || undefined,
-        brand: form.brand,
+        title,
+        subtitle: subtitle || undefined,
+        brand: SITE.title,
         kind: form.kind,
         category: form.category,
         subcategory: form.subcategory,
@@ -457,7 +453,7 @@ export function AdminStation() {
         poster: form.poster || (form.kind === "still" ? form.src || undefined : undefined),
         src: form.src || undefined,
         duration: form.duration || undefined,
-        blurb: form.blurb.trim() || activePreset.blurbHint,
+        blurb: subtitle || title || activePreset.blurbHint,
         body: form.body || undefined,
         paywalled: form.paywalled,
         tags: form.tags
@@ -537,32 +533,27 @@ export function AdminStation() {
     URL.revokeObjectURL(url);
   };
 
-  const tabs: { id: Tab; label: string }[] = [
-    { id: "compose", label: "Compose" },
-    { id: "library", label: "Library" },
-    { id: "analytics", label: "Analytics" },
-    { id: "data", label: "Data" },
-  ];
-
   return (
     <section className="admin" aria-labelledby="admin-title">
       <header className="admin__head">
         <h1 id="admin-title">ADMIN</h1>
-        <p className="admin__lead">
-          Drop a file to publish — compose, library, analytics, export. Files live on Cloudflare.
-        </p>
+        <p className="admin__lead">Upload · title · subtitle · tags.</p>
       </header>
 
       <nav className="admin__tabs" aria-label="Admin tools">
-        {tabs.map((t) => (
+        {ADMIN_TABS.map((t) => (
           <button
             key={t.id}
             type="button"
             className={`admin__tab ${tab === t.id ? "is-active" : ""}`}
             aria-current={tab === t.id ? "page" : undefined}
+            aria-label={t.label}
+            title={t.label}
             onClick={() => openTab(t.id)}
           >
-            {t.label}
+            <span className="admin__tab-icon" aria-hidden>
+              {t.icon}
+            </span>
             {t.id === "library" && !loading ? (
               <span className="admin__tab-count">{items.length}</span>
             ) : null}
@@ -579,9 +570,13 @@ export function AdminStation() {
                 type="button"
                 className={`admin__preset ${preset === p.id ? "is-active" : ""}`}
                 aria-pressed={preset === p.id}
+                aria-label={p.label}
+                title={p.label}
                 onClick={() => applyPreset(p)}
               >
-                {p.label}
+                <span className="admin__preset-icon" aria-hidden>
+                  {p.icon}
+                </span>
               </button>
             ))}
           </div>
@@ -637,19 +632,25 @@ export function AdminStation() {
                 maxLength={160}
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
-                placeholder="Give it a name"
+                placeholder="Title"
                 autoFocus
               />
             </label>
             <label>
-              <span>caption</span>
-              <textarea
-                required
-                maxLength={600}
-                rows={3}
-                value={form.blurb}
-                onChange={(e) => setForm({ ...form, blurb: e.target.value })}
-                placeholder={activePreset.blurbHint}
+              <span>subtitle</span>
+              <input
+                maxLength={200}
+                value={form.subtitle}
+                onChange={(e) => setForm({ ...form, subtitle: e.target.value })}
+                placeholder="Add a subtitle…"
+              />
+            </label>
+            <label>
+              <span>tags</span>
+              <input
+                value={form.tags}
+                onChange={(e) => setForm({ ...form, tags: e.target.value })}
+                placeholder="tags, comma, separated"
               />
             </label>
             {preset === "essay" ? (
@@ -660,7 +661,7 @@ export function AdminStation() {
                   maxLength={50000}
                   value={form.body}
                   onChange={(e) => setForm({ ...form, body: e.target.value })}
-                  placeholder="Write…"
+                  placeholder="Start writing…"
                 />
               </label>
             ) : null}
@@ -739,14 +740,6 @@ export function AdminStation() {
 
             {advanced ? (
               <div className="admin__advanced">
-                <label>
-                  <span>subtitle</span>
-                  <input
-                    maxLength={200}
-                    value={form.subtitle}
-                    onChange={(e) => setForm({ ...form, subtitle: e.target.value })}
-                  />
-                </label>
                 <div className="admin__row">
                   <label>
                     <span>kind</span>
@@ -764,18 +757,13 @@ export function AdminStation() {
                     </select>
                   </label>
                   <label>
-                    <span>brand</span>
-                    <select
-                      required
-                      value={form.brand}
-                      onChange={(e) => setForm({ ...form, brand: e.target.value })}
-                    >
-                      {brandOptions.map((b) => (
-                        <option key={b.value} value={b.value}>
-                          {b.label}
-                        </option>
-                      ))}
-                    </select>
+                    <span>duration</span>
+                    <input
+                      maxLength={24}
+                      placeholder="3:21"
+                      value={form.duration}
+                      onChange={(e) => setForm({ ...form, duration: e.target.value })}
+                    />
                   </label>
                 </div>
                 <div className="admin__row">
@@ -825,31 +813,13 @@ export function AdminStation() {
                     onChange={(e) => setForm({ ...form, externalUrl: e.target.value })}
                   />
                 </label>
-                <div className="admin__row">
-                  <label>
-                    <span>poster url (optional — upload above preferred)</span>
-                    <input
-                      type="url"
-                      value={form.poster}
-                      onChange={(e) => setForm({ ...form, poster: e.target.value })}
-                      placeholder="https://… or /api/media/house/…"
-                    />
-                  </label>
-                  <label>
-                    <span>duration</span>
-                    <input
-                      maxLength={24}
-                      placeholder="3:21"
-                      value={form.duration}
-                      onChange={(e) => setForm({ ...form, duration: e.target.value })}
-                    />
-                  </label>
-                </div>
                 <label>
-                  <span>tags (comma)</span>
+                  <span>poster url (optional)</span>
                   <input
-                    value={form.tags}
-                    onChange={(e) => setForm({ ...form, tags: e.target.value })}
+                    type="url"
+                    value={form.poster}
+                    onChange={(e) => setForm({ ...form, poster: e.target.value })}
+                    placeholder="https://… or /api/media/house/…"
                   />
                 </label>
                 {preset !== "essay" ? (
