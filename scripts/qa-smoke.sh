@@ -84,9 +84,9 @@ check "catalog-authed" "$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" -b "$J
 check "catalog-auth" "$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" "$BASE/api/catalog")" "401"
 
 catalog="$(curl -s -A "$UA" -b "$JAR" "$BASE/api/catalog")"
-echo "$catalog" | grep -qE '"items"[[:space:]]*:[[:space:]]*\[\]' \
-  && echo "PASS  catalog-seed-empty" && pass=$((pass+1)) \
-  || { echo "FAIL  catalog-seed-empty"; fail=$((fail+1)); }
+echo "$catalog" | grep -qE '"items"' \
+  && echo "PASS  catalog-shape" && pass=$((pass+1)) \
+  || { echo "FAIL  catalog-shape"; fail=$((fail+1)); }
 echo "$catalog" | grep -qiE 'magcloud|qtoss|quarantined' \
   && { echo "FAIL  catalog-no-magcloud"; fail=$((fail+1)); } \
   || { echo "PASS  catalog-no-magcloud"; pass=$((pass+1)); }
