@@ -960,7 +960,8 @@ a.drive .drive__face {
   border-right: 1px solid var(--line);
 }
 
-.featured__play {
+.featured__play,
+.featured__open {
   position: absolute;
   inset: auto auto 0.75rem 0.75rem;
   z-index: 2;
@@ -972,6 +973,12 @@ a.drive .drive__face {
   background: color-mix(in oklab, var(--void) 55%, transparent);
   color: var(--phosphor);
   font-size: 0.95rem;
+}
+
+.featured__open {
+  border-color: color-mix(in oklab, var(--amber) 70%, var(--line));
+  color: var(--amber);
+  font-size: 1.05rem;
 }
 
 .featured__meta {

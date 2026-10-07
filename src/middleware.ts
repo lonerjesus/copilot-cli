@@ -106,9 +106,11 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   // Apply security headers to app routes + brand static assets (OG / favicon).
-  // Other image extensions stay out of middleware for cache locality.
+  // Do NOT exclude `*.jpg` globally — that skipped `/api/media/house/*.jpg`
+  // and left session-gated posters without the edge auth gate.
+  // Root-level public images under /public still work; only Next internals skip.
   matcher: [
-    "/((?!_next/static|_next/image|.*\\.(?:jpg|jpeg|gif|webp|png)$).*)",
+    "/((?!_next/static|_next/image).*)",
     "/og.png",
     "/favicon.svg",
   ],
