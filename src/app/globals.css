@@ -960,8 +960,7 @@ a.drive .drive__face {
   border-right: 1px solid var(--line);
 }
 
-.featured__play,
-.featured__open {
+.featured__play {
   position: absolute;
   inset: auto auto 0.75rem 0.75rem;
   z-index: 2;
@@ -975,10 +974,46 @@ a.drive .drive__face {
   font-size: 0.95rem;
 }
 
-.featured__open {
-  border-color: color-mix(in oklab, var(--amber) 70%, var(--line));
-  color: var(--amber);
-  font-size: 1.05rem;
+.site-ticker {
+  overflow: hidden;
+  width: 100%;
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in oklab, var(--panel) 88%, var(--void));
+  z-index: 40;
+}
+
+.site-ticker__track {
+  display: flex;
+  width: max-content;
+  gap: 0;
+  padding: 0.4rem 0;
+  animation: site-ticker 36s linear infinite;
+  color: var(--phosphor-dim);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.site-ticker__track span {
+  padding-right: 2.5rem;
+}
+
+@keyframes site-ticker {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-ticker__track {
+    animation: none;
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 .featured__meta {
@@ -1212,7 +1247,8 @@ a.drive .drive__face {
 }
 
 .tile__art--vlog,
-.tile__art--essay {
+.tile__art--essay,
+.tile__art--writing {
   background: linear-gradient(135deg, #101816, #173028 50%, #0d1411);
 }
 
@@ -1336,6 +1372,22 @@ a.drive .drive__face {
   opacity: 1;
   pointer-events: auto;
   margin-top: 0.15rem;
+}
+
+.admin__ticker-panel {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  background: color-mix(in oklab, var(--panel) 92%, transparent);
+}
+
+.admin__ticker-panel h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  letter-spacing: 0.06em;
+  font-size: 0.95rem;
 }
 
 .footprint__ticker {

@@ -55,8 +55,17 @@ export const ALLOWED_MEDIA_TYPES: Record<"media" | "poster", string[]> = {
   poster: ["image/jpeg", "image/png", "image/webp", "image/gif"],
 };
 
-/** 95 MiB — stay under typical Worker request limits. */
-export const MAX_MEDIA_BYTES = 95 * 1024 * 1024;
+/**
+ * Max finished object size (chunked upload path).
+ * Single Worker requests stay under ~100 MiB — use chunked upload above that.
+ */
+export const MAX_MEDIA_BYTES = 512 * 1024 * 1024;
+
+/** Safe single-request ceiling (form overhead + Worker body cap). */
+export const SINGLE_SHOT_MAX_BYTES = 85 * 1024 * 1024;
+
+/** Chunk size for multi-part admin uploads. */
+export const UPLOAD_CHUNK_BYTES = 8 * 1024 * 1024;
 
 export function buildMediaUrl(key: string): string {
   const encoded = key
@@ -301,7 +310,7 @@ export function uploadErrorMessage(
     case "empty_file":
       return "That file was empty";
     case "file_too_large":
-      return "File too large (max 95 MB)";
+      return `File too large (max ${Math.floor(MAX_MEDIA_BYTES / (1024 * 1024))} MB)`;
     case "media_store_unavailable":
       return "Media store unavailable — try again after deploy";
     default:
@@ -467,4 +476,204 @@ export async function deleteMediaForCatalogUrls(urls: (string | undefined)[]): P
     if (key) keys.add(key);
   }
   await Promise.all([...keys].map((k) => deleteHouseMedia(k)));
+}
+
+/* —— Chunked admin uploads (bypass single-request Worker body cap) —— */
+
+const UPLOAD_PREFIX = "media-up:";
+
+type UploadSession = {
+  id: string;
+  key: string;
+  role: "media" | "poster";
+  contentType: string;
+  size: number;
+  chunkBytes: number;
+  totalChunks: number;
+  received: number[];
+  createdAt: string;
+};
+
+async function putUploadMeta(session: UploadSession): Promise<void> {
+  const mode = await resolveBackend();
+  const payload = JSON.stringify(session);
+  if (mode === "r2" || mode === "kv") {
+    const kv = await getAuthKv();
+    if (!kv) throw new MediaStoreUnavailableError();
+    await kv.put(`${UPLOAD_PREFIX}${session.id}:meta`, payload);
+    return;
+  }
+  const path = await import("node:path");
+  const { mkdir, writeFile } = await import("node:fs/promises");
+  const dir = path.join(process.cwd(), ".data", "uploads", session.id);
+  await mkdir(dir, { recursive: true });
+  await writeFile(path.join(dir, "meta.json"), payload, "utf8");
+}
+
+async function getUploadMeta(id: string): Promise<UploadSession | null> {
+  const mode = await resolveBackend();
+  if (mode === "r2" || mode === "kv") {
+    const kv = await getAuthKv();
+    if (!kv) throw new MediaStoreUnavailableError();
+    const raw = await kv.get(`${UPLOAD_PREFIX}${id}:meta`, "text");
+    if (!raw || typeof raw !== "string") return null;
+    try {
+      return JSON.parse(raw) as UploadSession;
+    } catch {
+      return null;
+    }
+  }
+  const path = await import("node:path");
+  const { readFile } = await import("node:fs/promises");
+  try {
+    const raw = await readFile(
+      path.join(process.cwd(), ".data", "uploads", id, "meta.json"),
+      "utf8",
+    );
+    return JSON.parse(raw) as UploadSession;
+  } catch {
+    return null;
+  }
+}
+
+async function putUploadChunk(id: string, index: number, data: ArrayBuffer): Promise<void> {
+  const mode = await resolveBackend();
+  if (mode === "r2" || mode === "kv") {
+    const kv = await getAuthKv();
+    if (!kv) throw new MediaStoreUnavailableError();
+    await kv.put(`${UPLOAD_PREFIX}${id}:${index}`, data);
+    return;
+  }
+  const path = await import("node:path");
+  const { mkdir, writeFile } = await import("node:fs/promises");
+  const dir = path.join(process.cwd(), ".data", "uploads", id);
+  await mkdir(dir, { recursive: true });
+  await writeFile(path.join(dir, `${index}.bin`), Buffer.from(data));
+}
+
+async function getUploadChunk(id: string, index: number): Promise<ArrayBuffer | null> {
+  const mode = await resolveBackend();
+  if (mode === "r2" || mode === "kv") {
+    const kv = await getAuthKv();
+    if (!kv) throw new MediaStoreUnavailableError();
+    const part = await kv.get(`${UPLOAD_PREFIX}${id}:${index}`, "arrayBuffer");
+    return part instanceof ArrayBuffer ? part : null;
+  }
+  const path = await import("node:path");
+  const { readFile } = await import("node:fs/promises");
+  try {
+    const buf = await readFile(path.join(process.cwd(), ".data", "uploads", id, `${index}.bin`));
+    return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
+  } catch {
+    return null;
+  }
+}
+
+async function clearUploadSession(session: UploadSession): Promise<void> {
+  const mode = await resolveBackend();
+  if (mode === "r2" || mode === "kv") {
+    const kv = await getAuthKv();
+    if (!kv) return;
+    await kv.delete(`${UPLOAD_PREFIX}${session.id}:meta`);
+    for (let i = 0; i < session.totalChunks; i++) {
+      await kv.delete(`${UPLOAD_PREFIX}${session.id}:${i}`);
+    }
+    return;
+  }
+  const path = await import("node:path");
+  const { rm } = await import("node:fs/promises");
+  try {
+    await rm(path.join(process.cwd(), ".data", "uploads", session.id), {
+      recursive: true,
+      force: true,
+    });
+  } catch {
+    /* gone */
+  }
+}
+
+export async function initChunkedUpload(input: {
+  filename: string;
+  contentType: string;
+  size: number;
+  role: "media" | "poster";
+}): Promise<{ uploadId: string; key: string; chunkBytes: number; totalChunks: number }> {
+  validateUploadFile(
+    { type: input.contentType, size: input.size },
+    input.role,
+  );
+  if (input.size > MAX_MEDIA_BYTES) throw new Error("file_too_large");
+  const totalChunks = Math.max(1, Math.ceil(input.size / UPLOAD_CHUNK_BYTES));
+  const id = crypto.randomUUID();
+  const key = newHouseObjectKey(input.filename || "upload.bin");
+  const session: UploadSession = {
+    id,
+    key,
+    role: input.role,
+    contentType: input.contentType,
+    size: input.size,
+    chunkBytes: UPLOAD_CHUNK_BYTES,
+    totalChunks,
+    received: [],
+    createdAt: new Date().toISOString(),
+  };
+  await putUploadMeta(session);
+  return {
+    uploadId: id,
+    key,
+    chunkBytes: UPLOAD_CHUNK_BYTES,
+    totalChunks,
+  };
+}
+
+export async function putChunkedUploadPart(
+  uploadId: string,
+  index: number,
+  data: ArrayBuffer,
+): Promise<{ received: number; totalChunks: number }> {
+  const session = await getUploadMeta(uploadId);
+  if (!session) throw new Error("upload_not_found");
+  if (index < 0 || index >= session.totalChunks) throw new Error("invalid_chunk");
+  if (data.byteLength <= 0) throw new Error("empty_file");
+  if (data.byteLength > session.chunkBytes + 64) throw new Error("chunk_too_large");
+  await putUploadChunk(uploadId, index, data);
+  if (!session.received.includes(index)) {
+    session.received.push(index);
+    session.received.sort((a, b) => a - b);
+    await putUploadMeta(session);
+  }
+  return { received: session.received.length, totalChunks: session.totalChunks };
+}
+
+export async function completeChunkedUpload(uploadId: string): Promise<{
+  url: string;
+  key: string;
+  contentType: string;
+  bytes: number;
+}> {
+  const session = await getUploadMeta(uploadId);
+  if (!session) throw new Error("upload_not_found");
+  if (session.received.length !== session.totalChunks) {
+    throw new Error("upload_incomplete");
+  }
+  const out = new Uint8Array(session.size);
+  let offset = 0;
+  for (let i = 0; i < session.totalChunks; i++) {
+    const part = await getUploadChunk(uploadId, i);
+    if (!part) throw new Error("upload_incomplete");
+    const chunk = new Uint8Array(part);
+    if (offset + chunk.byteLength > session.size) throw new Error("upload_corrupt");
+    out.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  if (offset !== session.size) throw new Error("upload_corrupt");
+  const copy = out.buffer.slice(out.byteOffset, out.byteOffset + out.byteLength);
+  await putHouseMedia(session.key, copy, session.contentType);
+  await clearUploadSession(session);
+  return {
+    url: buildMediaUrl(session.key),
+    key: session.key,
+    contentType: session.contentType,
+    bytes: session.size,
+  };
 }

@@ -174,8 +174,8 @@ function EmbedStage({
     return <NativeMedia kind={kind} src={src} title={title} playing={playing} onEnded={onEnded} />;
   }
 
-  // Player is AV-only — essays/stills never render a stage.
-  if (kind === "essay" || kind === "still") {
+  // Player is AV-only — writings/stills never render a stage.
+  if (kind === "writing" || kind === "essay" || kind === "still") {
     return (
       <div className="deck__visual deck__visual--blocked" aria-hidden>
         <div className="deck__orb" />

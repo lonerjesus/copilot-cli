@@ -1,6 +1,6 @@
-import type { CatalogItem, MediaKind } from "@/data/catalog";
+import { normalizeMediaKind, type CatalogItem, type MediaKind } from "@/data/catalog";
 import type { CategoryId, SubcategoryId } from "@/data/taxonomy";
-import { getSubcategory } from "@/data/taxonomy";
+import { getSubcategory, normalizeSubcategoryId } from "@/data/taxonomy";
 import { SITE } from "@/data/identity";
 import { AuthStoreUnavailableError } from "@/lib/auth/store";
 
@@ -96,7 +96,7 @@ async function readUploads(): Promise<UploadedContent[]> {
     if (!raw) return [];
     try {
       const parsed = JSON.parse(raw) as UploadedContent[];
-      return Array.isArray(parsed) ? parsed : [];
+      return Array.isArray(parsed) ? parsed.map(normalizeUpload) : [];
     } catch {
       return [];
     }
@@ -108,13 +108,13 @@ async function readUploads(): Promise<UploadedContent[]> {
     try {
       const raw = await readFile(file, "utf8");
       const parsed = JSON.parse(raw) as UploadedContent[];
-      return Array.isArray(parsed) ? parsed : [];
+      return Array.isArray(parsed) ? parsed.map(normalizeUpload) : [];
     } catch {
       return [];
     }
   }
   if (!g.__knUploads) g.__knUploads = [];
-  return g.__knUploads;
+  return g.__knUploads.map(normalizeUpload);
 }
 
 async function writeUploads(items: UploadedContent[]): Promise<void> {
@@ -140,7 +140,18 @@ async function writeUploads(items: UploadedContent[]): Promise<void> {
   await writeQueue;
 }
 
-const KINDS: MediaKind[] = ["video", "audio", "vlog", "essay", "still", "live"];
+const KINDS: MediaKind[] = ["video", "audio", "vlog", "writing", "still", "live"];
+
+function normalizeUpload(item: UploadedContent): UploadedContent {
+  const kind = normalizeMediaKind(item.kind);
+  const subcategory = normalizeSubcategoryId(item.subcategory);
+  return {
+    ...item,
+    kind,
+    subcategory,
+    category: item.category === "writing" || kind === "writing" ? "writing" : item.category,
+  };
+}
 
 function slugify(value: string): string {
   return value
@@ -174,9 +185,9 @@ export function validateCreateInput(raw: unknown): CreateContentInput {
   const o = raw as Record<string, unknown>;
   const title = String(o.title ?? "").trim();
   const brand = HOUSE_BRAND;
-  const kind = String(o.kind ?? "").trim() as MediaKind;
+  const kind = normalizeMediaKind(String(o.kind ?? "").trim());
   const category = String(o.category ?? "").trim() as CategoryId;
-  const subcategory = String(o.subcategory ?? "").trim() as SubcategoryId;
+  const subcategory = normalizeSubcategoryId(String(o.subcategory ?? "").trim());
   const platform = String(o.platform ?? "").trim().toLowerCase();
   const externalUrlRaw = String(o.externalUrl ?? "").trim();
   const srcRaw = o.src ? String(o.src).trim() : "";

@@ -7,9 +7,9 @@ export type CategoryId =
   | "house";
 
 export type SubcategoryId =
-  | "essays"
-  | "libellus"
-  | "criticism"
+  | "notes"
+  | "fiction"
+  | "nonfiction"
   | "music"
   | "podcast"
   | "experiments"
@@ -25,7 +25,11 @@ export type SubcategoryId =
   | "brands"
   | "handles"
   | "projects"
-  | "entities";
+  | "entities"
+  /** @deprecated legacy ids — normalized on read */
+  | "essays"
+  | "libellus"
+  | "criticism";
 
 export type Subcategory = {
   id: SubcategoryId;
@@ -41,27 +45,41 @@ export type Category = {
   subcategories: Subcategory[];
 };
 
+/** Map retired writing subs → current ids. */
+export function normalizeSubcategoryId(id: string): SubcategoryId {
+  switch (id) {
+    case "essays":
+      return "notes";
+    case "libellus":
+      return "fiction";
+    case "criticism":
+      return "nonfiction";
+    default:
+      return id as SubcategoryId;
+  }
+}
+
 export const CATEGORIES: Category[] = [
   {
     id: "writing",
     label: "WRITING",
-    hint: "essays · libellus · criticism",
-    keywords: ["writing", "text", "essay", "substack", "read"],
+    hint: "notes · fiction · nonfiction",
+    keywords: ["writing", "text", "note", "blog", "read", "fiction", "nonfiction"],
     subcategories: [
       {
-        id: "essays",
-        label: "Essays",
-        keywords: ["essay", "tsol", "telling show of love", "substack"],
+        id: "notes",
+        label: "Notes",
+        keywords: ["note", "notes", "blog", "tsol", "telling show of love", "substack"],
       },
       {
-        id: "libellus",
-        label: "Libellus",
-        keywords: ["libellus", "grungezhou", "grungezhou libellus"],
+        id: "fiction",
+        label: "Fiction",
+        keywords: ["fiction", "story", "libellus", "grungezhou"],
       },
       {
-        id: "criticism",
-        label: "Criticism",
-        keywords: ["criticism", "tl1", "thelonious1", "theloniousone"],
+        id: "nonfiction",
+        label: "Nonfiction",
+        keywords: ["nonfiction", "non-fiction", "criticism", "essay"],
       },
     ],
   },
@@ -200,7 +218,8 @@ export function getSubcategory(
   categoryId: CategoryId,
   subcategoryId: SubcategoryId,
 ): Subcategory | undefined {
-  return getCategory(categoryId)?.subcategories.find((s) => s.id === subcategoryId);
+  const normalized = normalizeSubcategoryId(subcategoryId);
+  return getCategory(categoryId)?.subcategories.find((s) => s.id === normalized);
 }
 
 export function findCategoryByQuery(query: string): {

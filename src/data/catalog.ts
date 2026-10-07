@@ -1,6 +1,12 @@
 import type { CategoryId, SubcategoryId } from "@/data/taxonomy";
 
-export type MediaKind = "video" | "audio" | "vlog" | "essay" | "still" | "live";
+export type MediaKind = "video" | "audio" | "vlog" | "writing" | "still" | "live";
+
+/** Accept legacy `essay` from stored uploads. */
+export function normalizeMediaKind(kind: string): MediaKind {
+  if (kind === "essay") return "writing";
+  return kind as MediaKind;
+}
 
 export type CatalogItem = {
   id: string;
@@ -90,7 +96,7 @@ export function streamRowMatches(rowId: string, item: CatalogItem): boolean {
     case "photos":
       return item.kind === "still";
     case "writing":
-      return item.kind === "essay";
+      return item.kind === "writing";
     case "now":
       return true;
     default:

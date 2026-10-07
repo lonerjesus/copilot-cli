@@ -117,7 +117,7 @@ export function rssToFootprint(items: RssItem[], platform = "substack"): Footpri
         platformLabel: platformLabel(platform),
         url: link,
         brand: "Telling Show Of Love",
-        kind: "essay",
+        kind: "writing",
         source: "rss" as const,
       },
     ];
