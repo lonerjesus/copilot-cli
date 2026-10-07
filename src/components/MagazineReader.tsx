@@ -10,11 +10,11 @@ function safeExternalHref(raw: string): string | null {
     if (url.protocol !== "https:") return null;
     const host = url.hostname.toLowerCase();
     const ok =
-      host === "www.magcloud.com" ||
-      host === "magcloud.com" ||
       host === "tellingshowoflove.substack.com" ||
       host.endsWith(".bandcamp.com") ||
-      host === "podcasts.apple.com";
+      host === "podcasts.apple.com" ||
+      host === "www.kamaunegasi.net" ||
+      host === "kamaunegasi.net";
     return ok ? url.toString() : null;
   } catch {
     return null;

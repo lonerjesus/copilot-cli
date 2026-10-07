@@ -10,8 +10,7 @@ export const SITE = {
   url: "https://www.kamaunegasi.net",
   title: "KAMAU NEGASI",
   tagline: "portfolio · vlog · stream",
-  description:
-    "18+ only. Portfolio and vlog platform for Kendrick-Kamau Negasi.",
+  description: "18+ only. Portfolio · vlog · stream.",
   logo: "/logo-kn-phosphor.png",
   logoLight: "/logo-kn-light.png",
   logoInk: "/logo-kn.png",
@@ -54,11 +53,6 @@ export const ALIASES: Alias[] = [
   { name: "Golden Crow", kind: "brand" },
   { name: "Golden Crow Acquisitions", kind: "entity" },
   {
-    name: "QUARANTINED THOUGHTS OF A STREET STATISTIC",
-    kind: "project",
-    note: "MagCloud chapbooks · Streetpolitik",
-  },
-  {
     name: "STPK's Smoker's Lounge Music",
     kind: "project",
     note: "Apple Podcasts · Streetpolitik™",
@@ -88,13 +82,6 @@ export const PLATFORMS = [
     url: "https://tellingshowoflove.substack.com",
     feed: "https://tellingshowoflove.substack.com/feed",
     kind: "blog" as const,
-  },
-  {
-    id: "magcloud",
-    label: "MagCloud",
-    handle: "streetpolitik",
-    url: "https://www.magcloud.com/user/streetpolitik",
-    kind: "magazine" as const,
   },
   {
     id: "bandcamp",
