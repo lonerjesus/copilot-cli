@@ -43,6 +43,13 @@ function Tile({
   canMagazine?: boolean;
 }) {
   const paid = isPaywalled(item);
+  const playable = isPlayableMedia(item);
+  const openLabel =
+    item.kind === "essay" || item.kind === "still"
+      ? canMagazine
+        ? "Open"
+        : "View"
+      : "Play";
   return (
     <div
       className={`tile-wrap ${active ? "tile-wrap--active" : ""} ${featured ? "tile-wrap--featured" : ""}`}
@@ -52,14 +59,16 @@ function Tile({
         className={`tile ${active ? "tile--active" : ""} ${featured ? "tile--featured" : ""}`}
         onClick={onPlay}
         aria-pressed={active}
-        aria-label={`${item.kind === "essay" && canMagazine ? "Open" : "Play"} ${item.title}`}
+        aria-label={`${openLabel} ${item.title}`}
       >
         <div className={`tile__art tile__art--${item.kind}`} aria-hidden>
           <MediaPoster item={item} className="tile__poster" label={kindGlyph(item.kind)} />
           <span className="tile__scan" />
-          <span className="tile__playhint" aria-hidden>
-            ▶
-          </span>
+          {playable ? (
+            <span className="tile__playhint" aria-hidden>
+              ▶
+            </span>
+          ) : null}
           {paid ? <span className="tile__badge">pay</span> : null}
         </div>
         <div className="tile__meta">
@@ -253,13 +262,25 @@ export function StreamDeck({ compact = false }: { compact?: boolean }) {
                   type="button"
                   className={`featured__card ${current?.id === hero.id ? "is-active" : ""}`}
                   onClick={() => activate(hero, items, "featured")}
-                  aria-label={`${hasMagazine(hero.id) && hero.kind === "essay" ? "Open magazine" : "Play"} ${hero.title}`}
+                  aria-label={`${
+                    isPlayableMedia(hero)
+                      ? "Play"
+                      : hasMagazine(hero.id)
+                        ? "Open magazine"
+                        : "Open"
+                  } ${hero.title}`}
                 >
                   <div className={`featured__art tile__art--${hero.kind}`} aria-hidden>
                     <MediaPoster item={hero} className="tile__poster" label={kindGlyph(hero.kind)} />
-                    <span className="featured__play" aria-hidden>
-                      ▶
-                    </span>
+                    {isPlayableMedia(hero) ? (
+                      <span className="featured__play" aria-hidden>
+                        ▶
+                      </span>
+                    ) : (
+                      <span className="featured__open" aria-hidden>
+                        {kindGlyph(hero.kind)}
+                      </span>
+                    )}
                   </div>
                   <div className="featured__meta">
                     <p className="featured__eyebrow">
@@ -273,11 +294,13 @@ export function StreamDeck({ compact = false }: { compact?: boolean }) {
                       <p className="featured__blurb">{hero.blurb}</p>
                     ) : null}
                     <p className="featured__cta">
-                      {hero.kind === "essay"
-                        ? hasMagazine(hero.id)
-                          ? "open · read"
-                          : "open · note"
-                        : "play · queue"}
+                      {isPlayableMedia(hero)
+                        ? "play · queue"
+                        : hero.kind === "essay"
+                          ? hasMagazine(hero.id)
+                            ? "open · read"
+                            : "open · note"
+                          : "open · view"}
                     </p>
                   </div>
                 </button>

@@ -178,16 +178,137 @@ function localPathForKey(key: string): string {
   return key;
 }
 
+const MIME_ALIASES: Record<string, string> = {
+  "image/jpg": "image/jpeg",
+  "image/pjpeg": "image/jpeg",
+  "image/x-png": "image/png",
+  "audio/mp3": "audio/mpeg",
+};
+
+/** True for same-origin house binary URLs (`/api/media/house/…`). */
+export function isHouseMediaUrl(url: string): boolean {
+  return mediaKeyFromUrl(url) != null;
+}
+
+/** Sniff common image payloads — mobile Safari often omits or mangles MIME. */
+export function sniffImageContentType(data: ArrayBuffer): string | null {
+  const u = new Uint8Array(data);
+  if (u.length >= 3 && u[0] === 0xff && u[1] === 0xd8 && u[2] === 0xff) {
+    return "image/jpeg";
+  }
+  if (
+    u.length >= 8 &&
+    u[0] === 0x89 &&
+    u[1] === 0x50 &&
+    u[2] === 0x4e &&
+    u[3] === 0x47 &&
+    u[4] === 0x0d &&
+    u[5] === 0x0a &&
+    u[6] === 0x1a &&
+    u[7] === 0x0a
+  ) {
+    return "image/png";
+  }
+  if (
+    u.length >= 6 &&
+    u[0] === 0x47 &&
+    u[1] === 0x49 &&
+    u[2] === 0x46 &&
+    u[3] === 0x38 &&
+    (u[4] === 0x37 || u[4] === 0x39) &&
+    u[5] === 0x61
+  ) {
+    return "image/gif";
+  }
+  if (
+    u.length >= 12 &&
+    u[0] === 0x52 &&
+    u[1] === 0x49 &&
+    u[2] === 0x46 &&
+    u[3] === 0x46 &&
+    u[8] === 0x57 &&
+    u[9] === 0x45 &&
+    u[10] === 0x42 &&
+    u[11] === 0x50
+  ) {
+    return "image/webp";
+  }
+  // ISO-BMFF brands used by iPhone HEIC/HEIF
+  if (u.length >= 12) {
+    const box = String.fromCharCode(u[4]!, u[5]!, u[6]!, u[7]!);
+    if (box === "ftyp") {
+      const brand = String.fromCharCode(u[8]!, u[9]!, u[10]!, u[11]!).toLowerCase();
+      if (brand === "heic" || brand === "heif" || brand === "mif1" || brand === "msf1") {
+        return "image/heic";
+      }
+    }
+  }
+  return null;
+}
+
+function normalizeDeclaredType(raw: string): string {
+  const type = (raw || "").toLowerCase().trim();
+  if (!type) return "";
+  return MIME_ALIASES[type] || type;
+}
+
+/**
+ * Validate upload MIME/size. Pass `data` when available so empty/`image/jpg`
+ * declarations from phones can be recovered via magic-byte sniffing.
+ */
 export function validateUploadFile(
   file: { type: string; size: number },
   role: "media" | "poster",
+  data?: ArrayBuffer,
 ): { contentType: string } {
-  const allowed = ALLOWED_MEDIA_TYPES[role];
-  const type = (file.type || "application/octet-stream").toLowerCase();
-  if (!allowed.includes(type)) throw new Error("invalid_type");
   if (file.size <= 0) throw new Error("empty_file");
   if (file.size > MAX_MEDIA_BYTES) throw new Error("file_too_large");
+
+  const allowed = ALLOWED_MEDIA_TYPES[role];
+  let type = normalizeDeclaredType(file.type);
+
+  if (type === "image/heic" || type === "image/heif") {
+    throw new Error("heic_unsupported");
+  }
+
+  const needsSniff =
+    Boolean(data) &&
+    (!type || type === "application/octet-stream" || (role === "poster" && !allowed.includes(type)));
+
+  if (needsSniff && data) {
+    const sniffed = sniffImageContentType(data);
+    if (sniffed === "image/heic") throw new Error("heic_unsupported");
+    if (sniffed) type = sniffed;
+  }
+
+  if (!type) type = "application/octet-stream";
+  if (!allowed.includes(type)) throw new Error("invalid_type");
   return { contentType: type };
+}
+
+/** Human-readable upload errors for admin UI. */
+export function uploadErrorMessage(
+  code: string,
+  role: "media" | "poster" = "poster",
+): string {
+  switch (code) {
+    case "heic_unsupported":
+      return "iPhone HEIC isn’t supported — export or choose JPEG / PNG";
+    case "invalid_type":
+      return role === "poster"
+        ? "Use JPEG, PNG, WebP, or GIF for thumbnails"
+        : "Unsupported file type for this upload";
+    case "empty_file":
+      return "That file was empty";
+    case "file_too_large":
+      return "File too large (max 95 MB)";
+    case "media_store_unavailable":
+      return "Media store unavailable — try again after deploy";
+    default:
+      // Already humanized messages pass through.
+      if (code.includes(" ") || /[A-Z]/.test(code)) return code;
+      return code.replace(/_/g, " ");
+  }
 }
 
 async function putKvMedia(key: string, data: ArrayBuffer, contentType: string): Promise<void> {

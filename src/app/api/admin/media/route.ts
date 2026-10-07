@@ -31,9 +31,10 @@ export async function POST(request: Request) {
   const role = roleRaw === "poster" ? "poster" : "media";
 
   try {
-    const { contentType } = validateUploadFile(file, role);
     const key = newHouseObjectKey(file.name || "upload.bin");
     const data = await file.arrayBuffer();
+    // Sniff bytes — mobile Safari often sends empty/`image/jpg` MIME for photos.
+    const { contentType } = validateUploadFile(file, role, data);
     await putHouseMedia(key, data, contentType);
     const url = buildMediaUrl(key);
     return NextResponse.json(
@@ -48,7 +49,9 @@ export async function POST(request: Request) {
     const status =
       message === "file_too_large"
         ? 413
-        : message === "invalid_type" || message === "empty_file"
+        : message === "invalid_type" ||
+            message === "empty_file" ||
+            message === "heic_unsupported"
           ? 400
           : 400;
     return jsonError(message, status);

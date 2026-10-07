@@ -14,7 +14,12 @@ import { CATEGORIES, type CategoryId, type SubcategoryId } from "@/data/taxonomy
 import { SITE } from "@/data/identity";
 import type { MediaKind } from "@/data/catalog";
 import type { UploadedContent } from "@/lib/content-store";
-import { ALLOWED_MEDIA_TYPES, MAX_MEDIA_BYTES, validateUploadFile } from "@/lib/media-store";
+import {
+  ALLOWED_MEDIA_TYPES,
+  MAX_MEDIA_BYTES,
+  uploadErrorMessage,
+  validateUploadFile,
+} from "@/lib/media-store";
 import {
   IconAnalytics,
   IconCompose,
@@ -25,6 +30,7 @@ import {
   IconPhoto,
   IconVideo,
 } from "@/components/NavIcons";
+import { AdminThumbPreview } from "@/components/MediaPoster";
 import type { ComponentType } from "react";
 
 type Tab = "compose" | "library" | "analytics" | "data";
@@ -295,9 +301,14 @@ export function AdminStation() {
   };
 
   const uploadFile = async (file: File, role: "media" | "poster") => {
-    validateUploadFile(file, role);
+    // Pre-read bytes so empty/`image/jpg` MIME from phones can be sniffed.
+    const bytes = await file.arrayBuffer();
+    const { contentType } = validateUploadFile(file, role, bytes);
     const body = new FormData();
-    body.append("file", file);
+    body.append(
+      "file",
+      new File([bytes], file.name || "upload.bin", { type: contentType }),
+    );
     body.append("role", role);
     const res = await fetch("/api/admin/media", {
       method: "POST",
@@ -305,8 +316,10 @@ export function AdminStation() {
       body,
     });
     const data = (await res.json().catch(() => ({}))) as { error?: string; url?: string };
-    if (!res.ok) throw new Error(data.error ?? "upload_failed");
-    if (!data.url) throw new Error("upload_failed");
+    if (!res.ok) {
+      throw new Error(uploadErrorMessage(data.error ?? "upload_failed", role));
+    }
+    if (!data.url) throw new Error("upload failed");
     return data.url;
   };
 
@@ -318,7 +331,6 @@ export function AdminStation() {
     try {
       const nextPreset = presetFromFile(file);
       applyPreset(nextPreset);
-      validateUploadFile(file, "media");
       const url = await uploadFile(file, "media");
       setForm((f) => ({
         ...f,
@@ -334,7 +346,9 @@ export function AdminStation() {
       }));
       setOk("file ready — add a title if needed, then publish");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "upload_failed");
+      setError(
+        err instanceof Error ? uploadErrorMessage(err.message, "media") : "upload failed",
+      );
     } finally {
       setBusy(false);
     }
@@ -360,12 +374,13 @@ export function AdminStation() {
     setOk("");
     setBusy(true);
     try {
-      validateUploadFile(file, "poster");
       const url = await uploadFile(file, "poster");
       setForm((f) => ({ ...f, poster: url }));
-      setOk("thumbnail ready");
+      setOk("thumbnail ready — publish to save it on the post");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "upload_failed");
+      setError(
+        err instanceof Error ? uploadErrorMessage(err.message, "poster") : "upload failed",
+      );
     } finally {
       setBusy(false);
     }
@@ -456,6 +471,11 @@ export function AdminStation() {
       const title = form.title.trim() || "Untitled";
       const subtitle = form.subtitle.trim();
 
+      const posterUrl =
+        form.poster.trim() ||
+        (form.kind === "still" ? form.src.trim() : "") ||
+        undefined;
+
       const payload = {
         title,
         subtitle: subtitle || undefined,
@@ -465,8 +485,8 @@ export function AdminStation() {
         subcategory: form.subcategory,
         platform: form.platform,
         externalUrl,
-        poster: form.poster || (form.kind === "still" ? form.src || undefined : undefined),
-        src: form.src || undefined,
+        poster: posterUrl,
+        src: form.src.trim() || undefined,
         duration: form.duration || undefined,
         blurb: subtitle || title || activePreset.blurbHint,
         body: form.body || undefined,
@@ -701,7 +721,10 @@ export function AdminStation() {
                 />
                 {form.poster ? (
                   <>
-                    <img className="admin__thumb-preview" src={form.poster} alt="" />
+                    <AdminThumbPreview
+                      src={form.poster}
+                      className="admin__thumb-preview"
+                    />
                     <p className="admin__drop-title">Thumbnail ready</p>
                     <p className="admin__drop-sub">
                       {form.poster.replace(/^https?:\/\/[^/]+/, "")}
@@ -714,7 +737,7 @@ export function AdminStation() {
                       {busy ? "Uploading…" : "Drop thumbnail image"}
                     </p>
                     <p className="admin__drop-hint">
-                      or click · jpeg / png / webp / gif
+                      or click · jpeg / png / webp / gif (not HEIC)
                     </p>
                   </>
                 )}

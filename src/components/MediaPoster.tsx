@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { CatalogItem } from "@/data/catalog";
+import { HouseMediaImage, useHouseMediaSrc } from "@/components/HouseMediaImage";
+import { isHouseMediaUrl } from "@/lib/media-store";
 
 function youtubeThumb(item: CatalogItem): string | null {
   const id =
@@ -24,7 +26,25 @@ function seedPoster(item: CatalogItem): string | null {
   return item.poster || youtubeThumb(item) || null;
 }
 
-/** Seamless original platform artwork for fetched/scraped media. */
+function FallbackMark({
+  item,
+  className,
+  label,
+}: {
+  item: CatalogItem;
+  className: string;
+  label?: string;
+}) {
+  const mark = (item.title || item.brand || "?").trim().slice(0, 1).toUpperCase() || "·";
+  return (
+    <div className={`media-poster media-poster--empty ${className}`} aria-hidden>
+      <span className="media-poster__fallback">{mark}</span>
+      {label ? <span className="media-poster__label">{label}</span> : null}
+    </div>
+  );
+}
+
+/** Seamless house / platform artwork with credentialed private media load. */
 export function MediaPoster({
   item,
   className = "",
@@ -37,15 +57,20 @@ export function MediaPoster({
   const seed = useMemo(() => seedPoster(item), [item]);
   const [brokenSeed, setBrokenSeed] = useState<string | null>(null);
   const [remote, setRemote] = useState<{ forUrl: string; thumb: string } | null>(null);
-  const [status, setStatus] = useState<{ src: string; loaded?: boolean; failed?: boolean }>({
-    src: "",
-  });
+  const [publicFailed, setPublicFailed] = useState(false);
+  const [publicLoaded, setPublicLoaded] = useState(false);
 
   const activeSeed = seed && brokenSeed === seed ? null : seed;
   const remoteThumb = remote?.forUrl === item.externalUrl ? remote.thumb : null;
   const src = activeSeed || remoteThumb;
-  const loaded = Boolean(src && status.src === src && status.loaded);
-  const failed = Boolean(src && status.src === src && status.failed);
+  const house = Boolean(src && isHouseMediaUrl(src));
+  const houseMedia = useHouseMediaSrc(house ? src : null);
+
+  useEffect(() => {
+    setBrokenSeed(null);
+    setPublicFailed(false);
+    setPublicLoaded(false);
+  }, [item.id, item.poster, item.externalUrl]);
 
   useEffect(() => {
     if (activeSeed || !item.externalUrl.startsWith("https://")) return;
@@ -70,18 +95,31 @@ export function MediaPoster({
     };
   }, [activeSeed, item.externalUrl]);
 
-  if (!src || failed) {
-    const mark = (item.brand || item.title || "?").trim().slice(0, 1).toUpperCase() || "·";
+  useEffect(() => {
+    if (house && houseMedia.failed && activeSeed && src === activeSeed) {
+      setBrokenSeed(activeSeed);
+    }
+  }, [house, houseMedia.failed, activeSeed, src]);
+
+  if (!src || (house && houseMedia.failed) || (!house && publicFailed)) {
+    return <FallbackMark item={item} className={className} label={label} />;
+  }
+
+  if (house) {
+    const ready = Boolean(houseMedia.displaySrc);
     return (
-      <div className={`media-poster media-poster--empty ${className}`} aria-hidden>
-        <span className="media-poster__fallback">{mark}</span>
+      <div className={`media-poster ${ready ? "is-ready" : ""} ${className}`}>
+        {houseMedia.displaySrc ? (
+          // eslint-disable-next-line @next/next/no-img-element -- blob URL from credentialed fetch
+          <img src={houseMedia.displaySrc} alt="" loading="lazy" decoding="async" />
+        ) : null}
         {label ? <span className="media-poster__label">{label}</span> : null}
       </div>
     );
   }
 
   return (
-    <div className={`media-poster ${loaded ? "is-ready" : ""} ${className}`}>
+    <div className={`media-poster ${publicLoaded ? "is-ready" : ""} ${className}`}>
       {/* eslint-disable-next-line @next/next/no-img-element -- remote platform thumbs; hosts vary */}
       <img
         key={src}
@@ -90,16 +128,21 @@ export function MediaPoster({
         loading="lazy"
         decoding="async"
         referrerPolicy="no-referrer"
-        onLoad={() => setStatus({ src, loaded: true })}
+        onLoad={() => setPublicLoaded(true)}
         onError={() => {
           if (activeSeed && src === activeSeed) {
             setBrokenSeed(activeSeed);
             return;
           }
-          setStatus({ src, failed: true });
+          setPublicFailed(true);
         }}
       />
       {label ? <span className="media-poster__label">{label}</span> : null}
     </div>
   );
+}
+
+/** Admin compose thumbnail preview — same credentialed path as the stream. */
+export function AdminThumbPreview({ src, className }: { src: string; className?: string }) {
+  return <HouseMediaImage src={src} className={className} alt="" />;
 }
