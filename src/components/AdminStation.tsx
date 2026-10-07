@@ -378,7 +378,9 @@ export function AdminStation() {
       setForm((f) => ({ ...f, poster: url }));
       setOk("thumbnail ready — publish to save it on the post");
     } catch (err) {
-      setError(err instanceof Error ? uploadErrorMessage(err.message) : "upload failed");
+      setError(
+        err instanceof Error ? uploadErrorMessage(err.message, "poster") : "upload failed",
+      );
     } finally {
       setBusy(false);
     }
