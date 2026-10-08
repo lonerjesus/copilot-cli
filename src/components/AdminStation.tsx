@@ -221,6 +221,23 @@ function presetFromFile(file: File): UploadPreset {
   return PRESETS[0]!;
 }
 
+/**
+ * House uploads use same-origin paths (`/api/media/house/…`).
+ * Browsers reject those on `<input type="url">` — keep text inputs and
+ * normalize bare house keys before PATCH/POST.
+ */
+function normalizeMediaRef(value: string): string {
+  const v = value.trim();
+  if (!v) return "";
+  if (v.startsWith("/api/media/house/") && !v.includes("..")) return v;
+  if (v.startsWith("house/") && !v.includes("..")) return `/api/media/${v}`;
+  // Filename-only remnant from a house key (uuid-or-prefix + sanitized name).
+  if (/^[A-Za-z0-9._-]+\.(jpe?g|png|webp|gif|mp3|m4a|wav|flac|mp4|mov|webm)$/i.test(v)) {
+    return `/api/media/house/${v}`;
+  }
+  return v;
+}
+
 function formatUsd(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`;
 }
@@ -487,16 +504,19 @@ export function AdminStation() {
 
   const buildPayload = useCallback(
     (state: FormState) => {
-      const mediaUrl = state.src.trim() || state.externalUrl.trim();
+      const src = normalizeMediaRef(state.src);
+      const external = normalizeMediaRef(state.externalUrl);
+      const mediaUrl = src || external;
       if (!mediaUrl && state.kind !== "writing") {
         throw new Error("drop a file or paste a media url");
       }
-      const externalUrl = state.externalUrl.trim() || mediaUrl || `${SITE.url}/`;
+      const externalUrl = external || mediaUrl || `${SITE.url}/`;
       const title = state.title.trim() || "Untitled";
       const subtitle = state.subtitle.trim();
+      const posterNorm = normalizeMediaRef(state.poster);
       const posterUrl =
-        state.poster.trim() ||
-        (state.kind === "still" ? state.src.trim() : "") ||
+        posterNorm ||
+        (state.kind === "still" ? src : "") ||
         undefined;
       const hint =
         PRESETS.find((p) => p.kind === state.kind)?.blurbHint ?? activePreset.blurbHint;
@@ -510,7 +530,7 @@ export function AdminStation() {
         platform: state.platform || "house",
         externalUrl,
         poster: posterUrl,
-        src: state.src.trim() || undefined,
+        src: src || undefined,
         duration: state.duration || undefined,
         blurb: subtitle || title || hint,
         body: state.body || undefined,
@@ -690,7 +710,8 @@ export function AdminStation() {
   const startEdit = (item: UploadedContent) => {
     setTab("compose");
     setEditingId(item.id);
-    setAdvanced(true);
+    // Keep advanced closed — drop zones handle media/thumbs; URL fields trap iOS Save.
+    setAdvanced(false);
     const kind = normalizeMediaKind(item.kind);
     const match =
       PRESETS.find((p) => p.kind === kind) ??
@@ -711,13 +732,24 @@ export function AdminStation() {
       paywalled: item.paywalled !== false,
       tags: (item.tags ?? []).join(", "),
     });
-    setOk(`editing · ${item.id}`);
+    setOk(`editing · ${item.id} — drop files or save when ready`);
+    setError("");
+    // Bring compose into view on phone.
+    requestAnimationFrame(() => {
+      document.getElementById("admin-compose")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
   };
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     setError("");
     setOk("");
+    if (busy) return;
+    if (!form.title.trim()) {
+      setError("add a title before saving");
+      document.getElementById("admin-title-input")?.focus();
+      return;
+    }
     setBusy(true);
     const wasEditing = Boolean(editingId);
     try {
@@ -726,6 +758,9 @@ export function AdminStation() {
       resetCompose({ keepMessage: true });
       setOk(wasEditing ? `saved · ${item.id}` : `published · ${item.id}`);
       setTab("library");
+      requestAnimationFrame(() => {
+        document.getElementById("admin-title")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
     } catch (err) {
       setError(
         err instanceof Error ? uploadErrorMessage(err.message, "media") : "network_error",
@@ -808,7 +843,13 @@ export function AdminStation() {
       </nav>
 
       {tab === "compose" ? (
-        <div className="admin__compose">
+        <div className="admin__compose" id="admin-compose">
+          {editingId ? (
+            <p className="admin__editing" role="status">
+              Editing <code>{editingId}</code>
+              <span> — thumbnails &amp; media save as you drop them</span>
+            </p>
+          ) : null}
           <div className="admin__presets" role="group" aria-label="Post type">
             {PRESETS.map((p) => (
               <button
@@ -818,6 +859,7 @@ export function AdminStation() {
                 aria-pressed={preset === p.id}
                 aria-label={p.label}
                 title={p.label}
+                disabled={busy}
                 onClick={() => applyPreset(p)}
               >
                 <p.Icon className="admin__preset-icon" />
@@ -875,16 +917,23 @@ export function AdminStation() {
             )}
           </label>
 
-          <form className="admin__form admin__form--compose" onSubmit={submit}>
+          <form
+            className="admin__form admin__form--compose"
+            onSubmit={submit}
+            // House media uses /api/media/… paths — native type=url blocks Save on iOS.
+            noValidate
+          >
             <label>
               <span>title</span>
               <input
+                id="admin-title-input"
                 required
                 maxLength={160}
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
                 placeholder="Title"
-                autoFocus
+                autoFocus={!editingId}
+                autoComplete="off"
               />
             </label>
             <label>
@@ -1055,24 +1104,37 @@ export function AdminStation() {
                 <label>
                   <span>media url</span>
                   <input
-                    type="url"
+                    type="text"
+                    inputMode="url"
+                    autoCapitalize="off"
+                    autoCorrect="off"
+                    spellCheck={false}
                     value={form.src}
                     onChange={(e) => setForm({ ...form, src: e.target.value })}
-                    placeholder="https://…"
+                    placeholder="https://… or /api/media/house/…"
                   />
                 </label>
                 <label>
                   <span>page url</span>
                   <input
-                    type="url"
+                    type="text"
+                    inputMode="url"
+                    autoCapitalize="off"
+                    autoCorrect="off"
+                    spellCheck={false}
                     value={form.externalUrl}
                     onChange={(e) => setForm({ ...form, externalUrl: e.target.value })}
+                    placeholder="https://www.kamaunegasi.net/"
                   />
                 </label>
                 <label>
                   <span>poster url (optional)</span>
                   <input
-                    type="url"
+                    type="text"
+                    inputMode="url"
+                    autoCapitalize="off"
+                    autoCorrect="off"
+                    spellCheck={false}
                     value={form.poster}
                     onChange={(e) => setForm({ ...form, poster: e.target.value })}
                     placeholder="https://… or /api/media/house/…"
@@ -1107,15 +1169,19 @@ export function AdminStation() {
               {editingId ? (
                 <button
                   type="button"
-                  className="btn btn--ghost"
+                  className="btn btn--ghost admin__action-cancel"
                   onClick={() => resetCompose()}
                   disabled={busy}
                 >
                   cancel edit
                 </button>
               ) : null}
-              <button type="submit" className="btn btn--primary" disabled={busy}>
-                {busy ? "working…" : editingId ? "save changes" : "publish"}
+              <button type="submit" className="btn btn--primary admin__action-save" disabled={busy}>
+                {busy
+                  ? uploadProgress || "saving…"
+                  : editingId
+                    ? "save changes"
+                    : "publish"}
               </button>
             </div>
           </form>
