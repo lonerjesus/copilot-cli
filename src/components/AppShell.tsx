@@ -9,6 +9,7 @@ import { Hero } from "@/components/Hero";
 import { StreamDeck } from "@/components/StreamDeck";
 import { CategoryBrowser } from "@/components/CategoryBrowser";
 import { MagazineReader } from "@/components/MagazineReader";
+import { WritingReader } from "@/components/WritingReader";
 
 const HouseAtlas = dynamic(
   () => import("@/components/HouseAtlas").then((m) => m.HouseAtlas),
@@ -38,7 +39,7 @@ function ShellInner() {
   const [view, setView] = useState<ViewId>("stream");
   const [menuOpen, setMenuOpen] = useState(false);
   const { setExpanded, toggle } = usePlayerState();
-  const { openId, closeMagazine } = useMagazine();
+  const { openId, writingItem, closeMagazine, closeWriting } = useMagazine();
   const { user, logout, refresh } = useAuth();
 
   useEffect(() => {
@@ -181,6 +182,7 @@ function ShellInner() {
 
         <PlayerDock />
         <MagazineReader catalogId={openId} onClose={closeMagazine} />
+        <WritingReader item={writingItem} onClose={closeWriting} />
       </div>
     </>
   );

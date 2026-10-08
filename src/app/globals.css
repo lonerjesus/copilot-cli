@@ -3818,6 +3818,153 @@ a.drive .drive__face {
   background: #c6f54a;
 }
 
+/* House writing / notes reader (admin-published body) */
+.writing-reader {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  background:
+    linear-gradient(180deg, color-mix(in oklab, var(--void) 88%, #0a120e), var(--void));
+  color: var(--text);
+  overflow: hidden;
+  animation: compose-in 0.35s ease both;
+}
+
+.writing-reader__chrome {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: max(0.75rem, var(--safe-t)) max(var(--page-x), var(--safe-r)) 0.75rem
+    max(var(--page-x), var(--safe-l));
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in oklab, var(--panel) 92%, transparent);
+}
+
+.writing-reader__mast {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem 1rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.writing-reader__close {
+  appearance: none;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--text);
+  padding: 0.45rem 0.75rem;
+  font: inherit;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  min-height: 2.5rem;
+}
+
+.writing-reader__sheet {
+  overflow: auto;
+  padding: 1.25rem max(var(--page-x), var(--safe-l))
+    calc(2rem + var(--safe-b) + var(--deck-h)) max(var(--page-x), var(--safe-r));
+  max-width: 42rem;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.writing-reader__poster {
+  margin: 0 0 1.25rem;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  max-height: 16rem;
+  overflow: hidden;
+}
+
+.writing-reader__poster-img {
+  width: 100%;
+  max-height: 16rem;
+  object-fit: cover;
+  display: block;
+}
+
+.writing-reader__kicker {
+  margin: 0 0 0.35rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--phosphor);
+}
+
+.writing-reader__head h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.45rem, 4vw, 2rem);
+  letter-spacing: 0.04em;
+  line-height: 1.15;
+}
+
+.writing-reader__dek {
+  margin: 0.55rem 0 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+.writing-reader__pay {
+  margin: 1rem 0 1.25rem;
+}
+
+.writing-reader__body {
+  display: grid;
+  gap: 1rem;
+}
+
+.writing-reader__body p {
+  margin: 0;
+  font-size: 1.02rem;
+  line-height: 1.65;
+  color: var(--text);
+  white-space: pre-wrap;
+}
+
+.writing-reader__empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.writing-reader__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 1.75rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.writing-reader__tags span {
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  padding: 0.25rem 0.45rem;
+}
+
+@media (max-width: 720px) {
+  .writing-reader__sheet {
+    padding-top: 1rem;
+  }
+
+  .writing-reader__head h2 {
+    font-size: 1.35rem;
+  }
+}
+
 .topbar__account {
   display: flex;
   align-items: center;

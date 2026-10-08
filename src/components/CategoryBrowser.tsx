@@ -35,7 +35,7 @@ export function CategoryBrowser({
   compact = false,
 }: CategoryBrowserProps & { compact?: boolean }) {
   const { current, playItem } = usePlayerState();
-  const { openMagazine, hasMagazine } = useMagazine();
+  const { openMagazine, openReadable, hasMagazine, isReadable } = useMagazine();
   const [query, setQuery] = useState(initialQuery);
   const [category, setCategory] = useState<CategoryId | "all">(initialCategory);
   const [subcategory, setSubcategory] = useState<SubcategoryId | "all">(initialSubcategory);
@@ -346,7 +346,7 @@ export function CategoryBrowser({
                         className={`tile tile--compact ${current?.id === item.id ? "tile--active" : ""}`}
                         onClick={() => {
                           if (!isPlayableMedia(item)) {
-                            if (hasMagazine(item.id)) openMagazine(item.id);
+                            openReadable(item);
                             return;
                           }
                           playItem(item, playableCatalog(group.items));
@@ -354,8 +354,8 @@ export function CategoryBrowser({
                         aria-label={
                           isPlayableMedia(item)
                             ? `Play ${item.title}`
-                            : hasMagazine(item.id)
-                              ? `Open magazine for ${item.title}`
+                            : isReadable(item)
+                              ? `Open ${item.title}`
                               : item.title
                         }
                       >

@@ -8,6 +8,7 @@ type Signal =
   | "next"
   | "queue_next"
   | "magazine_open"
+  | "writing_open"
   | "category_filter"
   | "command"
   | "footprint_open"
@@ -67,8 +68,12 @@ export function engagementSummary() {
   return {
     count: events.length,
     hasPlay: signals.has("play") || signals.has("enter_stream"),
-    hasMagazine: signals.has("magazine_open"),
+    hasMagazine: signals.has("magazine_open") || signals.has("writing_open"),
     hasDepth: signals.has("footprint_open") || signals.has("category_filter"),
-    lowBounce: signals.has("enter_stream") || signals.has("play") || signals.has("magazine_open"),
+    lowBounce:
+      signals.has("enter_stream") ||
+      signals.has("play") ||
+      signals.has("magazine_open") ||
+      signals.has("writing_open"),
   };
 }

@@ -31,7 +31,17 @@ export type CatalogItem = {
   };
   tags: string[];
   blurb: string;
+  /** Long-form house writing / notes (admin compose). */
+  body?: string;
 };
+
+/** Non-AV items that should open a reader (not the player). */
+export function isReadableText(item: CatalogItem): boolean {
+  const kind = normalizeMediaKind(item.kind);
+  if (kind === "writing") return true;
+  if (kind === "still") return true;
+  return Boolean(item.body?.trim());
+}
 
 export function isPaywalled(item: CatalogItem): boolean {
   if (typeof item.paywalled === "boolean") return item.paywalled;

@@ -40,6 +40,7 @@ function Tile({
 }) {
   const paid = isPaywalled(item);
   const playable = isPlayableMedia(item);
+  const readable = !playable && (item.kind === "writing" || item.kind === "still" || Boolean(item.body));
   return (
     <div
       className={`tile-wrap ${active ? "tile-wrap--active" : ""} ${featured ? "tile-wrap--featured" : ""}`}
@@ -49,7 +50,7 @@ function Tile({
         className={`tile ${active ? "tile--active" : ""} ${featured ? "tile--featured" : ""}`}
         onClick={onActivate}
         aria-pressed={playable ? active : undefined}
-        aria-label={`${playable ? "Play" : "Open"} ${item.title}`}
+        aria-label={`${playable ? "Play" : readable ? "Open" : "Select"} ${item.title}`}
       >
         <div className={`tile__art tile__art--${item.kind}`} aria-hidden>
           <MediaPoster item={item} className="tile__poster" label={kindGlyph(item.kind)} />
@@ -57,6 +58,10 @@ function Tile({
           {playable ? (
             <span className="tile__playhint" aria-hidden>
               ▶
+            </span>
+          ) : readable ? (
+            <span className="tile__playhint tile__playhint--read" aria-hidden>
+              ▦
             </span>
           ) : null}
           {paid ? <span className="tile__badge">pay</span> : null}
@@ -156,7 +161,7 @@ function rowItems(rowId: string, pinnedIds: string[], house: CatalogItem[]): Cat
 
 export function StreamDeck({ compact = false }: { compact?: boolean }) {
   const { current, playItem, queueNext } = usePlayerState();
-  const { openMagazine, hasMagazine } = useMagazine();
+  const { openReadable, isReadable } = useMagazine();
   const [live, setLive] = useState<CatalogItem[]>(() => houseCatalog(CATALOG));
 
   useEffect(() => {
@@ -191,12 +196,12 @@ export function StreamDeck({ compact = false }: { compact?: boolean }) {
     (item: CatalogItem, queue: CatalogItem[], via: string) => {
       track("enter_stream", { id: item.id, via });
       if (!isPlayableMedia(item)) {
-        if (hasMagazine(item.id)) openMagazine(item.id);
+        openReadable(item);
         return;
       }
       playItem(item, playableCatalog(queue));
     },
-    [hasMagazine, openMagazine, playItem],
+    [openReadable, playItem],
   );
 
   return (
@@ -243,11 +248,7 @@ export function StreamDeck({ compact = false }: { compact?: boolean }) {
                   className={`featured__card ${current?.id === hero.id ? "is-active" : ""}`}
                   onClick={() => activate(hero, items, "featured")}
                   aria-label={`${
-                    isPlayableMedia(hero)
-                      ? "Play"
-                      : hasMagazine(hero.id)
-                        ? "Open"
-                        : "Open"
+                    isPlayableMedia(hero) ? "Play" : isReadable(hero) ? "Open" : "Select"
                   } ${hero.title}`}
                 >
                   <div className={`featured__art tile__art--${hero.kind}`} aria-hidden>
@@ -255,6 +256,10 @@ export function StreamDeck({ compact = false }: { compact?: boolean }) {
                     {isPlayableMedia(hero) ? (
                       <span className="featured__play" aria-hidden>
                         ▶
+                      </span>
+                    ) : isReadable(hero) ? (
+                      <span className="featured__play featured__play--read" aria-hidden>
+                        ▦
                       </span>
                     ) : null}
                   </div>
@@ -272,10 +277,8 @@ export function StreamDeck({ compact = false }: { compact?: boolean }) {
                     <p className="featured__cta">
                       {isPlayableMedia(hero)
                         ? "play · queue"
-                        : hero.kind === "writing"
-                          ? hasMagazine(hero.id)
-                            ? "open · read"
-                            : "open · note"
+                        : isReadable(hero)
+                          ? "open · read"
                           : "open · view"}
                     </p>
                   </div>

@@ -5,6 +5,7 @@ import { AgeGate } from "@/components/AgeGate";
 import { AuthProvider, useAuth } from "@/components/AuthContext";
 import { MagazineProvider, useMagazine } from "@/components/MagazineContext";
 import { MagazineReader } from "@/components/MagazineReader";
+import { WritingReader } from "@/components/WritingReader";
 import { FootprintArchive } from "@/components/FootprintArchive";
 import { PlayerDock } from "@/components/player/PlayerDock";
 import { PlayerProvider } from "@/components/player/PlayerContext";
@@ -15,7 +16,7 @@ import { SITE } from "@/data/identity";
 
 function FootprintInner({ footprint }: { footprint: FootprintItem[] }) {
   const { user, logout } = useAuth();
-  const { openId, closeMagazine } = useMagazine();
+  const { openId, writingItem, closeMagazine, closeWriting } = useMagazine();
 
   return (
     <>
@@ -64,6 +65,7 @@ function FootprintInner({ footprint }: { footprint: FootprintItem[] }) {
 
         <PlayerDock />
         <MagazineReader catalogId={openId} onClose={closeMagazine} />
+        <WritingReader item={writingItem} onClose={closeWriting} />
       </div>
     </>
   );

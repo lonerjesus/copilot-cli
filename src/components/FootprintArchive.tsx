@@ -44,7 +44,7 @@ function posterItem(item: FootprintItem, catalog: CatalogItem[]): CatalogItem {
 
 export function FootprintArchive({ initial }: FootprintArchiveProps) {
   const { playItem, current } = usePlayerState();
-  const { openMagazine, hasMagazine } = useMagazine();
+  const { openReadable } = useMagazine();
   const [items, setItems] = useState(initial);
   const [liveCatalog, setLiveCatalog] = useState<CatalogItem[]>(CATALOG);
   const [filter, setFilter] = useState<string>("all");
@@ -110,8 +110,7 @@ export function FootprintArchive({ initial }: FootprintArchiveProps) {
       playItem(catalogMatch);
       return;
     }
-    if (catalogMatch && hasMagazine(catalogMatch.id)) {
-      openMagazine(catalogMatch.id);
+    if (catalogMatch && openReadable(catalogMatch)) {
       return;
     }
     try {
