@@ -78,7 +78,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [index, setIndex] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [expanded, setExpanded] = useState(false);
-  const [autoplay, setAutoplayState] = useState(true);
+  const [autoplay, setAutoplayState] = useState(() => readAutoplayPref());
   const [progress, setProgress] = useState(0);
   const timer = useRef<number | null>(null);
   const playingRef = useRef(playing);
@@ -91,10 +91,6 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     autoplayRef.current = autoplay;
   }, [autoplay]);
-
-  useEffect(() => {
-    setAutoplayState(readAutoplayPref());
-  }, []);
 
   const setAutoplay = useCallback((value: boolean) => {
     setAutoplayState(value);

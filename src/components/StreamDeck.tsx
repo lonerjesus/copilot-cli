@@ -196,7 +196,7 @@ export function StreamDeck({ compact = false }: { compact?: boolean }) {
     (item: CatalogItem, queue: CatalogItem[], via: string) => {
       track("enter_stream", { id: item.id, via });
       if (!isPlayableMedia(item)) {
-        openReadable(item);
+        openReadable(item, queue);
         return;
       }
       playItem(item, playableCatalog(queue));

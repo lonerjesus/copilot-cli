@@ -10,6 +10,7 @@ import { StreamDeck } from "@/components/StreamDeck";
 import { CategoryBrowser } from "@/components/CategoryBrowser";
 import { MagazineReader } from "@/components/MagazineReader";
 import { WritingReader } from "@/components/WritingReader";
+import { PhotoGallery } from "@/components/PhotoGallery";
 
 const HouseAtlas = dynamic(
   () => import("@/components/HouseAtlas").then((m) => m.HouseAtlas),
@@ -39,7 +40,15 @@ function ShellInner() {
   const [view, setView] = useState<ViewId>("stream");
   const [menuOpen, setMenuOpen] = useState(false);
   const { setExpanded, toggle } = usePlayerState();
-  const { openId, writingItem, closeMagazine, closeWriting } = useMagazine();
+  const {
+    openId,
+    writingItem,
+    gallery,
+    closeMagazine,
+    closeWriting,
+    closeGallery,
+    setGalleryIndex,
+  } = useMagazine();
   const { user, logout, refresh } = useAuth();
 
   useEffect(() => {
@@ -67,7 +76,10 @@ function ShellInner() {
   const go = useCallback((id: ViewId) => {
     setView(id);
     setMenuOpen(false);
-    window.history.replaceState(null, "", `#${id}`);
+    // Prefer hash assignment so deep-links and back/forward stay in sync.
+    if (window.location.hash.replace(/^#/, "") !== id) {
+      window.location.hash = id;
+    }
   }, []);
 
   const nav: { id: ViewId; label: string; Icon: ComponentType<{ className?: string }> }[] = [
@@ -185,6 +197,14 @@ function ShellInner() {
       <PlayerDock />
       <MagazineReader catalogId={openId} onClose={closeMagazine} />
       <WritingReader item={writingItem} onClose={closeWriting} />
+      {gallery ? (
+        <PhotoGallery
+          items={gallery.items}
+          index={gallery.index}
+          onIndexChange={setGalleryIndex}
+          onClose={closeGallery}
+        />
+      ) : null}
     </>
   );
 }

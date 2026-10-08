@@ -6,6 +6,7 @@ import { AuthProvider, useAuth } from "@/components/AuthContext";
 import { MagazineProvider, useMagazine } from "@/components/MagazineContext";
 import { MagazineReader } from "@/components/MagazineReader";
 import { WritingReader } from "@/components/WritingReader";
+import { PhotoGallery } from "@/components/PhotoGallery";
 import { FootprintArchive } from "@/components/FootprintArchive";
 import { PlayerDock } from "@/components/player/PlayerDock";
 import { PlayerProvider } from "@/components/player/PlayerContext";
@@ -16,7 +17,15 @@ import { SITE } from "@/data/identity";
 
 function FootprintInner({ footprint }: { footprint: FootprintItem[] }) {
   const { user, logout } = useAuth();
-  const { openId, writingItem, closeMagazine, closeWriting } = useMagazine();
+  const {
+    openId,
+    writingItem,
+    gallery,
+    closeMagazine,
+    closeWriting,
+    closeGallery,
+    setGalleryIndex,
+  } = useMagazine();
 
   return (
     <>
@@ -68,6 +77,14 @@ function FootprintInner({ footprint }: { footprint: FootprintItem[] }) {
       <PlayerDock />
       <MagazineReader catalogId={openId} onClose={closeMagazine} />
       <WritingReader item={writingItem} onClose={closeWriting} />
+      {gallery ? (
+        <PhotoGallery
+          items={gallery.items}
+          index={gallery.index}
+          onIndexChange={setGalleryIndex}
+          onClose={closeGallery}
+        />
+      ) : null}
     </>
   );
 }

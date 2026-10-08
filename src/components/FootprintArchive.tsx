@@ -110,7 +110,7 @@ export function FootprintArchive({ initial }: FootprintArchiveProps) {
       playItem(catalogMatch);
       return;
     }
-    if (catalogMatch && openReadable(catalogMatch)) {
+    if (catalogMatch && openReadable(catalogMatch, liveCatalog)) {
       return;
     }
     try {

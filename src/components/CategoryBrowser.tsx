@@ -346,7 +346,7 @@ export function CategoryBrowser({
                         className={`tile tile--compact ${current?.id === item.id ? "tile--active" : ""}`}
                         onClick={() => {
                           if (!isPlayableMedia(item)) {
-                            openReadable(item);
+                            openReadable(item, group.items);
                             return;
                           }
                           playItem(item, playableCatalog(group.items));
