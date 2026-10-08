@@ -18,7 +18,8 @@
     "qa:av": "node --experimental-strip-types scripts/check-av-upload-types.mjs",
     "qa:av-e2e": "node scripts/e2e-av-upload.mjs",
     "qa:edit-save": "node scripts/e2e-admin-edit-save.mjs",
-    "qa:media-ref": "node --experimental-strip-types scripts/check-media-ref.mjs"
+    "qa:media-ref": "node --experimental-strip-types scripts/check-media-ref.mjs",
+    "qa:media-meta": "node --experimental-strip-types scripts/check-media-meta.mjs"
   },
   "dependencies": {
     "@opennextjs/cloudflare": "^1.20.8",

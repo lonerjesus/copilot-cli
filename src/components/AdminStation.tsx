@@ -27,6 +27,7 @@ import {
   videoAcceptAttribute,
 } from "@/lib/media-store";
 import { normalizeMediaRef } from "@/lib/media-ref";
+import { extractUploadMeta } from "@/lib/media-meta";
 import { MAX_TICKER_CHARS } from "@/lib/ticker-store";
 import {
   IconAnalytics,
@@ -262,6 +263,7 @@ export function AdminStation() {
   const posterRef = useRef<HTMLInputElement>(null);
   const formRef = useRef(form);
   const editingIdRef = useRef(editingId);
+  const posterClearedRef = useRef(false);
   const fileInputId = "admin-media-file";
   const posterInputId = "admin-poster-file";
 
@@ -404,8 +406,11 @@ export function AdminStation() {
   };
 
   const uploadFile = async (file: File, role: "media" | "poster") => {
-    const bytes = await file.arrayBuffer();
-    const { contentType } = validateUploadFile(file, role, bytes);
+    // Sniff from a head slice only — never load a multi-hundred-MB file into RAM.
+    const headBytes = await file
+      .slice(0, Math.min(file.size, 256 * 1024))
+      .arrayBuffer();
+    const { contentType } = validateUploadFile(file, role, headBytes);
 
     const postWithRetry = async (
       label: string,
@@ -438,14 +443,14 @@ export function AdminStation() {
       throw lastErr ?? new Error("upload_failed");
     };
 
-    // Small files — single Worker request.
+    // Small files — single Worker request (File streams; no full ArrayBuffer).
     if (file.size <= SINGLE_SHOT_MAX_BYTES) {
       setUploadProgress("uploading…");
       const res = await postWithRetry("upload", () => {
         const body = new FormData();
         body.append(
           "file",
-          new File([bytes], file.name || "upload.bin", { type: contentType }),
+          new File([file], file.name || "upload.bin", { type: contentType }),
         );
         body.append("role", role);
         return fetch("/api/admin/media", {
@@ -493,7 +498,7 @@ export function AdminStation() {
     for (let i = 0; i < totalChunks; i++) {
       const start = i * chunkBytes;
       const end = Math.min(file.size, start + chunkBytes);
-      const slice = bytes.slice(start, end);
+      const slice = file.slice(start, end);
       setUploadProgress(`uploading ${i + 1}/${totalChunks}`);
       const partRes = await postWithRetry(`part ${i + 1}`, () => {
         const part = new FormData();
@@ -547,9 +552,10 @@ export function AdminStation() {
       const title = state.title.trim() || "Untitled";
       const subtitle = state.subtitle.trim();
       const posterNorm = normalizeMediaRef(state.poster);
+      // Still → src poster default only when the user has not cleared the thumb.
       const posterUrl =
         posterNorm ||
-        (state.kind === "still" ? src : "") ||
+        (state.kind === "still" && !posterClearedRef.current ? src : "") ||
         undefined;
       const hint =
         PRESETS.find((p) => p.kind === state.kind)?.blurbHint ?? activePreset.blurbHint;
@@ -612,18 +618,32 @@ export function AdminStation() {
         ? PRESETS.find((p) => p.id === "writing")!
         : presetFromFile(file);
       if (!keepWriting) applyPreset(nextPreset);
+      // Pull title / duration / dimensions while the upload runs.
+      const metaPromise = extractUploadMeta(file);
       const url = await uploadFile(file, "media");
+      const meta = await metaPromise.catch(() => ({} as Awaited<ReturnType<typeof extractUploadMeta>>));
       // Merge onto the latest form — title/tags typed during upload must survive.
       const latest = formRef.current;
+      if (!keepWriting && nextPreset.kind === "still") {
+        posterClearedRef.current = false;
+      }
       const nextForm: FormState = {
         ...latest,
         kind: keepWriting ? "writing" : nextPreset.kind,
         category: keepWriting ? "writing" : nextPreset.category,
         subcategory: keepWriting ? latest.subcategory || "notes" : nextPreset.subcategory,
-        title: latest.title.trim() || titleFromFilename(file.name),
+        title:
+          latest.title.trim() ||
+          meta.title?.trim() ||
+          titleFromFilename(file.name),
         src: url,
         externalUrl: latest.externalUrl.trim() || url,
         poster: !keepWriting && nextPreset.kind === "still" ? url : latest.poster,
+        duration: latest.duration.trim() || meta.duration || "",
+        subtitle:
+          latest.subtitle.trim() ||
+          (meta.width && meta.height ? `${meta.width}×${meta.height}` : "") ||
+          "",
         tags: latest.tags || (keepWriting ? "writing" : nextPreset.id),
         paywalled: keepWriting ? latest.paywalled : true,
       };
@@ -636,10 +656,18 @@ export function AdminStation() {
       if (id) {
         const item = await persistContent(nextForm, id);
         setDirty(false);
-        setOk(`media saved · ${item.id}`);
+        setOk(
+          meta.duration
+            ? `media saved · ${item.id} · ${meta.duration}`
+            : `media saved · ${item.id}`,
+        );
         await refresh();
       } else {
-        setOk("file ready — add a title if needed, then publish");
+        setOk(
+          meta.duration
+            ? `file ready · ${meta.duration} — add a title if needed, then publish`
+            : "file ready — add a title if needed, then publish",
+        );
       }
     } catch (err) {
       setError(
@@ -671,8 +699,19 @@ export function AdminStation() {
     setOk("");
     setBusy(true);
     try {
+      const metaPromise = extractUploadMeta(file);
       const url = await uploadFile(file, "poster");
-      const nextForm: FormState = { ...formRef.current, poster: url };
+      const meta = await metaPromise.catch(() => ({} as Awaited<ReturnType<typeof extractUploadMeta>>));
+      posterClearedRef.current = false;
+      const latest = formRef.current;
+      const nextForm: FormState = {
+        ...latest,
+        poster: url,
+        subtitle:
+          latest.subtitle.trim() ||
+          (meta.width && meta.height ? `${meta.width}×${meta.height}` : "") ||
+          "",
+      };
       setForm(nextForm);
       formRef.current = nextForm;
       setDirty(true);
@@ -711,6 +750,7 @@ export function AdminStation() {
   };
 
   const clearPoster = () => {
+    posterClearedRef.current = true;
     const nextForm: FormState = { ...formRef.current, poster: "" };
     setForm(nextForm);
     formRef.current = nextForm;
@@ -745,6 +785,7 @@ export function AdminStation() {
   const resetCompose = (opts?: { keepMessage?: boolean }) => {
     setEditingId(null);
     editingIdRef.current = null;
+    posterClearedRef.current = false;
     const next = {
       ...emptyForm(),
       kind: activePreset.kind,
@@ -787,6 +828,7 @@ export function AdminStation() {
     };
     setForm(next);
     formRef.current = next;
+    posterClearedRef.current = false;
     setDirty(false);
     setOk(`editing · ${item.id} — drop files or save when ready`);
     setError("");
@@ -1043,7 +1085,7 @@ export function AdminStation() {
                   ref={posterRef}
                   type="file"
                   className="admin__file-hidden"
-                  accept={[...ALLOWED_MEDIA_TYPES.poster].join(",")}
+                  accept={[...ALLOWED_MEDIA_TYPES.poster, "image/*", ".jpg", ".jpeg", ".png", ".webp", ".gif"].join(",")}
                   disabled={busy}
                   onChange={onPickPoster}
                 />

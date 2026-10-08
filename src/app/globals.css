@@ -2257,8 +2257,8 @@ a.drive .drive__face {
 }
 
 .admin__compose-actions {
+  /* Fixed on narrow viewports — sticky bottom was overlapping the thumbnail. */
   position: sticky;
-  /* Lift above home indicator AND software keyboard (visualViewport inset). */
   bottom: calc(max(0.65rem, var(--safe-b)) + var(--admin-keyboard-inset, 0px));
   z-index: 8;
   display: flex;
@@ -2382,11 +2382,21 @@ a.drive .drive__face {
   }
 
   .admin__compose-actions {
-    margin-left: calc(-1 * max(var(--page-x), var(--safe-l)));
-    margin-right: calc(-1 * max(var(--page-x), var(--safe-r)));
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: calc(var(--admin-keyboard-inset, 0px));
+    margin: 0;
     padding-left: max(var(--page-x), var(--safe-l));
     padding-right: max(var(--page-x), var(--safe-r));
+    padding-top: 0.75rem;
     padding-bottom: max(0.75rem, var(--safe-b));
+    box-shadow: 0 -12px 28px color-mix(in oklab, var(--void) 70%, transparent);
+  }
+
+  .admin__compose {
+    /* Clear the fixed Save/Publish bar + home indicator. */
+    padding-bottom: calc(6.5rem + var(--safe-b) + var(--admin-keyboard-inset, 0px));
   }
 
   .admin__stat-grid {
@@ -2536,10 +2546,6 @@ a.drive .drive__face {
     height: 3rem;
   }
 
-  .admin__compose {
-    padding-bottom: calc(6rem + var(--admin-keyboard-inset, 0px));
-  }
-
   .admin__drop-title {
     font-size: 0.95rem;
   }
@@ -2547,9 +2553,9 @@ a.drive .drive__face {
 
 @media (max-height: 480px) and (orientation: landscape) {
   .admin__compose-actions {
-    bottom: calc(0.35rem + var(--admin-keyboard-inset, 0px));
+    bottom: var(--admin-keyboard-inset, 0px);
     padding-top: 0.45rem;
-    padding-bottom: 0.45rem;
+    padding-bottom: max(0.45rem, var(--safe-b));
   }
 
   .admin__action-cancel,

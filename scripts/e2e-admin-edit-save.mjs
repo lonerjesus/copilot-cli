@@ -179,5 +179,109 @@ const catalog = await api("/api/catalog", { jar });
 const catHit = (catalog.json?.items || []).find((i) => i.id === id);
 ok("catalog-has-poster", catHit?.poster === posterUrl, catHit?.poster || "missing");
 
+// House-path media refs (same shape AdminStation normalizeMediaRef emits) must PATCH.
+const houseKey = String(mediaUrl).replace(/^.*\/api\/media\//, "");
+const bareName = String(mediaUrl).split("/").pop();
+const housePatch = await api("/api/admin/content", {
+  method: "PATCH",
+  jar,
+  headers: { "content-type": "application/json" },
+  body: JSON.stringify({
+    id,
+    title: pub.json.item.title,
+    kind: "writing",
+    category: "writing",
+    subcategory: "notes",
+    platform: "house",
+    externalUrl: `/api/media/${houseKey}`,
+    src: `/api/media/${houseKey}`,
+    poster: posterUrl,
+    blurb: "probe",
+    body: "house path body",
+    paywalled: true,
+    tags: ["probe"],
+  }),
+});
+ok(
+  "patch-house-path",
+  housePatch.res.status === 200 &&
+    String(housePatch.json?.item?.src || "").includes("/api/media/house/"),
+  housePatch.text.slice(0, 200),
+);
+
+// Clear poster (empty string) must stick — no still→src restore on writing.
+const cleared = await api("/api/admin/content", {
+  method: "PATCH",
+  jar,
+  headers: { "content-type": "application/json" },
+  body: JSON.stringify({
+    id,
+    title: pub.json.item.title,
+    kind: "writing",
+    category: "writing",
+    subcategory: "notes",
+    platform: "house",
+    externalUrl: "https://www.kamaunegasi.net/",
+    src: mediaUrl,
+    poster: "",
+    blurb: "probe",
+    body: "cleared poster",
+    paywalled: true,
+    tags: ["probe"],
+  }),
+});
+ok(
+  "patch-clear-poster",
+  cleared.res.status === 200 && !cleared.json?.item?.poster,
+  String(cleared.json?.item?.poster ?? "cleared"),
+);
+
+// Chunked upload round-trip (init → one part → complete) for small MP3.
+const mp3 = tinyMp3();
+const init = await api("/api/admin/media/init", {
+  method: "POST",
+  jar,
+  headers: { "content-type": "application/json" },
+  body: JSON.stringify({
+    filename: "chunk-probe.mp3",
+    contentType: "audio/mpeg",
+    size: mp3.length,
+    role: "media",
+  }),
+});
+ok(
+  "chunk-init",
+  (init.res.status === 200 || init.res.status === 201) && Boolean(init.json?.uploadId),
+  init.text.slice(0, 160),
+);
+if (init.json?.uploadId) {
+  const part = new FormData();
+  part.append("uploadId", init.json.uploadId);
+  part.append("index", "0");
+  part.append("chunk", new Blob([mp3], { type: "application/octet-stream" }), "part-0.bin");
+  const partRes = await api("/api/admin/media/chunk", {
+    method: "POST",
+    jar,
+    body: part,
+  });
+  ok("chunk-part", partRes.res.status === 200 || partRes.res.status === 201, partRes.text.slice(0, 120));
+  const done = await api("/api/admin/media/complete", {
+    method: "POST",
+    jar,
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ uploadId: init.json.uploadId }),
+  });
+  ok(
+    "chunk-complete",
+    (done.res.status === 200 || done.res.status === 201) && Boolean(done.json?.url),
+    done.text.slice(0, 160),
+  );
+} else {
+  ok("chunk-part", false, "skipped");
+  ok("chunk-complete", false, "skipped");
+}
+
+ok("bare-name-hint", Boolean(bareName && /\.mp3$/i.test(bareName)), bareName || "missing");
+
 console.log(`== result: ${pass} passed · ${fail} failed ==`);
 process.exit(fail ? 1 : 0);

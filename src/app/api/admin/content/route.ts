@@ -28,6 +28,9 @@ export async function GET() {
     if (err instanceof AuthStoreUnavailableError) {
       return jsonError("auth_store_unavailable", 503);
     }
+    if (err instanceof Error && err.message === "catalog_corrupt") {
+      return jsonError("catalog_corrupt", 503);
+    }
     throw err;
   }
 }
@@ -59,6 +62,9 @@ export async function POST(request: Request) {
   } catch (err) {
     if (err instanceof AuthStoreUnavailableError) {
       return jsonError("auth_store_unavailable", 503);
+    }
+    if (err instanceof Error && err.message === "catalog_corrupt") {
+      return jsonError("catalog_corrupt", 503);
     }
     const message = err instanceof Error ? err.message : "invalid_body";
     return jsonError(message, 400);
@@ -103,6 +109,9 @@ export async function PATCH(request: Request) {
     if (err instanceof AuthStoreUnavailableError) {
       return jsonError("auth_store_unavailable", 503);
     }
+    if (err instanceof Error && err.message === "catalog_corrupt") {
+      return jsonError("catalog_corrupt", 503);
+    }
     const message = err instanceof Error ? err.message : "invalid_body";
     return jsonError(message, 400);
   }
@@ -130,6 +139,9 @@ export async function DELETE(request: Request) {
   } catch (err) {
     if (err instanceof AuthStoreUnavailableError) {
       return jsonError("auth_store_unavailable", 503);
+    }
+    if (err instanceof Error && err.message === "catalog_corrupt") {
+      return jsonError("catalog_corrupt", 503);
     }
     throw err;
   }
