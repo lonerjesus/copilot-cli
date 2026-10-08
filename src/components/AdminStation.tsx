@@ -221,6 +221,23 @@ function presetFromFile(file: File): UploadPreset {
   return PRESETS[0]!;
 }
 
+/**
+ * House uploads use same-origin paths (`/api/media/house/…`).
+ * Browsers reject those on `<input type="url">` — keep text inputs and
+ * normalize bare house keys before PATCH/POST.
+ */
+function normalizeMediaRef(value: string): string {
+  const v = value.trim();
+  if (!v) return "";
+  if (v.startsWith("/api/media/house/") && !v.includes("..")) return v;
+  if (v.startsWith("house/") && !v.includes("..")) return `/api/media/${v}`;
+  // Filename-only remnant from a house key (uuid-or-prefix + sanitized name).
+  if (/^[A-Za-z0-9._-]+\.(jpe?g|png|webp|gif|mp3|m4a|wav|flac|mp4|mov|webm)$/i.test(v)) {
+    return `/api/media/house/${v}`;
+  }
+  return v;
+}
+
 function formatUsd(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`;
 }
@@ -487,16 +504,19 @@ export function AdminStation() {
 
   const buildPayload = useCallback(
     (state: FormState) => {
-      const mediaUrl = state.src.trim() || state.externalUrl.trim();
+      const src = normalizeMediaRef(state.src);
+      const external = normalizeMediaRef(state.externalUrl);
+      const mediaUrl = src || external;
       if (!mediaUrl && state.kind !== "writing") {
         throw new Error("drop a file or paste a media url");
       }
-      const externalUrl = state.externalUrl.trim() || mediaUrl || `${SITE.url}/`;
+      const externalUrl = external || mediaUrl || `${SITE.url}/`;
       const title = state.title.trim() || "Untitled";
       const subtitle = state.subtitle.trim();
+      const posterNorm = normalizeMediaRef(state.poster);
       const posterUrl =
-        state.poster.trim() ||
-        (state.kind === "still" ? state.src.trim() : "") ||
+        posterNorm ||
+        (state.kind === "still" ? src : "") ||
         undefined;
       const hint =
         PRESETS.find((p) => p.kind === state.kind)?.blurbHint ?? activePreset.blurbHint;
@@ -510,7 +530,7 @@ export function AdminStation() {
         platform: state.platform || "house",
         externalUrl,
         poster: posterUrl,
-        src: state.src.trim() || undefined,
+        src: src || undefined,
         duration: state.duration || undefined,
         blurb: subtitle || title || hint,
         body: state.body || undefined,
@@ -875,7 +895,12 @@ export function AdminStation() {
             )}
           </label>
 
-          <form className="admin__form admin__form--compose" onSubmit={submit}>
+          <form
+            className="admin__form admin__form--compose"
+            onSubmit={submit}
+            // House media uses /api/media/… paths — native type=url blocks Save on iOS.
+            noValidate
+          >
             <label>
               <span>title</span>
               <input
@@ -1055,24 +1080,37 @@ export function AdminStation() {
                 <label>
                   <span>media url</span>
                   <input
-                    type="url"
+                    type="text"
+                    inputMode="url"
+                    autoCapitalize="off"
+                    autoCorrect="off"
+                    spellCheck={false}
                     value={form.src}
                     onChange={(e) => setForm({ ...form, src: e.target.value })}
-                    placeholder="https://…"
+                    placeholder="https://… or /api/media/house/…"
                   />
                 </label>
                 <label>
                   <span>page url</span>
                   <input
-                    type="url"
+                    type="text"
+                    inputMode="url"
+                    autoCapitalize="off"
+                    autoCorrect="off"
+                    spellCheck={false}
                     value={form.externalUrl}
                     onChange={(e) => setForm({ ...form, externalUrl: e.target.value })}
+                    placeholder="https://www.kamaunegasi.net/"
                   />
                 </label>
                 <label>
                   <span>poster url (optional)</span>
                   <input
-                    type="url"
+                    type="text"
+                    inputMode="url"
+                    autoCapitalize="off"
+                    autoCorrect="off"
+                    spellCheck={false}
                     value={form.poster}
                     onChange={(e) => setForm({ ...form, poster: e.target.value })}
                     placeholder="https://… or /api/media/house/…"
