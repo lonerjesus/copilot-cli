@@ -232,7 +232,7 @@ export function StreamDeck({ compact = false }: { compact?: boolean }) {
 
             {empty ? (
               <p className="row__empty">
-                No {row.title.toLowerCase()} yet.
+                No {row.title.toLowerCase()} yet. Next: Admin → Compose.
               </p>
             ) : null}
 
@@ -314,7 +314,7 @@ export function StreamDeck({ compact = false }: { compact?: boolean }) {
           <span className="stream__empty-mark" aria-hidden>
             ◈
           </span>
-          <span>Empty shelf — publish the next drop from admin.</span>
+          <span>Shelf empty. Next: open Admin → Compose and publish one drop.</span>
         </p>
       ) : null}
     </section>

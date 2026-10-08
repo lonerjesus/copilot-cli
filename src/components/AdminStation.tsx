@@ -1197,7 +1197,7 @@ export function AdminStation() {
             </button>
           </header>
           {items.length === 0 && !loading ? (
-            <p className="admin__empty">Nothing published yet — drop a file on Compose.</p>
+            <p className="admin__empty">Nothing published yet. Next: open Compose and drop a file.</p>
           ) : (
             <ul className="admin__library-list">
               {items.map((item) => (

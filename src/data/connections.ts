@@ -300,5 +300,5 @@ export function legacyPlatformCount(): number {
 export const ATLAS = {
   title: SITE.title,
   eyebrow: "HOUSE",
-  line: "Projects · outlets · archive — one roof under the mark.",
+  line: "Outlets, projects, archive, and stack under one mark. Pick a panel below.",
 } as const;

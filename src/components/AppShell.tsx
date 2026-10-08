@@ -12,7 +12,7 @@ import { MagazineReader } from "@/components/MagazineReader";
 
 const HouseAtlas = dynamic(
   () => import("@/components/HouseAtlas").then((m) => m.HouseAtlas),
-  { ssr: false, loading: () => <p className="atlas__boot">Loading house…</p> },
+  { ssr: false, loading: () => <p className="atlas__boot">Opening house…</p> },
 );
 import { MagazineProvider, useMagazine } from "@/components/MagazineContext";
 import { PlayerDock } from "@/components/player/PlayerDock";
@@ -55,7 +55,15 @@ function ShellInner() {
         setView(id);
       }
       if (id === "categories") setView("browse");
-      if (id === "connections" || id === "projects") setView("house");
+      if (
+        id === "connections" ||
+        id === "projects" ||
+        id === "stack" ||
+        id === "marks" ||
+        id === "archive"
+      ) {
+        setView("house");
+      }
       if (id === "donate") setView("support");
     };
     applyHash();

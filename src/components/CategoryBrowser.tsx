@@ -308,7 +308,7 @@ export function CategoryBrowser({
 
       <div className="cat-results">
         {grouped.length === 0 ? (
-          <p className="cat-empty">no signal for current filters</p>
+          <p className="cat-empty">No matches. Clear a filter or try another word.</p>
         ) : (
           grouped.map((group) => {
             const cat = getCategory(group.categoryId);

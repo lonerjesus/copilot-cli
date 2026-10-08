@@ -23,17 +23,24 @@ import {
   type HouseProject,
   type OutletLane,
 } from "@/data/connections";
+import {
+  GITHUB_TOOLS,
+  GITHUB_TOOLS_COUNT,
+  GITHUB_TOOLS_SOURCE,
+  type GithubTool,
+} from "@/data/github-tools";
 import type { ArchiveItem } from "@/lib/archive-bridge";
 import { BrandMark } from "@/components/BrandMark";
 import { track } from "@/lib/analytics";
 
-type PanelId = "outlets" | "projects" | "archive" | "marks";
+type PanelId = "outlets" | "projects" | "archive" | "marks" | "stack";
 
 const PANELS: { id: PanelId; label: string }[] = [
   { id: "outlets", label: "outlets" },
   { id: "projects", label: "projects" },
   { id: "archive", label: "archive" },
   { id: "marks", label: "marks" },
+  { id: "stack", label: "stack" },
 ];
 
 const LANES: { id: OutletLane | "all"; label: string }[] = [
@@ -69,6 +76,15 @@ function projectTouchesLane(project: HouseProject, lane: OutletLane | "all"): bo
   return project.outletIds.some((id) => outletById(id)?.lane === lane);
 }
 
+function panelFromHash(): PanelId {
+  if (typeof window === "undefined") return "outlets";
+  const id = window.location.hash.replace(/^#/, "").toLowerCase();
+  if (id === "stack" || id === "projects" || id === "archive" || id === "marks") {
+    return id;
+  }
+  return "outlets";
+}
+
 export function HouseAtlas({ compact = false }: { compact?: boolean }) {
   const baseId = useId();
   const [panel, setPanel] = useState<PanelId>("outlets");
@@ -79,6 +95,16 @@ export function HouseAtlas({ compact = false }: { compact?: boolean }) {
   );
   const panelTabRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const laneTabRefs = useRef<Array<HTMLButtonElement | null>>([]);
+
+  useEffect(() => {
+    const apply = () => {
+      const next = panelFromHash();
+      startTransition(() => setPanel(next));
+    };
+    apply();
+    window.addEventListener("hashchange", apply);
+    return () => window.removeEventListener("hashchange", apply);
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -133,6 +159,14 @@ export function HouseAtlas({ compact = false }: { compact?: boolean }) {
 
   const goPanel = useCallback((id: PanelId) => {
     startTransition(() => setPanel(id));
+    if (typeof window === "undefined") return;
+    const nextHash =
+      id === "stack" || id === "projects" || id === "archive" || id === "marks"
+        ? id
+        : "house";
+    if (window.location.hash.replace(/^#/, "") !== nextHash) {
+      window.history.replaceState(null, "", `#${nextHash}`);
+    }
   }, []);
 
   const goLane = useCallback((id: OutletLane | "all") => {
@@ -307,7 +341,7 @@ export function HouseAtlas({ compact = false }: { compact?: boolean }) {
               ))}
             </ul>
           ) : (
-            <p className="atlas__empty">No outlets in this lane.</p>
+            <p className="atlas__empty">Nothing in this lane. Pick another lane above.</p>
           )}
         </div>
       ) : null}
@@ -330,7 +364,7 @@ export function HouseAtlas({ compact = false }: { compact?: boolean }) {
               ))}
             </ul>
           ) : (
-            <p className="atlas__empty">No projects touch this lane.</p>
+            <p className="atlas__empty">No projects in this lane. Pick another lane above.</p>
           )}
         </div>
       ) : null}
@@ -362,9 +396,11 @@ export function HouseAtlas({ compact = false }: { compact?: boolean }) {
               ))}
             </ul>
           ) : archiveState === "error" ? (
-            <p className="atlas__empty">Archive bridge unreachable — try again in a moment.</p>
+            <p className="atlas__empty">
+              Archive bridge offline. Wait ~30 seconds, then open archive again.
+            </p>
           ) : archiveState === "quiet" ? (
-            <p className="atlas__empty">Archive feeds quiet right now.</p>
+            <p className="atlas__empty">No archive items right now. Check outlets or stack.</p>
           ) : (
             <ul className="atlas__archive-list">
               {archive.map((item, i) => (
@@ -433,6 +469,33 @@ export function HouseAtlas({ compact = false }: { compact?: boolean }) {
           </ul>
         </div>
       ) : null}
+
+      {panel === "stack" ? (
+        <div
+          className="atlas__block atlas__block--stack"
+          role="tabpanel"
+          id={`${baseId}-panel-panel-stack`}
+          aria-labelledby={`${baseId}-panel-stack`}
+        >
+          <header className="atlas__block-head">
+            <h3>STACK</h3>
+            <span>
+              {GITHUB_TOOLS.length}/{GITHUB_TOOLS_COUNT}
+            </span>
+          </header>
+          <p className="atlas__aside">
+            Open a row to leave for GitHub. Rows marked local are installed under{" "}
+            <code>agents/skills</code>. Source: {GITHUB_TOOLS_SOURCE}.
+          </p>
+          <ul className="atlas__outlet-list" aria-label="GitHub tools">
+            {[...GITHUB_TOOLS]
+              .sort((a, b) => Number(b.verdict === "vendored") - Number(a.verdict === "vendored"))
+              .map((tool, i) => (
+                <StackRow key={tool.id} tool={tool} index={i} />
+              ))}
+          </ul>
+        </div>
+      ) : null}
     </section>
   );
 }
@@ -461,6 +524,38 @@ function OutletRow({
         <span className="atlas__outlet-body">
           <strong>{outlet.label}</strong>
           <em>{outlet.blurb}</em>
+        </span>
+        <span className="atlas__outlet-go" aria-hidden>
+          ↗
+        </span>
+      </a>
+    </li>
+  );
+}
+
+function StackRow({ tool, index }: { tool: GithubTool; index: number }) {
+  const lane = tool.verdict === "vendored" ? "local" : "github";
+  return (
+    <li
+      className={`atlas__outlet ${tool.verdict === "vendored" ? "atlas-lane--writing" : "atlas-lane--web"}`}
+      style={{ animationDelay: `${Math.min(index, 10) * 35}ms` }}
+    >
+      <a
+        href={tool.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={() => track("enter_stream", { id: tool.id, via: "atlas_stack" })}
+      >
+        <span className="atlas__outlet-lane">{lane}</span>
+        <span className="atlas__outlet-body">
+          <strong>
+            {tool.name}
+            {tool.verdict === "vendored" ? " · skill" : ""}
+          </strong>
+          <em>
+            {tool.repo} — {tool.blurb}
+            {tool.localSkill ? ` · ${tool.localSkill}` : ""}
+          </em>
         </span>
         <span className="atlas__outlet-go" aria-hidden>
           ↗

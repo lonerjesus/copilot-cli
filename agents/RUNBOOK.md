@@ -30,7 +30,8 @@ Invoke an agent when **any** listed path/signal matches. Run Wave A agents in pa
 | Boot / age gate / 18+ copy | `compliance-18plus`, `ux`, `catalog-names` | `qa-browser` → `verifier` |
 | `wrangler.toml`, `next.config.ts`, deploy docs, build scripts | `cloudflare-deploy`, `security`, `performance` | `verifier` |
 | README / AGENTS / docs only | `catalog-names` (if names mentioned) | `verifier` |
-| Analytics, CTA, empty-states, SEO blurbs | `analytics-bounce`, `catalog-names` | `qa-browser` if UI → `verifier` |
+| Analytics, CTA, empty-states, SEO blurbs | `analytics-bounce`, `catalog-names`, `ux` (apply `agents/skills/no-ai-slop` + `i-have-adhd`) | `qa-browser` if UI → `verifier` |
+| Access / auth errors / register steps | `ux`, `compliance-18plus`, `catalog-names` | `qa-browser` → `verifier` |
 
 ## Wave rules
 

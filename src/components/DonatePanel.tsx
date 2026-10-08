@@ -38,7 +38,7 @@ export function DonatePanel({ compact = false }: { compact?: boolean }) {
       });
       const data = (await res.json()) as { url?: string; error?: string; mode?: string };
       if (!res.ok) {
-        setMessage(data.error ?? "fail");
+        setMessage(data.error ?? "Donate failed. Retry give once.");
         return;
       }
       track("command", { cmd: "donate", cents: amount });
@@ -47,7 +47,7 @@ export function DonatePanel({ compact = false }: { compact?: boolean }) {
         window.location.href = data.url;
       }
     } catch {
-      setMessage("network");
+      setMessage("Network failed. Check connection, then tap give again.");
     } finally {
       setBusy(false);
     }
@@ -62,6 +62,7 @@ export function DonatePanel({ compact = false }: { compact?: boolean }) {
         <header className="section__head">
           <div>
             <h2 id="donate-title">SUPPORT</h2>
+            <p className="section__sub">Pick an amount, then give.</p>
           </div>
         </header>
       ) : null}
