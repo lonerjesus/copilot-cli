@@ -387,13 +387,16 @@ export function PlayerDock() {
     current,
     playing,
     expanded,
+    autoplay,
     progress,
     upNext,
     toggle,
+    pause,
     next,
     prev,
     playItem,
     setExpanded,
+    setAutoplay,
     setProgress,
   } = usePlayer();
   const { openMagazine, hasMagazine } = useMagazine();
@@ -436,6 +439,10 @@ export function PlayerDock() {
             seekTo={seekTo}
             onProgress={setProgress}
             onEnded={() => {
+              if (!autoplay) {
+                pause();
+                return;
+              }
               track("next", { id: current.id, via: "ended" });
               next();
             }}
@@ -514,6 +521,15 @@ export function PlayerDock() {
           ) : null}
         </div>
         <div className="deck__controls">
+          <button
+            type="button"
+            className={`deck__autoplay ${autoplay ? "is-on" : ""}`}
+            aria-pressed={autoplay}
+            title={autoplay ? "Autoplay on — click to load paused" : "Autoplay off — click to auto-start"}
+            onClick={() => setAutoplay(!autoplay)}
+          >
+            {autoplay ? "auto" : "tap"}
+          </button>
           <button type="button" onClick={prev} aria-label="Previous">
             ⏮
           </button>

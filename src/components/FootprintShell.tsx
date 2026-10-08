@@ -62,11 +62,12 @@ function FootprintInner({ footprint }: { footprint: FootprintItem[] }) {
         </main>
 
         <SiteFooter />
-
-        <PlayerDock />
-        <MagazineReader catalogId={openId} onClose={closeMagazine} />
-        <WritingReader item={writingItem} onClose={closeWriting} />
       </div>
+
+      {/* Viewport-fixed overlays — outside .shell so transform/relative never traps them */}
+      <PlayerDock />
+      <MagazineReader catalogId={openId} onClose={closeMagazine} />
+      <WritingReader item={writingItem} onClose={closeWriting} />
     </>
   );
 }

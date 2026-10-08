@@ -298,7 +298,7 @@ body:has(.agebanner) .topbar {
   transform: translateY(-3vh);
 }
 
-.shell > *:not(.brand-watermark),
+.shell > *:not(.brand-watermark):not(.deck):not(.writing-reader):not(.magazine),
 .access > *:not(.brand-watermark) {
   position: relative;
   z-index: 1;
@@ -2975,7 +2975,7 @@ a.drive .drive__face {
   color: var(--phosphor);
 }
 
-/* Player dock */
+/* Player dock — always viewport-fixed (Spotify / Apple TV hover bar) */
 .deck {
   position: fixed;
   left: 0;
@@ -2986,6 +2986,9 @@ a.drive .drive__face {
   background: color-mix(in oklab, #070b08 94%, transparent);
   backdrop-filter: blur(12px);
   padding-bottom: var(--safe-b);
+  /* Escape any ancestor containing-block quirks */
+  transform: translateZ(0);
+  will-change: transform;
 }
 
 .deck__bar {
@@ -3120,6 +3123,20 @@ a.drive .drive__face {
 .deck__controls {
   display: flex;
   gap: 0.35rem;
+  align-items: center;
+}
+
+.deck__autoplay {
+  min-width: 2.75rem;
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.deck__autoplay.is-on {
+  color: var(--phosphor);
+  border-color: var(--phosphor-dim);
 }
 
 .deck__play {
@@ -3818,18 +3835,56 @@ a.drive .drive__face {
   background: #c6f54a;
 }
 
-/* House writing / notes reader (admin-published body) */
+/* House writing / notes — social enlarge lightbox */
 .writing-reader {
   position: fixed;
   inset: 0;
   z-index: 60;
   display: grid;
-  grid-template-rows: auto 1fr;
-  background:
-    linear-gradient(180deg, color-mix(in oklab, var(--void) 88%, #0a120e), var(--void));
+  place-items: center;
+  padding: max(0.75rem, var(--safe-t)) max(var(--page-x), var(--safe-r))
+    calc(var(--deck-h) + 1.25rem + var(--safe-b)) max(var(--page-x), var(--safe-l));
   color: var(--text);
   overflow: hidden;
-  animation: compose-in 0.35s ease both;
+  animation: compose-in 0.28s ease both;
+  transform: translateZ(0);
+}
+
+.writing-reader__scrim {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+  background: color-mix(in oklab, #020403 72%, transparent);
+  backdrop-filter: blur(10px);
+}
+
+.writing-reader__card {
+  position: relative;
+  z-index: 1;
+  width: min(40rem, 100%);
+  max-height: min(86vh, 920px);
+  display: grid;
+  grid-template-rows: auto 1fr;
+  border: 1px solid var(--line-hot);
+  background:
+    linear-gradient(180deg, color-mix(in oklab, var(--panel) 96%, #0a120e), var(--void));
+  box-shadow: 0 28px 80px color-mix(in oklab, #000 55%, transparent);
+  animation: writing-pop 0.32s cubic-bezier(0.2, 0.85, 0.25, 1) both;
+  overflow: hidden;
+}
+
+@keyframes writing-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.94) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .writing-reader__chrome {
@@ -3837,8 +3892,7 @@ a.drive .drive__face {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: max(0.75rem, var(--safe-t)) max(var(--page-x), var(--safe-r)) 0.75rem
-    max(var(--page-x), var(--safe-l));
+  padding: 0.75rem 1rem;
   border-bottom: 1px solid var(--line);
   background: color-mix(in oklab, var(--panel) 92%, transparent);
 }
@@ -3869,10 +3923,8 @@ a.drive .drive__face {
 
 .writing-reader__sheet {
   overflow: auto;
-  padding: 1.25rem max(var(--page-x), var(--safe-l))
-    calc(2rem + var(--safe-b) + var(--deck-h)) max(var(--page-x), var(--safe-r));
-  max-width: 42rem;
-  margin: 0 auto;
+  padding: 1.25rem 1.25rem 1.75rem;
+  min-height: 0;
   width: 100%;
 }
 
@@ -3956,8 +4008,19 @@ a.drive .drive__face {
 }
 
 @media (max-width: 720px) {
+  .writing-reader {
+    padding: max(0.5rem, var(--safe-t)) 0.65rem
+      calc(var(--deck-h) + 0.85rem + var(--safe-b));
+    place-items: end center;
+  }
+
+  .writing-reader__card {
+    width: 100%;
+    max-height: min(88vh, 920px);
+  }
+
   .writing-reader__sheet {
-    padding-top: 1rem;
+    padding: 1rem 1rem 1.35rem;
   }
 
   .writing-reader__head h2 {

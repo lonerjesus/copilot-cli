@@ -12,21 +12,46 @@ import {
 } from "react";
 import { getQueue, isPlayableMedia, playableCatalog, type CatalogItem } from "@/data/catalog";
 
+const AUTOPLAY_KEY = "kn.player.autoplay";
+
+function readAutoplayPref(): boolean {
+  if (typeof window === "undefined") return true;
+  try {
+    const raw = window.localStorage.getItem(AUTOPLAY_KEY);
+    if (raw === null) return true;
+    return raw === "1" || raw === "true";
+  } catch {
+    return true;
+  }
+}
+
+function writeAutoplayPref(value: boolean) {
+  try {
+    window.localStorage.setItem(AUTOPLAY_KEY, value ? "1" : "0");
+  } catch {
+    /* private mode */
+  }
+}
+
 type PlayerStateValue = {
   queue: CatalogItem[];
   current: CatalogItem | null;
   index: number;
   playing: boolean;
   expanded: boolean;
+  /** When on, selecting media starts playback. When off, loads paused. */
+  autoplay: boolean;
   /** Items after the current index — Spotify-style Up Next. */
   upNext: CatalogItem[];
   playItem: (item: CatalogItem, queue?: CatalogItem[]) => void;
   /** Insert after current without interrupting playback (Play Next). */
   queueNext: (item: CatalogItem) => void;
   toggle: () => void;
+  pause: () => void;
   next: () => void;
   prev: () => void;
   setExpanded: (value: boolean) => void;
+  setAutoplay: (value: boolean) => void;
 };
 
 type PlayerProgressValue = {
@@ -53,8 +78,28 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [index, setIndex] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [autoplay, setAutoplayState] = useState(true);
   const [progress, setProgress] = useState(0);
   const timer = useRef<number | null>(null);
+  const playingRef = useRef(playing);
+  const autoplayRef = useRef(autoplay);
+
+  useEffect(() => {
+    playingRef.current = playing;
+  }, [playing]);
+
+  useEffect(() => {
+    autoplayRef.current = autoplay;
+  }, [autoplay]);
+
+  useEffect(() => {
+    setAutoplayState(readAutoplayPref());
+  }, []);
+
+  const setAutoplay = useCallback((value: boolean) => {
+    setAutoplayState(value);
+    writeAutoplayPref(value);
+  }, []);
 
   const current = queue[index] && isPlayableMedia(queue[index]!) ? queue[index]! : null;
   const upNext = useMemo(
@@ -70,15 +115,18 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   };
 
   const next = useCallback(() => {
+    // Manual skip keeps current play/pause; autoplay only gates select + ended.
+    const keepPlaying = playingRef.current;
     setIndex((i) => stepIndex(queue, i, 1));
     setProgress(0);
-    setPlaying(true);
+    setPlaying(keepPlaying);
   }, [queue]);
 
   const prev = useCallback(() => {
+    const keepPlaying = playingRef.current;
     setIndex((i) => stepIndex(queue, i, -1));
     setProgress(0);
-    setPlaying(true);
+    setPlaying(keepPlaying);
   }, [queue]);
 
   const playItem = useCallback((item: CatalogItem, nextQueue?: CatalogItem[]) => {
@@ -90,7 +138,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     setQueue(withItem);
     setIndex(found >= 0 ? found : 0);
     setProgress(0);
-    setPlaying(true);
+    setPlaying(autoplayRef.current);
     setExpanded(true);
   }, [queue]);
 
@@ -106,6 +154,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   }, [index]);
 
   const toggle = useCallback(() => setPlaying((p) => !p), []);
+  const pause = useCallback(() => setPlaying(false), []);
 
   useEffect(() => {
     clearTimer();
@@ -123,7 +172,11 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     timer.current = window.setInterval(() => {
       setProgress((p) => {
         if (p >= 100) {
-          next();
+          if (autoplayRef.current) {
+            next();
+          } else {
+            setPlaying(false);
+          }
           return 0;
         }
         return p + 0.35;
@@ -139,15 +192,33 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       index,
       playing,
       expanded,
+      autoplay,
       upNext,
       playItem,
       queueNext,
       toggle,
+      pause,
       next,
       prev,
       setExpanded,
+      setAutoplay,
     }),
-    [queue, current, index, playing, expanded, upNext, playItem, queueNext, toggle, next, prev],
+    [
+      queue,
+      current,
+      index,
+      playing,
+      expanded,
+      autoplay,
+      upNext,
+      playItem,
+      queueNext,
+      toggle,
+      pause,
+      next,
+      prev,
+      setAutoplay,
+    ],
   );
 
   const progressValue = useMemo(

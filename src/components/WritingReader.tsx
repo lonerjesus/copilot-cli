@@ -31,8 +31,13 @@ export function WritingReader({ item, onClose }: WritingReaderProps) {
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();
     };
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", onKey);
+    };
   }, [item, onClose]);
 
   if (!item) return null;
@@ -44,56 +49,64 @@ export function WritingReader({ item, onClose }: WritingReaderProps) {
       aria-modal="true"
       aria-labelledby="writing-reader-title"
     >
-      <div className="writing-reader__chrome">
-        <div className="writing-reader__mast">
-          <span>{kindLabel(item.kind)}</span>
-          <span>{item.publishedAt}</span>
-          {item.platform ? <span>{item.platform}</span> : null}
+      <button
+        type="button"
+        className="writing-reader__scrim"
+        aria-label="Close"
+        onClick={onClose}
+      />
+      <div className="writing-reader__card">
+        <div className="writing-reader__chrome">
+          <div className="writing-reader__mast">
+            <span>{kindLabel(item.kind)}</span>
+            <span>{item.publishedAt}</span>
+            {item.platform ? <span>{item.platform}</span> : null}
+          </div>
+          <button type="button" className="writing-reader__close" onClick={onClose}>
+            close ✕
+          </button>
         </div>
-        <button type="button" className="writing-reader__close" onClick={onClose}>
-          close ✕
-        </button>
+
+        <article className="writing-reader__sheet">
+          {item.poster || item.kind === "still" ? (
+            <div className="writing-reader__poster" aria-hidden>
+              <MediaPoster
+                item={item}
+                className="writing-reader__poster-img"
+                label={kindLabel(item.kind)}
+              />
+            </div>
+          ) : null}
+
+          <header className="writing-reader__head">
+            <p className="writing-reader__kicker">{item.brand}</p>
+            <h2 id="writing-reader-title">{item.title}</h2>
+            {item.subtitle ? <p className="writing-reader__dek">{item.subtitle}</p> : null}
+          </header>
+
+          <div className="writing-reader__pay">
+            <ContentPayActions catalogId={item.id} title={item.title} />
+          </div>
+
+          {paras.length ? (
+            <div className="writing-reader__body">
+              {paras.map((para, i) => (
+                <p key={`${i}-${para.slice(0, 24)}`}>{para}</p>
+              ))}
+            </div>
+          ) : (
+            <p className="writing-reader__empty">No body on this note yet.</p>
+          )}
+
+          {item.tags?.length ? (
+            <footer className="writing-reader__tags">
+              {item.tags.map((t) => (
+                <span key={t}>{t}</span>
+              ))}
+            </footer>
+          ) : null}
+        </article>
       </div>
-
-      <article className="writing-reader__sheet">
-        {item.poster || item.kind === "still" ? (
-          <div className="writing-reader__poster" aria-hidden>
-            <MediaPoster
-              item={item}
-              className="writing-reader__poster-img"
-              label={kindLabel(item.kind)}
-            />
-          </div>
-        ) : null}
-
-        <header className="writing-reader__head">
-          <p className="writing-reader__kicker">{item.brand}</p>
-          <h2 id="writing-reader-title">{item.title}</h2>
-          {item.subtitle ? <p className="writing-reader__dek">{item.subtitle}</p> : null}
-        </header>
-
-        <div className="writing-reader__pay">
-          <ContentPayActions catalogId={item.id} title={item.title} />
-        </div>
-
-        {paras.length ? (
-          <div className="writing-reader__body">
-            {paras.map((para, i) => (
-              <p key={`${i}-${para.slice(0, 24)}`}>{para}</p>
-            ))}
-          </div>
-        ) : (
-          <p className="writing-reader__empty">No body on this note yet.</p>
-        )}
-
-        {item.tags?.length ? (
-          <footer className="writing-reader__tags">
-            {item.tags.map((t) => (
-              <span key={t}>{t}</span>
-            ))}
-          </footer>
-        ) : null}
-      </article>
     </div>
   );
 }
