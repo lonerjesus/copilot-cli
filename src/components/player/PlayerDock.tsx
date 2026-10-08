@@ -67,16 +67,21 @@ function NativeMedia({
   src,
   title,
   playing,
+  progress,
+  onProgress,
   onEnded,
 }: {
   kind: "audio" | "video";
   src: string;
   title: string;
   playing: boolean;
+  progress: number;
+  onProgress: (value: number) => void;
   onEnded?: () => void;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const seekingRef = useRef(false);
 
   useEffect(() => {
     const node = kind === "video" ? videoRef.current : audioRef.current;
@@ -89,6 +94,28 @@ function NativeMedia({
     }
   }, [playing, kind, src]);
 
+  // Scrub bar → media clock (user seek).
+  useEffect(() => {
+    const node = kind === "video" ? videoRef.current : audioRef.current;
+    if (!node || !Number.isFinite(node.duration) || node.duration <= 0) return;
+    const target = (progress / 100) * node.duration;
+    if (Math.abs(node.currentTime - target) < 0.45) return;
+    seekingRef.current = true;
+    try {
+      node.currentTime = target;
+    } catch {
+      /* ignore seek races while metadata loads */
+    }
+    seekingRef.current = false;
+  }, [progress, kind, src]);
+
+  const onTimeUpdate = () => {
+    if (seekingRef.current) return;
+    const node = kind === "video" ? videoRef.current : audioRef.current;
+    if (!node || !Number.isFinite(node.duration) || node.duration <= 0) return;
+    onProgress(Math.min(100, (node.currentTime / node.duration) * 100));
+  };
+
   if (kind === "video") {
     return (
       <video
@@ -97,7 +124,9 @@ function NativeMedia({
         src={src}
         controls
         playsInline
+        preload="auto"
         title={title}
+        onTimeUpdate={onTimeUpdate}
         onEnded={() => onEnded?.()}
       />
     );
@@ -105,7 +134,15 @@ function NativeMedia({
 
   return (
     <div className="deck__native-audio">
-      <audio ref={audioRef} src={src} controls title={title} onEnded={() => onEnded?.()} />
+      <audio
+        ref={audioRef}
+        src={src}
+        controls
+        preload="auto"
+        title={title}
+        onTimeUpdate={onTimeUpdate}
+        onEnded={() => onEnded?.()}
+      />
       <div className={`deck__visual deck__visual--mini ${playing ? "is-playing" : ""}`} aria-hidden>
         <div className="deck__orb" />
         <div className="deck__bars">
@@ -127,6 +164,8 @@ function EmbedStage({
   src,
   poster,
   playing,
+  progress,
+  onProgress,
   onEnded,
 }: {
   provider?: string;
@@ -137,6 +176,8 @@ function EmbedStage({
   src?: string;
   poster?: string;
   playing: boolean;
+  progress: number;
+  onProgress: (value: number) => void;
   onEnded?: () => void;
 }) {
   const [resolvedBandcampId, setResolvedBandcampId] = useState<string | null>(null);
@@ -171,7 +212,17 @@ function EmbedStage({
   }, [isBandcamp, bandcampId, url]);
 
   if (src && (kind === "audio" || kind === "video")) {
-    return <NativeMedia kind={kind} src={src} title={title} playing={playing} onEnded={onEnded} />;
+    return (
+      <NativeMedia
+        kind={kind}
+        src={src}
+        title={title}
+        playing={playing}
+        progress={progress}
+        onProgress={onProgress}
+        onEnded={onEnded}
+      />
+    );
   }
 
   // Player is AV-only — writings/stills never render a stage.
@@ -376,6 +427,8 @@ export function PlayerDock() {
             src={current.src}
             poster={current.poster}
             playing={playing}
+            progress={progress}
+            onProgress={setProgress}
             onEnded={() => {
               track("next", { id: current.id, via: "ended" });
               next();

@@ -16,7 +16,10 @@ type R2Bucket = {
     value: ReadableStream | ArrayBuffer | string,
     options?: { httpMetadata?: { contentType?: string } },
   ): Promise<unknown>;
-  get(key: string): Promise<R2Object | null>;
+  get(
+    key: string,
+    options?: { range?: { offset: number; length: number } },
+  ): Promise<R2Object | null>;
   delete(key: string): Promise<void>;
 };
 
@@ -573,9 +576,12 @@ async function getKvMedia(key: string): Promise<{
     const part = await kv.get(`${KV_PREFIX}${key}:${i}`, "arrayBuffer");
     if (!part || !(part instanceof ArrayBuffer)) return null;
     const chunk = new Uint8Array(part);
+    if (offset + chunk.byteLength > meta.size) return null;
     out.set(chunk, offset);
     offset += chunk.byteLength;
   }
+  // Incomplete reassembly used to return trailing NULs — players cut songs short.
+  if (offset !== meta.size) return null;
   return { body: out, contentType: meta.contentType, size: meta.size };
 }
 
@@ -622,7 +628,10 @@ export async function putHouseMedia(
   await writeFile(full, Buffer.from(data));
 }
 
-export async function getHouseMedia(key: string): Promise<{
+export async function getHouseMedia(
+  key: string,
+  opts?: { range?: { offset: number; length: number } },
+): Promise<{
   body: ReadableStream | ArrayBuffer | Uint8Array;
   contentType: string;
   size?: number;
@@ -632,7 +641,9 @@ export async function getHouseMedia(key: string): Promise<{
   if (mode === "r2") {
     const r2 = await getMediaR2();
     if (!r2) throw new MediaStoreUnavailableError();
-    const obj = await r2.get(key);
+    const obj = opts?.range
+      ? await r2.get(key, { range: opts.range })
+      : await r2.get(key);
     if (!obj?.body) return null;
     return {
       body: obj.body,
@@ -641,13 +652,43 @@ export async function getHouseMedia(key: string): Promise<{
     };
   }
   if (mode === "kv") {
-    return getKvMedia(key);
+    const hit = await getKvMedia(key);
+    if (!hit) return null;
+    if (opts?.range) {
+      const { offset, length } = opts.range;
+      const end = Math.min(hit.body.byteLength, offset + length);
+      if (offset < 0 || offset >= hit.body.byteLength || length <= 0) return null;
+      return {
+        body: hit.body.subarray(offset, end),
+        contentType: hit.contentType,
+        size: hit.size,
+      };
+    }
+    return hit;
   }
   const path = await import("node:path");
-  const { readFile } = await import("node:fs/promises");
+  const { readFile, open } = await import("node:fs/promises");
   const rel = localPathForKey(key);
   const full = path.join(process.cwd(), ".data", "media", rel);
   try {
+    if (opts?.range) {
+      const fh = await open(full, "r");
+      try {
+        const stat = await fh.stat();
+        const { offset, length } = opts.range;
+        if (offset < 0 || offset >= stat.size || length <= 0) return null;
+        const readLen = Math.min(length, stat.size - offset);
+        const buf = Buffer.alloc(readLen);
+        await fh.read(buf, 0, readLen, offset);
+        return {
+          body: new Uint8Array(buf),
+          contentType: "application/octet-stream",
+          size: stat.size,
+        };
+      } finally {
+        await fh.close();
+      }
+    }
     const buf = await readFile(full);
     const bytes = new Uint8Array(buf);
     return {
