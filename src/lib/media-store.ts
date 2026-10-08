@@ -544,15 +544,17 @@ async function putKvMedia(key: string, data: ArrayBuffer, contentType: string): 
   if (!kv) throw new MediaStoreUnavailableError();
   const bytes = new Uint8Array(data);
   const parts = Math.max(1, Math.ceil(bytes.byteLength / KV_CHUNK));
-  await kv.put(
-    `${KV_PREFIX}${key}:meta`,
-    JSON.stringify({ contentType, size: bytes.byteLength, parts }),
-  );
+  // Write parts first, then meta — so a mid-write failure never leaves
+  // meta.size > reassembled bytes (players would cut off on trailing NULs).
   for (let i = 0; i < parts; i++) {
     const slice = bytes.subarray(i * KV_CHUNK, Math.min(bytes.byteLength, (i + 1) * KV_CHUNK));
     const copy = slice.buffer.slice(slice.byteOffset, slice.byteOffset + slice.byteLength);
     await kv.put(`${KV_PREFIX}${key}:${i}`, copy as ArrayBuffer);
   }
+  await kv.put(
+    `${KV_PREFIX}${key}:meta`,
+    JSON.stringify({ contentType, size: bytes.byteLength, parts }),
+  );
 }
 
 async function getKvMedia(key: string): Promise<{
@@ -626,6 +628,51 @@ export async function putHouseMedia(
   const full = path.join(process.cwd(), ".data", "media", rel);
   await mkdir(path.dirname(full), { recursive: true });
   await writeFile(full, Buffer.from(data));
+}
+
+/** Meta-only probe for HEAD — avoids loading the full object from KV. */
+export async function getHouseMediaMeta(key: string): Promise<{
+  contentType: string;
+  size: number;
+} | null> {
+  if (!key.startsWith(HOUSE_PREFIX) || key.includes("..")) return null;
+  const mode = await resolveBackend();
+  if (mode === "r2") {
+    const r2 = await getMediaR2();
+    if (!r2) throw new MediaStoreUnavailableError();
+    const obj = await r2.get(key);
+    if (!obj) return null;
+    return {
+      contentType: obj.httpMetadata?.contentType || "application/octet-stream",
+      size: obj.size ?? 0,
+    };
+  }
+  if (mode === "kv") {
+    const kv = await getAuthKv();
+    if (!kv) throw new MediaStoreUnavailableError();
+    const metaRaw = await kv.get(`${KV_PREFIX}${key}:meta`, "text");
+    if (!metaRaw || typeof metaRaw !== "string") return null;
+    try {
+      const meta = JSON.parse(metaRaw) as { contentType?: string; size?: number };
+      if (typeof meta.size !== "number" || meta.size < 0) return null;
+      return {
+        contentType: meta.contentType || "application/octet-stream",
+        size: meta.size,
+      };
+    } catch {
+      return null;
+    }
+  }
+  const path = await import("node:path");
+  const { stat } = await import("node:fs/promises");
+  const rel = localPathForKey(key);
+  const full = path.join(process.cwd(), ".data", "media", rel);
+  try {
+    const s = await stat(full);
+    return { contentType: "application/octet-stream", size: s.size };
+  } catch {
+    return null;
+  }
 }
 
 export async function getHouseMedia(
@@ -892,7 +939,11 @@ export async function putChunkedUploadPart(
   if (!session) throw new Error("upload_not_found");
   if (index < 0 || index >= session.totalChunks) throw new Error("invalid_chunk");
   if (data.byteLength <= 0) throw new Error("empty_file");
-  if (data.byteLength > session.chunkBytes + 64) throw new Error("chunk_too_large");
+  const isLast = index === session.totalChunks - 1;
+  const expected = isLast
+    ? session.size - session.chunkBytes * (session.totalChunks - 1)
+    : session.chunkBytes;
+  if (data.byteLength !== expected) throw new Error("chunk_size_mismatch");
   await putUploadChunk(uploadId, index, data);
   if (!session.received.includes(index)) {
     session.received.push(index);

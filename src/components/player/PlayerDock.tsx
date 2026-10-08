@@ -67,7 +67,7 @@ function NativeMedia({
   src,
   title,
   playing,
-  progress,
+  seekTo,
   onProgress,
   onEnded,
 }: {
@@ -75,7 +75,8 @@ function NativeMedia({
   src: string;
   title: string;
   playing: boolean;
-  progress: number;
+  /** User scrub only — null while timeupdate drives the bar. */
+  seekTo: number | null;
   onProgress: (value: number) => void;
   onEnded?: () => void;
 }) {
@@ -94,12 +95,12 @@ function NativeMedia({
     }
   }, [playing, kind, src]);
 
-  // Scrub bar → media clock (user seek).
+  // Seek only when the scrubber fires (not on every timeupdate → progress tick).
   useEffect(() => {
+    if (seekTo == null) return;
     const node = kind === "video" ? videoRef.current : audioRef.current;
     if (!node || !Number.isFinite(node.duration) || node.duration <= 0) return;
-    const target = (progress / 100) * node.duration;
-    if (Math.abs(node.currentTime - target) < 0.45) return;
+    const target = (seekTo / 100) * node.duration;
     seekingRef.current = true;
     try {
       node.currentTime = target;
@@ -107,7 +108,7 @@ function NativeMedia({
       /* ignore seek races while metadata loads */
     }
     seekingRef.current = false;
-  }, [progress, kind, src]);
+  }, [seekTo, kind, src]);
 
   const onTimeUpdate = () => {
     if (seekingRef.current) return;
@@ -164,7 +165,7 @@ function EmbedStage({
   src,
   poster,
   playing,
-  progress,
+  seekTo,
   onProgress,
   onEnded,
 }: {
@@ -176,7 +177,7 @@ function EmbedStage({
   src?: string;
   poster?: string;
   playing: boolean;
-  progress: number;
+  seekTo: number | null;
   onProgress: (value: number) => void;
   onEnded?: () => void;
 }) {
@@ -218,7 +219,7 @@ function EmbedStage({
         src={src}
         title={title}
         playing={playing}
-        progress={progress}
+        seekTo={seekTo}
         onProgress={onProgress}
         onEnded={onEnded}
       />
@@ -396,11 +397,16 @@ export function PlayerDock() {
     setProgress,
   } = usePlayer();
   const { openMagazine, hasMagazine } = useMagazine();
+  const [seekTo, setSeekTo] = useState<number | null>(null);
 
   const label = useMemo(() => {
     if (!current) return "NO SIGNAL";
     return current.title;
   }, [current]);
+
+  useEffect(() => {
+    setSeekTo(null);
+  }, [current?.id]);
 
   const isTheater =
     current?.kind === "video" ||
@@ -427,7 +433,7 @@ export function PlayerDock() {
             src={current.src}
             poster={current.poster}
             playing={playing}
-            progress={progress}
+            seekTo={seekTo}
             onProgress={setProgress}
             onEnded={() => {
               track("next", { id: current.id, via: "ended" });
@@ -541,7 +547,11 @@ export function PlayerDock() {
             min={0}
             max={100}
             value={progress}
-            onChange={(e) => setProgress(Number(e.target.value))}
+            onChange={(e) => {
+              const nextVal = Number(e.target.value);
+              setProgress(nextVal);
+              setSeekTo(nextVal);
+            }}
           />
         </label>
       </div>

@@ -1,7 +1,11 @@
 import { type NextRequest } from "next/server";
 import { getSessionUserFromRequest } from "@/lib/auth/session";
 import { jsonError } from "@/lib/commerce/checkout";
-import { getHouseMedia, MediaStoreUnavailableError } from "@/lib/media-store";
+import {
+  getHouseMedia,
+  getHouseMediaMeta,
+  MediaStoreUnavailableError,
+} from "@/lib/media-store";
 
 export const dynamic = "force-dynamic";
 
@@ -204,16 +208,14 @@ export async function HEAD(
   }
 
   try {
-    const hit = await getHouseMedia(key);
-    if (!hit) return jsonError("not_found", 404);
-    const contentType = contentTypeFromKey(key, hit.contentType);
-    const bytes = toUint8Array(hit.body);
-    const size = hit.size ?? bytes?.byteLength ?? 0;
+    const meta = await getHouseMediaMeta(key);
+    if (!meta) return jsonError("not_found", 404);
+    const contentType = contentTypeFromKey(key, meta.contentType);
     return new Response(null, {
       status: 200,
       headers: {
         "Content-Type": contentType,
-        "Content-Length": String(size),
+        "Content-Length": String(meta.size),
         "Accept-Ranges": "bytes",
         "Cache-Control": "private, no-store",
         "X-Content-Type-Options": "nosniff",
