@@ -16,3 +16,12 @@
 ## Verifier
 
 `MERGE_OK` — house compose can ingest MP3 and sibling AV variants up to 512 MB (chunked).
+
+## Pre-deploy verification (2026-10-08)
+
+| Suite | Result |
+|-------|--------|
+| `npm run qa:av` | PASS |
+| `scripts/e2e-av-upload.mjs` (dev :3010) | **14/14** — mp3/m4a/wav/flac/mp4 upload+serve, pdf reject, member 403 |
+| `qa:smoke` + `ADMIN_EMAIL` | **60/60** |
+| Workers Builds (PR branch) | SUCCESS |
