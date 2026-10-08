@@ -366,8 +366,14 @@ export async function updateUpload(
     subcategory: patch.subcategory ?? current.subcategory,
     platform: patch.platform ?? current.platform,
     externalUrl: patch.externalUrl ?? current.externalUrl,
-    poster: patch.poster !== undefined ? patch.poster : current.poster,
-    src: patch.src !== undefined ? patch.src : current.src,
+    // Empty string clears optional media refs on edit.
+    poster:
+      patch.poster !== undefined
+        ? patch.poster
+          ? patch.poster
+          : undefined
+        : current.poster,
+    src: patch.src !== undefined ? (patch.src ? patch.src : undefined) : current.src,
     duration: patch.duration !== undefined ? patch.duration : current.duration,
     tags: patch.tags ?? current.tags,
     blurb: patch.blurb ?? current.blurb,
