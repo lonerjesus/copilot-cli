@@ -1830,7 +1830,9 @@ a.drive .drive__face {
 .admin {
   max-width: var(--max);
   margin: 0 auto;
-  padding: 1.5rem 1.1rem 3rem;
+  padding: 1.5rem var(--page-x) calc(3.5rem + var(--safe-b));
+  padding-left: max(var(--page-x), var(--safe-l));
+  padding-right: max(var(--page-x), var(--safe-r));
 }
 
 .admin__head h1 {
@@ -1927,7 +1929,25 @@ a.drive .drive__face {
   border: 1px solid var(--line);
   background: var(--void);
   color: var(--text);
-  padding: 0.55rem 0.65rem;
+  padding: 0.65rem 0.75rem;
+  /* ≥16px — prevents iOS focus zoom that knocks Save off-screen */
+  font-size: 1rem;
+  border-radius: var(--radius);
+  min-height: 2.75rem;
+}
+
+.admin__form textarea {
+  min-height: 8rem;
+  line-height: 1.45;
+  resize: vertical;
+}
+
+.admin__form input:focus-visible,
+.admin__form select:focus-visible,
+.admin__form textarea:focus-visible {
+  outline: 2px solid var(--phosphor);
+  outline-offset: 1px;
+  border-color: color-mix(in oklab, var(--phosphor) 45%, var(--line));
 }
 
 .admin__row {
@@ -2010,7 +2030,7 @@ a.drive .drive__face {
   border: 1px solid var(--line);
   background: transparent;
   color: var(--danger);
-  padding: 0.3rem 0.5rem;
+  padding: 0.45rem 0.7rem;
   font-size: 0.68rem;
   letter-spacing: 0.08em;
   cursor: pointer;
@@ -2067,6 +2087,29 @@ a.drive .drive__face {
   gap: 1rem;
   max-width: 40rem;
   animation: compose-in 0.45s ease both;
+  padding-bottom: 5.5rem;
+}
+
+.admin__editing {
+  margin: 0;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid color-mix(in oklab, var(--amber) 40%, var(--line));
+  background: color-mix(in oklab, var(--amber) 8%, var(--panel));
+  color: var(--text);
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  line-height: 1.4;
+}
+
+.admin__editing code {
+  color: var(--phosphor);
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  word-break: break-all;
+}
+
+.admin__editing span {
+  color: var(--muted);
 }
 
 .admin__drop {
@@ -2115,7 +2158,9 @@ a.drive .drive__face {
   font-size: 0.72rem;
   color: var(--muted);
   word-break: break-all;
-  max-width: 28rem;
+  overflow-wrap: anywhere;
+  max-width: min(28rem, 100%);
+  padding: 0 0.5rem;
 }
 
 .admin__drop-hint {
@@ -2198,11 +2243,43 @@ a.drive .drive__face {
   background: color-mix(in oklab, var(--panel) 92%, transparent);
 }
 
+.admin__advanced input {
+  word-break: break-all;
+  overflow-wrap: anywhere;
+}
+
 .admin__compose-actions {
+  position: sticky;
+  bottom: max(0.65rem, var(--safe-b));
+  z-index: 8;
   display: flex;
   flex-wrap: wrap;
   gap: 0.65rem;
-  justify-content: flex-end;
+  justify-content: stretch;
+  margin: 0.5rem calc(-1 * var(--page-x)) 0;
+  padding: 0.75rem var(--page-x);
+  border-top: 1px solid var(--line);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in oklab, var(--void) 20%, transparent),
+      color-mix(in oklab, var(--void) 94%, transparent) 28%,
+      var(--void)
+    );
+  backdrop-filter: blur(8px);
+}
+
+.admin__action-cancel,
+.admin__action-save {
+  flex: 1 1 8rem;
+  min-height: 3rem;
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin__action-save {
+  flex: 1.4 1 10rem;
 }
 
 .admin__library,
@@ -2249,14 +2326,63 @@ a.drive .drive__face {
   flex-shrink: 0;
 }
 
+.admin__edit,
+.admin__delete {
+  min-height: 2.5rem;
+  min-width: 3.25rem;
+  padding: 0.45rem 0.7rem;
+}
+
 .admin__edit {
   border: 1px solid var(--line);
   background: transparent;
   color: inherit;
-  padding: 0.3rem 0.5rem;
+  padding: 0.45rem 0.7rem;
   font-size: 0.68rem;
   letter-spacing: 0.08em;
   cursor: pointer;
+}
+
+@media (max-width: 720px) {
+  .admin {
+    padding-top: 1rem;
+  }
+
+  .admin__row {
+    grid-template-columns: 1fr;
+  }
+
+  .admin__library-list li {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.55rem;
+  }
+
+  .admin__library-actions {
+    width: 100%;
+  }
+
+  .admin__library-actions .admin__edit,
+  .admin__library-actions .admin__delete {
+    flex: 1;
+  }
+
+  .admin__drop {
+    min-height: 9.5rem;
+    padding: 1.15rem 0.85rem;
+  }
+
+  .admin__compose-actions {
+    margin-left: calc(-1 * max(var(--page-x), var(--safe-l)));
+    margin-right: calc(-1 * max(var(--page-x), var(--safe-r)));
+    padding-left: max(var(--page-x), var(--safe-l));
+    padding-right: max(var(--page-x), var(--safe-r));
+    padding-bottom: max(0.75rem, var(--safe-b));
+  }
+
+  .admin__stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .admin__stat-grid {

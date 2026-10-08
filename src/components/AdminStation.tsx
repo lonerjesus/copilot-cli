@@ -710,7 +710,8 @@ export function AdminStation() {
   const startEdit = (item: UploadedContent) => {
     setTab("compose");
     setEditingId(item.id);
-    setAdvanced(true);
+    // Keep advanced closed — drop zones handle media/thumbs; URL fields trap iOS Save.
+    setAdvanced(false);
     const kind = normalizeMediaKind(item.kind);
     const match =
       PRESETS.find((p) => p.kind === kind) ??
@@ -731,13 +732,24 @@ export function AdminStation() {
       paywalled: item.paywalled !== false,
       tags: (item.tags ?? []).join(", "),
     });
-    setOk(`editing · ${item.id}`);
+    setOk(`editing · ${item.id} — drop files or save when ready`);
+    setError("");
+    // Bring compose into view on phone.
+    requestAnimationFrame(() => {
+      document.getElementById("admin-compose")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
   };
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     setError("");
     setOk("");
+    if (busy) return;
+    if (!form.title.trim()) {
+      setError("add a title before saving");
+      document.getElementById("admin-title-input")?.focus();
+      return;
+    }
     setBusy(true);
     const wasEditing = Boolean(editingId);
     try {
@@ -746,6 +758,9 @@ export function AdminStation() {
       resetCompose({ keepMessage: true });
       setOk(wasEditing ? `saved · ${item.id}` : `published · ${item.id}`);
       setTab("library");
+      requestAnimationFrame(() => {
+        document.getElementById("admin-title")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
     } catch (err) {
       setError(
         err instanceof Error ? uploadErrorMessage(err.message, "media") : "network_error",
@@ -828,7 +843,13 @@ export function AdminStation() {
       </nav>
 
       {tab === "compose" ? (
-        <div className="admin__compose">
+        <div className="admin__compose" id="admin-compose">
+          {editingId ? (
+            <p className="admin__editing" role="status">
+              Editing <code>{editingId}</code>
+              <span> — thumbnails &amp; media save as you drop them</span>
+            </p>
+          ) : null}
           <div className="admin__presets" role="group" aria-label="Post type">
             {PRESETS.map((p) => (
               <button
@@ -838,6 +859,7 @@ export function AdminStation() {
                 aria-pressed={preset === p.id}
                 aria-label={p.label}
                 title={p.label}
+                disabled={busy}
                 onClick={() => applyPreset(p)}
               >
                 <p.Icon className="admin__preset-icon" />
@@ -904,12 +926,14 @@ export function AdminStation() {
             <label>
               <span>title</span>
               <input
+                id="admin-title-input"
                 required
                 maxLength={160}
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
                 placeholder="Title"
-                autoFocus
+                autoFocus={!editingId}
+                autoComplete="off"
               />
             </label>
             <label>
@@ -1145,15 +1169,19 @@ export function AdminStation() {
               {editingId ? (
                 <button
                   type="button"
-                  className="btn btn--ghost"
+                  className="btn btn--ghost admin__action-cancel"
                   onClick={() => resetCompose()}
                   disabled={busy}
                 >
                   cancel edit
                 </button>
               ) : null}
-              <button type="submit" className="btn btn--primary" disabled={busy}>
-                {busy ? "working…" : editingId ? "save changes" : "publish"}
+              <button type="submit" className="btn btn--primary admin__action-save" disabled={busy}>
+                {busy
+                  ? uploadProgress || "saving…"
+                  : editingId
+                    ? "save changes"
+                    : "publish"}
               </button>
             </div>
           </form>
