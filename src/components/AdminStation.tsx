@@ -357,41 +357,77 @@ export function AdminStation() {
     const bytes = await file.arrayBuffer();
     const { contentType } = validateUploadFile(file, role, bytes);
 
+    const postWithRetry = async (
+      label: string,
+      run: () => Promise<Response>,
+      attempts = 3,
+    ): Promise<Response> => {
+      let lastErr: Error | null = null;
+      for (let attempt = 1; attempt <= attempts; attempt++) {
+        try {
+          const res = await run();
+          // Retry transient Worker / network blips.
+          if (res.status >= 500 || res.status === 429) {
+            lastErr = new Error(`upload_retry_${res.status}`);
+            if (attempt < attempts) {
+              setUploadProgress(`${label} · retry ${attempt}/${attempts - 1}`);
+              await new Promise((r) => setTimeout(r, 350 * attempt));
+              continue;
+            }
+          }
+          return res;
+        } catch (err) {
+          lastErr = err instanceof Error ? err : new Error("network_error");
+          if (attempt < attempts) {
+            setUploadProgress(`${label} · retry ${attempt}/${attempts - 1}`);
+            await new Promise((r) => setTimeout(r, 350 * attempt));
+            continue;
+          }
+        }
+      }
+      throw lastErr ?? new Error("upload_failed");
+    };
+
     // Small files — single Worker request.
     if (file.size <= SINGLE_SHOT_MAX_BYTES) {
-      setUploadProgress("");
-      const body = new FormData();
-      body.append(
-        "file",
-        new File([bytes], file.name || "upload.bin", { type: contentType }),
-      );
-      body.append("role", role);
-      const res = await fetch("/api/admin/media", {
-        method: "POST",
-        credentials: "same-origin",
-        body,
+      setUploadProgress("uploading…");
+      const res = await postWithRetry("upload", () => {
+        const body = new FormData();
+        body.append(
+          "file",
+          new File([bytes], file.name || "upload.bin", { type: contentType }),
+        );
+        body.append("role", role);
+        return fetch("/api/admin/media", {
+          method: "POST",
+          credentials: "same-origin",
+          body,
+        });
       });
       const data = (await res.json().catch(() => ({}))) as { error?: string; url?: string };
       if (!res.ok) {
         throw new Error(uploadErrorMessage(data.error ?? "upload_failed", role));
       }
       if (!data.url) throw new Error("upload failed");
+      setUploadProgress("");
       return data.url;
     }
 
     // Large blogs / long AV — chunked path (up to MAX_MEDIA_BYTES).
     setUploadProgress("starting large upload…");
-    const initRes = await fetch("/api/admin/media/init", {
-      method: "POST",
-      credentials: "same-origin",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        filename: file.name || "upload.bin",
-        contentType,
-        size: file.size,
-        role,
+    const initRes = await postWithRetry("start", () =>
+      fetch("/api/admin/media/init", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          filename: file.name || "upload.bin",
+          contentType,
+          size: file.size,
+          role,
+        }),
       }),
-    });
+    );
     const initData = (await initRes.json().catch(() => ({}))) as {
       error?: string;
       uploadId?: string;
@@ -409,17 +445,19 @@ export function AdminStation() {
       const end = Math.min(file.size, start + chunkBytes);
       const slice = bytes.slice(start, end);
       setUploadProgress(`uploading ${i + 1}/${totalChunks}`);
-      const part = new FormData();
-      part.append("uploadId", initData.uploadId);
-      part.append("index", String(i));
-      part.append(
-        "chunk",
-        new File([slice], `part-${i}.bin`, { type: "application/octet-stream" }),
-      );
-      const partRes = await fetch("/api/admin/media/chunk", {
-        method: "POST",
-        credentials: "same-origin",
-        body: part,
+      const partRes = await postWithRetry(`part ${i + 1}`, () => {
+        const part = new FormData();
+        part.append("uploadId", initData.uploadId!);
+        part.append("index", String(i));
+        part.append(
+          "chunk",
+          new File([slice], `part-${i}.bin`, { type: "application/octet-stream" }),
+        );
+        return fetch("/api/admin/media/chunk", {
+          method: "POST",
+          credentials: "same-origin",
+          body: part,
+        });
       });
       const partData = (await partRes.json().catch(() => ({}))) as { error?: string };
       if (!partRes.ok) {
@@ -428,12 +466,14 @@ export function AdminStation() {
     }
 
     setUploadProgress("finishing…");
-    const doneRes = await fetch("/api/admin/media/complete", {
-      method: "POST",
-      credentials: "same-origin",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ uploadId: initData.uploadId }),
-    });
+    const doneRes = await postWithRetry("finish", () =>
+      fetch("/api/admin/media/complete", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ uploadId: initData.uploadId }),
+      }),
+    );
     const doneData = (await doneRes.json().catch(() => ({}))) as {
       error?: string;
       url?: string;
@@ -444,6 +484,68 @@ export function AdminStation() {
     setUploadProgress("");
     return doneData.url;
   };
+
+  const buildPayload = useCallback(
+    (state: FormState) => {
+      const mediaUrl = state.src.trim() || state.externalUrl.trim();
+      if (!mediaUrl && state.kind !== "writing") {
+        throw new Error("drop a file or paste a media url");
+      }
+      const externalUrl = state.externalUrl.trim() || mediaUrl || `${SITE.url}/`;
+      const title = state.title.trim() || "Untitled";
+      const subtitle = state.subtitle.trim();
+      const posterUrl =
+        state.poster.trim() ||
+        (state.kind === "still" ? state.src.trim() : "") ||
+        undefined;
+      const hint =
+        PRESETS.find((p) => p.kind === state.kind)?.blurbHint ?? activePreset.blurbHint;
+      return {
+        title,
+        subtitle: subtitle || undefined,
+        brand: SITE.title,
+        kind: state.kind,
+        category: state.category,
+        subcategory: state.subcategory,
+        platform: state.platform || "house",
+        externalUrl,
+        poster: posterUrl,
+        src: state.src.trim() || undefined,
+        duration: state.duration || undefined,
+        blurb: subtitle || title || hint,
+        body: state.body || undefined,
+        paywalled: state.paywalled,
+        tags: state.tags
+          .split(",")
+          .map((t) => t.trim())
+          .filter(Boolean),
+      };
+    },
+    [activePreset.blurbHint],
+  );
+
+  /** Persist compose form (create or update). Returns saved item. */
+  const persistContent = useCallback(
+    async (state: FormState, id: string | null) => {
+      const payload = buildPayload(state);
+      const res = await fetch("/api/admin/content", {
+        method: id ? "PATCH" : "POST",
+        credentials: "same-origin",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(id ? { id, ...payload } : payload),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        item?: UploadedContent;
+      };
+      if (!res.ok) {
+        throw new Error(data.error ?? (id ? "save_failed" : "publish_failed"));
+      }
+      if (!data.item) throw new Error(id ? "save_failed" : "publish_failed");
+      return data.item;
+    },
+    [buildPayload],
+  );
 
   const ingestFile = async (file: File) => {
     if (busy) return;
@@ -458,19 +560,28 @@ export function AdminStation() {
         : presetFromFile(file);
       if (!keepWriting) applyPreset(nextPreset);
       const url = await uploadFile(file, "media");
-      setForm((f) => ({
-        ...f,
+      const nextForm: FormState = {
+        ...form,
         kind: keepWriting ? "writing" : nextPreset.kind,
         category: keepWriting ? "writing" : nextPreset.category,
-        subcategory: keepWriting ? f.subcategory || "notes" : nextPreset.subcategory,
-        title: f.title.trim() || titleFromFilename(file.name),
+        subcategory: keepWriting ? form.subcategory || "notes" : nextPreset.subcategory,
+        title: form.title.trim() || titleFromFilename(file.name),
         src: url,
-        externalUrl: f.externalUrl.trim() || url,
-        poster: !keepWriting && nextPreset.kind === "still" ? url : f.poster,
-        tags: f.tags || (keepWriting ? "writing" : nextPreset.id),
-        paywalled: keepWriting ? f.paywalled : true,
-      }));
-      setOk("file ready — add a title if needed, then publish");
+        externalUrl: form.externalUrl.trim() || url,
+        poster: !keepWriting && nextPreset.kind === "still" ? url : form.poster,
+        tags: form.tags || (keepWriting ? "writing" : nextPreset.id),
+        paywalled: keepWriting ? form.paywalled : true,
+      };
+      setForm(nextForm);
+
+      // Editing an existing post — persist media immediately so uploads stick.
+      if (editingId) {
+        const item = await persistContent(nextForm, editingId);
+        setOk(`media saved · ${item.id}`);
+        await refresh();
+      } else {
+        setOk("file ready — add a title if needed, then publish");
+      }
     } catch (err) {
       setError(
         err instanceof Error ? uploadErrorMessage(err.message, "media") : "upload failed",
@@ -502,8 +613,17 @@ export function AdminStation() {
     setBusy(true);
     try {
       const url = await uploadFile(file, "poster");
-      setForm((f) => ({ ...f, poster: url }));
-      setOk("thumbnail ready — publish to save it on the post");
+      const nextForm: FormState = { ...form, poster: url };
+      setForm(nextForm);
+
+      // Editing — write thumbnail onto the post now (do not wait for "save changes").
+      if (editingId) {
+        const item = await persistContent(nextForm, editingId);
+        setOk(`thumbnail saved · ${item.id}`);
+        await refresh();
+      } else {
+        setOk("thumbnail ready — publish to attach it to the post");
+      }
     } catch (err) {
       setError(
         err instanceof Error ? uploadErrorMessage(err.message, "poster") : "upload failed",
@@ -528,8 +648,21 @@ export function AdminStation() {
   };
 
   const clearPoster = () => {
-    setForm((f) => ({ ...f, poster: "" }));
+    const nextForm: FormState = { ...form, poster: "" };
+    setForm(nextForm);
     setOk("");
+    if (editingId) {
+      setBusy(true);
+      void persistContent(nextForm, editingId)
+        .then(async (item) => {
+          setOk(`thumbnail cleared · ${item.id}`);
+          await refresh();
+        })
+        .catch((err: unknown) => {
+          setError(err instanceof Error ? err.message : "save_failed");
+        })
+        .finally(() => setBusy(false));
+    }
   };
 
   const onCategory = (id: CategoryId) => {
@@ -541,7 +674,7 @@ export function AdminStation() {
     }));
   };
 
-  const resetCompose = () => {
+  const resetCompose = (opts?: { keepMessage?: boolean }) => {
     setEditingId(null);
     setForm({
       ...emptyForm(),
@@ -550,7 +683,7 @@ export function AdminStation() {
       subcategory: activePreset.subcategory,
       tags: activePreset.id,
     });
-    setOk("");
+    if (!opts?.keepMessage) setOk("");
     setError("");
   };
 
@@ -586,65 +719,17 @@ export function AdminStation() {
     setError("");
     setOk("");
     setBusy(true);
+    const wasEditing = Boolean(editingId);
     try {
-      const mediaUrl = form.src.trim() || form.externalUrl.trim();
-      if (!mediaUrl && form.kind !== "writing") {
-        setError("drop a file or paste a media url");
-        return;
-      }
-      const externalUrl =
-        form.externalUrl.trim() ||
-        mediaUrl ||
-        SITE.url + "/";
-      const title = form.title.trim() || "Untitled";
-      const subtitle = form.subtitle.trim();
-
-      const posterUrl =
-        form.poster.trim() ||
-        (form.kind === "still" ? form.src.trim() : "") ||
-        undefined;
-
-      const payload = {
-        title,
-        subtitle: subtitle || undefined,
-        brand: SITE.title,
-        kind: form.kind,
-        category: form.category,
-        subcategory: form.subcategory,
-        platform: form.platform,
-        externalUrl,
-        poster: posterUrl,
-        src: form.src.trim() || undefined,
-        duration: form.duration || undefined,
-        blurb: subtitle || title || activePreset.blurbHint,
-        body: form.body || undefined,
-        paywalled: form.paywalled,
-        tags: form.tags
-          .split(",")
-          .map((t) => t.trim())
-          .filter(Boolean),
-      };
-
-      const res = await fetch("/api/admin/content", {
-        method: editingId ? "PATCH" : "POST",
-        credentials: "same-origin",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(editingId ? { id: editingId, ...payload } : payload),
-      });
-      const data = (await res.json().catch(() => ({}))) as {
-        error?: string;
-        item?: UploadedContent;
-      };
-      if (!res.ok) {
-        setError(data.error ?? "publish_failed");
-        return;
-      }
-      setOk(editingId ? `saved · ${data.item?.id}` : `published · ${data.item?.id}`);
-      resetCompose();
+      const item = await persistContent(form, editingId);
       await refresh();
-      if (!editingId) setTab("library");
-    } catch {
-      setError("network_error");
+      resetCompose({ keepMessage: true });
+      setOk(wasEditing ? `saved · ${item.id}` : `published · ${item.id}`);
+      setTab("library");
+    } catch (err) {
+      setError(
+        err instanceof Error ? uploadErrorMessage(err.message, "media") : "network_error",
+      );
     } finally {
       setBusy(false);
     }
@@ -1020,7 +1105,12 @@ export function AdminStation() {
 
             <div className="admin__compose-actions">
               {editingId ? (
-                <button type="button" className="btn btn--ghost" onClick={resetCompose} disabled={busy}>
+                <button
+                  type="button"
+                  className="btn btn--ghost"
+                  onClick={() => resetCompose()}
+                  disabled={busy}
+                >
                   cancel edit
                 </button>
               ) : null}
