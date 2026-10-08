@@ -74,7 +74,9 @@ export function HouseAtlas({ compact = false }: { compact?: boolean }) {
   const [panel, setPanel] = useState<PanelId>("outlets");
   const [lane, setLane] = useState<OutletLane | "all">("all");
   const [archive, setArchive] = useState<ArchiveItem[]>([]);
-  const [archiveState, setArchiveState] = useState<"loading" | "ready" | "quiet">("loading");
+  const [archiveState, setArchiveState] = useState<"loading" | "ready" | "quiet" | "error">(
+    "loading",
+  );
   const panelTabRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const laneTabRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
@@ -87,7 +89,7 @@ export function HouseAtlas({ compact = false }: { compact?: boolean }) {
           signal: controller.signal,
         });
         if (!res.ok) {
-          setArchiveState("quiet");
+          setArchiveState("error");
           return;
         }
         const data = (await res.json()) as { archive?: ArchiveItem[] };
@@ -96,7 +98,7 @@ export function HouseAtlas({ compact = false }: { compact?: boolean }) {
         setArchiveState(items.length ? "ready" : "quiet");
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") return;
-        setArchiveState("quiet");
+        setArchiveState("error");
       }
     };
     void run();
@@ -359,6 +361,8 @@ export function HouseAtlas({ compact = false }: { compact?: boolean }) {
                 <li key={n} className="atlas__skeleton" />
               ))}
             </ul>
+          ) : archiveState === "error" ? (
+            <p className="atlas__empty">Archive bridge unreachable — try again in a moment.</p>
           ) : archiveState === "quiet" ? (
             <p className="atlas__empty">Archive feeds quiet right now.</p>
           ) : (
@@ -466,6 +470,17 @@ function OutletRow({
   );
 }
 
+function outletChip(outlet: HouseOutlet): string {
+  const head = outlet.label.split(/[·/]/)[0]?.trim() ?? "";
+  if (head && head.length <= 18) return head;
+  if (outlet.id.startsWith("bandcamp")) return "Bandcamp";
+  if (outlet.id.startsWith("apple")) return "Apple";
+  if (outlet.id.startsWith("twitch")) return "Twitch";
+  if (outlet.id.startsWith("shazam")) return "Shazam";
+  if (outlet.id === "magcloud-archive") return "MagCloud";
+  return outlet.lane;
+}
+
 function ProjectRow({ project, index }: { project: HouseProject; index: number }) {
   const links = project.outletIds
     .map((id) => outletById(id))
@@ -495,7 +510,7 @@ function ProjectRow({ project, index }: { project: HouseProject; index: number }
               title={o.label}
               onClick={() => track("enter_stream", { id: o.id, via: "atlas_project" })}
             >
-              {o.label.split("·")[0]?.trim() || o.lane}
+              {outletChip(o)}
             </a>
           ))}
         </div>
