@@ -2044,11 +2044,19 @@ a.drive .drive__face {
 
 .admin__tabs {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 0.35rem;
   margin: 1.25rem 0 0.5rem;
   border-bottom: 1px solid var(--line);
   padding-bottom: 0.35rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+}
+
+.admin__tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .admin__tab {
@@ -2250,7 +2258,8 @@ a.drive .drive__face {
 
 .admin__compose-actions {
   position: sticky;
-  bottom: max(0.65rem, var(--safe-b));
+  /* Lift above home indicator AND software keyboard (visualViewport inset). */
+  bottom: calc(max(0.65rem, var(--safe-b)) + var(--admin-keyboard-inset, 0px));
   z-index: 8;
   display: flex;
   flex-wrap: wrap;
@@ -2504,11 +2513,52 @@ a.drive .drive__face {
   }
 
   .admin__library-actions {
-    justify-content: flex-end;
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .admin__library-actions .admin__edit,
+  .admin__library-actions .admin__delete {
+    flex: 1;
   }
 
   .admin__tab {
+    min-height: 2.75rem;
+    flex: 0 0 auto;
+  }
+
+  .admin__presets {
+    gap: 0.45rem;
+  }
+
+  .admin__preset {
+    width: 3rem;
+    height: 3rem;
+  }
+
+  .admin__compose {
+    padding-bottom: calc(6rem + var(--admin-keyboard-inset, 0px));
+  }
+
+  .admin__drop-title {
+    font-size: 0.95rem;
+  }
+}
+
+@media (max-height: 480px) and (orientation: landscape) {
+  .admin__compose-actions {
+    bottom: calc(0.35rem + var(--admin-keyboard-inset, 0px));
+    padding-top: 0.45rem;
+    padding-bottom: 0.45rem;
+  }
+
+  .admin__action-cancel,
+  .admin__action-save {
     min-height: 2.5rem;
+  }
+
+  .admin__drop {
+    min-height: 6.5rem;
   }
 }
 

@@ -26,6 +26,7 @@ import {
   validateUploadFile,
   videoAcceptAttribute,
 } from "@/lib/media-store";
+import { normalizeMediaRef } from "@/lib/media-ref";
 import { MAX_TICKER_CHARS } from "@/lib/ticker-store";
 import {
   IconAnalytics,
@@ -221,23 +222,6 @@ function presetFromFile(file: File): UploadPreset {
   return PRESETS[0]!;
 }
 
-/**
- * House uploads use same-origin paths (`/api/media/house/…`).
- * Browsers reject those on `<input type="url">` — keep text inputs and
- * normalize bare house keys before PATCH/POST.
- */
-function normalizeMediaRef(value: string): string {
-  const v = value.trim();
-  if (!v) return "";
-  if (v.startsWith("/api/media/house/") && !v.includes("..")) return v;
-  if (v.startsWith("house/") && !v.includes("..")) return `/api/media/${v}`;
-  // Filename-only remnant from a house key (uuid-or-prefix + sanitized name).
-  if (/^[A-Za-z0-9._-]+\.(jpe?g|png|webp|gif|mp3|m4a|wav|flac|mp4|mov|webm)$/i.test(v)) {
-    return `/api/media/house/${v}`;
-  }
-  return v;
-}
-
 function formatUsd(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`;
 }
@@ -273,10 +257,29 @@ export function AdminStation() {
   const [tickerBusy, setTickerBusy] = useState(false);
   const [tickerMsg, setTickerMsg] = useState("");
   const [uploadProgress, setUploadProgress] = useState("");
+  const [dirty, setDirty] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const posterRef = useRef<HTMLInputElement>(null);
+  const formRef = useRef(form);
+  const editingIdRef = useRef(editingId);
   const fileInputId = "admin-media-file";
   const posterInputId = "admin-poster-file";
+
+  useEffect(() => {
+    formRef.current = form;
+  }, [form]);
+  useEffect(() => {
+    editingIdRef.current = editingId;
+  }, [editingId]);
+
+  const patchForm = useCallback((patch: Partial<FormState> | ((prev: FormState) => FormState)) => {
+    setForm((prev) => {
+      const next = typeof patch === "function" ? patch(prev) : { ...prev, ...patch };
+      formRef.current = next;
+      return next;
+    });
+    setDirty(true);
+  }, []);
 
   const category = useMemo(
     () => CATEGORIES.find((c) => c.id === form.category),
@@ -284,6 +287,36 @@ export function AdminStation() {
   );
   const subs = category?.subcategories ?? [];
   const activePreset = PRESETS.find((p) => p.id === preset) ?? PRESETS[0]!;
+
+  // Keep sticky Save above the iOS software keyboard.
+  useEffect(() => {
+    const root = document.documentElement;
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const sync = () => {
+      const inset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      root.style.setProperty("--admin-keyboard-inset", `${inset}px`);
+    };
+    sync();
+    vv.addEventListener("resize", sync);
+    vv.addEventListener("scroll", sync);
+    return () => {
+      vv.removeEventListener("resize", sync);
+      vv.removeEventListener("scroll", sync);
+      root.style.removeProperty("--admin-keyboard-inset");
+    };
+  }, []);
+
+  // Warn before leaving mid-compose / mid-edit with unsaved field changes.
+  useEffect(() => {
+    if (!dirty) return;
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [dirty]);
 
   const refresh = useCallback(async () => {
     const res = await fetch("/api/admin/content", { credentials: "same-origin" });
@@ -359,7 +392,7 @@ export function AdminStation() {
 
   const applyPreset = (next: UploadPreset) => {
     setPreset(next.id);
-    setForm((f) => ({
+    patchForm((f) => ({
       ...f,
       kind: next.kind,
       category: next.category,
@@ -580,23 +613,29 @@ export function AdminStation() {
         : presetFromFile(file);
       if (!keepWriting) applyPreset(nextPreset);
       const url = await uploadFile(file, "media");
+      // Merge onto the latest form — title/tags typed during upload must survive.
+      const latest = formRef.current;
       const nextForm: FormState = {
-        ...form,
+        ...latest,
         kind: keepWriting ? "writing" : nextPreset.kind,
         category: keepWriting ? "writing" : nextPreset.category,
-        subcategory: keepWriting ? form.subcategory || "notes" : nextPreset.subcategory,
-        title: form.title.trim() || titleFromFilename(file.name),
+        subcategory: keepWriting ? latest.subcategory || "notes" : nextPreset.subcategory,
+        title: latest.title.trim() || titleFromFilename(file.name),
         src: url,
-        externalUrl: form.externalUrl.trim() || url,
-        poster: !keepWriting && nextPreset.kind === "still" ? url : form.poster,
-        tags: form.tags || (keepWriting ? "writing" : nextPreset.id),
-        paywalled: keepWriting ? form.paywalled : true,
+        externalUrl: latest.externalUrl.trim() || url,
+        poster: !keepWriting && nextPreset.kind === "still" ? url : latest.poster,
+        tags: latest.tags || (keepWriting ? "writing" : nextPreset.id),
+        paywalled: keepWriting ? latest.paywalled : true,
       };
       setForm(nextForm);
+      formRef.current = nextForm;
+      setDirty(true);
 
       // Editing an existing post — persist media immediately so uploads stick.
-      if (editingId) {
-        const item = await persistContent(nextForm, editingId);
+      const id = editingIdRef.current;
+      if (id) {
+        const item = await persistContent(nextForm, id);
+        setDirty(false);
         setOk(`media saved · ${item.id}`);
         await refresh();
       } else {
@@ -633,12 +672,16 @@ export function AdminStation() {
     setBusy(true);
     try {
       const url = await uploadFile(file, "poster");
-      const nextForm: FormState = { ...form, poster: url };
+      const nextForm: FormState = { ...formRef.current, poster: url };
       setForm(nextForm);
+      formRef.current = nextForm;
+      setDirty(true);
 
       // Editing — write thumbnail onto the post now (do not wait for "save changes").
-      if (editingId) {
-        const item = await persistContent(nextForm, editingId);
+      const id = editingIdRef.current;
+      if (id) {
+        const item = await persistContent(nextForm, id);
+        setDirty(false);
         setOk(`thumbnail saved · ${item.id}`);
         await refresh();
       } else {
@@ -668,13 +711,16 @@ export function AdminStation() {
   };
 
   const clearPoster = () => {
-    const nextForm: FormState = { ...form, poster: "" };
+    const nextForm: FormState = { ...formRef.current, poster: "" };
     setForm(nextForm);
+    formRef.current = nextForm;
     setOk("");
-    if (editingId) {
+    const id = editingIdRef.current;
+    if (id) {
       setBusy(true);
-      void persistContent(nextForm, editingId)
+      void persistContent(nextForm, id)
         .then(async (item) => {
+          setDirty(false);
           setOk(`thumbnail cleared · ${item.id}`);
           await refresh();
         })
@@ -682,12 +728,14 @@ export function AdminStation() {
           setError(err instanceof Error ? err.message : "save_failed");
         })
         .finally(() => setBusy(false));
+    } else {
+      setDirty(true);
     }
   };
 
   const onCategory = (id: CategoryId) => {
     const cat = CATEGORIES.find((c) => c.id === id);
-    setForm((f) => ({
+    patchForm((f) => ({
       ...f,
       category: id,
       subcategory: (cat?.subcategories[0]?.id ?? f.subcategory) as SubcategoryId,
@@ -696,13 +744,17 @@ export function AdminStation() {
 
   const resetCompose = (opts?: { keepMessage?: boolean }) => {
     setEditingId(null);
-    setForm({
+    editingIdRef.current = null;
+    const next = {
       ...emptyForm(),
       kind: activePreset.kind,
       category: activePreset.category,
       subcategory: activePreset.subcategory,
       tags: activePreset.id,
-    });
+    };
+    setForm(next);
+    formRef.current = next;
+    setDirty(false);
     if (!opts?.keepMessage) setOk("");
     setError("");
   };
@@ -710,6 +762,7 @@ export function AdminStation() {
   const startEdit = (item: UploadedContent) => {
     setTab("compose");
     setEditingId(item.id);
+    editingIdRef.current = item.id;
     // Keep advanced closed — drop zones handle media/thumbs; URL fields trap iOS Save.
     setAdvanced(false);
     const kind = normalizeMediaKind(item.kind);
@@ -717,7 +770,7 @@ export function AdminStation() {
       PRESETS.find((p) => p.kind === kind) ??
       PRESETS.find((p) => p.id === "video")!;
     setPreset(match.id);
-    setForm({
+    const next: FormState = {
       title: item.title,
       subtitle: item.subtitle ?? "",
       kind,
@@ -731,7 +784,10 @@ export function AdminStation() {
       body: item.body ?? "",
       paywalled: item.paywalled !== false,
       tags: (item.tags ?? []).join(", "),
-    });
+    };
+    setForm(next);
+    formRef.current = next;
+    setDirty(false);
     setOk(`editing · ${item.id} — drop files or save when ready`);
     setError("");
     // Bring compose into view on phone.
@@ -745,15 +801,18 @@ export function AdminStation() {
     setError("");
     setOk("");
     if (busy) return;
-    if (!form.title.trim()) {
+    const latest = formRef.current;
+    const id = editingIdRef.current;
+    if (!latest.title.trim()) {
       setError("add a title before saving");
       document.getElementById("admin-title-input")?.focus();
       return;
     }
     setBusy(true);
-    const wasEditing = Boolean(editingId);
+    const wasEditing = Boolean(id);
     try {
-      const item = await persistContent(form, editingId);
+      const item = await persistContent(latest, id);
+      setDirty(false);
       await refresh();
       resetCompose({ keepMessage: true });
       setOk(wasEditing ? `saved · ${item.id}` : `published · ${item.id}`);
@@ -930,7 +989,7 @@ export function AdminStation() {
                 required
                 maxLength={160}
                 value={form.title}
-                onChange={(e) => setForm({ ...form, title: e.target.value })}
+                onChange={(e) => patchForm({ title: e.target.value })}
                 placeholder="Title"
                 autoFocus={!editingId}
                 autoComplete="off"
@@ -941,7 +1000,7 @@ export function AdminStation() {
               <input
                 maxLength={200}
                 value={form.subtitle}
-                onChange={(e) => setForm({ ...form, subtitle: e.target.value })}
+                onChange={(e) => patchForm({ subtitle: e.target.value })}
                 placeholder="Add a subtitle…"
               />
             </label>
@@ -949,7 +1008,7 @@ export function AdminStation() {
               <span>tags</span>
               <input
                 value={form.tags}
-                onChange={(e) => setForm({ ...form, tags: e.target.value })}
+                onChange={(e) => patchForm({ tags: e.target.value })}
                 placeholder="tags, comma, separated"
               />
             </label>
@@ -960,7 +1019,7 @@ export function AdminStation() {
                   rows={10}
                   maxLength={50000}
                   value={form.body}
-                  onChange={(e) => setForm({ ...form, body: e.target.value })}
+                  onChange={(e) => patchForm({ body: e.target.value })}
                   placeholder="Start writing…"
                 />
               </label>
@@ -1027,7 +1086,7 @@ export function AdminStation() {
               <input
                 type="checkbox"
                 checked={form.paywalled}
-                onChange={(e) => setForm({ ...form, paywalled: e.target.checked })}
+                onChange={(e) => patchForm({ paywalled: e.target.checked })}
               />
               <span>paywall save / download</span>
             </label>
@@ -1048,7 +1107,7 @@ export function AdminStation() {
                     <span>kind</span>
                     <select
                       value={form.kind}
-                      onChange={(e) => setForm({ ...form, kind: e.target.value as MediaKind })}
+                      onChange={(e) => patchForm({ kind: e.target.value as MediaKind })}
                     >
                       {(["video", "still", "audio", "vlog", "writing", "live"] as MediaKind[]).map(
                         (k) => (
@@ -1066,7 +1125,7 @@ export function AdminStation() {
                         maxLength={24}
                         placeholder="3:21"
                         value={form.duration}
-                        onChange={(e) => setForm({ ...form, duration: e.target.value })}
+                        onChange={(e) => patchForm({ duration: e.target.value })}
                       />
                     </label>
                   )}
@@ -1090,7 +1149,7 @@ export function AdminStation() {
                     <select
                       value={form.subcategory}
                       onChange={(e) =>
-                        setForm({ ...form, subcategory: e.target.value as SubcategoryId })
+                        patchForm({ subcategory: e.target.value as SubcategoryId })
                       }
                     >
                       {subs.map((s) => (
@@ -1110,7 +1169,7 @@ export function AdminStation() {
                     autoCorrect="off"
                     spellCheck={false}
                     value={form.src}
-                    onChange={(e) => setForm({ ...form, src: e.target.value })}
+                    onChange={(e) => patchForm({ src: e.target.value })}
                     placeholder="https://… or /api/media/house/…"
                   />
                 </label>
@@ -1123,7 +1182,7 @@ export function AdminStation() {
                     autoCorrect="off"
                     spellCheck={false}
                     value={form.externalUrl}
-                    onChange={(e) => setForm({ ...form, externalUrl: e.target.value })}
+                    onChange={(e) => patchForm({ externalUrl: e.target.value })}
                     placeholder="https://www.kamaunegasi.net/"
                   />
                 </label>
@@ -1136,7 +1195,7 @@ export function AdminStation() {
                     autoCorrect="off"
                     spellCheck={false}
                     value={form.poster}
-                    onChange={(e) => setForm({ ...form, poster: e.target.value })}
+                    onChange={(e) => patchForm({ poster: e.target.value })}
                     placeholder="https://… or /api/media/house/…"
                   />
                 </label>
@@ -1147,7 +1206,7 @@ export function AdminStation() {
                       rows={4}
                       maxLength={50000}
                       value={form.body}
-                      onChange={(e) => setForm({ ...form, body: e.target.value })}
+                      onChange={(e) => patchForm({ body: e.target.value })}
                     />
                   </label>
                 ) : null}

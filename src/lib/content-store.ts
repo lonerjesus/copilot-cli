@@ -3,6 +3,7 @@ import type { CategoryId, SubcategoryId } from "@/data/taxonomy";
 import { getSubcategory, normalizeSubcategoryId } from "@/data/taxonomy";
 import { SITE } from "@/data/identity";
 import { AuthStoreUnavailableError } from "@/lib/auth/store";
+import { normalizeMediaRef } from "@/lib/media-ref";
 
 /**
  * Durable store for admin-uploaded catalog entries.
@@ -189,8 +190,8 @@ export function validateCreateInput(raw: unknown): CreateContentInput {
   const category = String(o.category ?? "").trim() as CategoryId;
   const subcategory = normalizeSubcategoryId(String(o.subcategory ?? "").trim());
   const platform = String(o.platform ?? "").trim().toLowerCase();
-  const externalUrlRaw = String(o.externalUrl ?? "").trim();
-  const srcRaw = o.src ? String(o.src).trim() : "";
+  const externalUrlRaw = normalizeMediaRef(String(o.externalUrl ?? ""));
+  const srcRaw = o.src != null && String(o.src).trim() ? normalizeMediaRef(String(o.src)) : "";
   const subtitle = o.subtitle ? String(o.subtitle).trim().slice(0, 200) : undefined;
   const blurbRaw = String(o.blurb ?? "").trim();
   const blurb = (blurbRaw || subtitle || title).slice(0, 600);
@@ -206,11 +207,13 @@ export function validateCreateInput(raw: unknown): CreateContentInput {
   if (!mediaCandidate) throw new Error("invalid_url");
 
   function assertMediaRef(value: string, err: string): string {
-    if (value.startsWith("/api/media/house/") && !value.includes("..")) {
-      return value;
+    const normalized = normalizeMediaRef(value);
+    if (normalized.includes("..") || normalized.includes("\\")) throw new Error(err);
+    if (normalized.startsWith("/api/media/house/")) {
+      return normalized;
     }
     try {
-      const parsed = new URL(value);
+      const parsed = new URL(normalized);
       if (parsed.protocol !== "https:") throw new Error(err);
       return parsed.toString();
     } catch {
@@ -223,7 +226,10 @@ export function validateCreateInput(raw: unknown): CreateContentInput {
     externalUrl = assertMediaRef(externalUrlRaw, "invalid_url");
   }
 
-  const posterRaw = o.poster ? String(o.poster).trim() : undefined;
+  const posterRaw =
+    o.poster != null && String(o.poster).trim()
+      ? normalizeMediaRef(String(o.poster))
+      : undefined;
   let poster: string | undefined;
   if (posterRaw) {
     poster = assertMediaRef(posterRaw, "invalid_poster");
