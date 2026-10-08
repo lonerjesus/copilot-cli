@@ -20,7 +20,13 @@ type R2Bucket = {
     key: string,
     options?: { range?: { offset: number; length: number } },
   ): Promise<R2Object | null>;
+  head?(key: string): Promise<R2ObjectHead | null>;
   delete(key: string): Promise<void>;
+};
+
+type R2ObjectHead = {
+  httpMetadata?: { contentType?: string };
+  size?: number;
 };
 
 type R2Object = {
@@ -28,6 +34,9 @@ type R2Object = {
   httpMetadata?: { contentType?: string };
   size?: number;
 };
+
+/** Credentialed full-file blob play ceiling — above this, progressive Range streams. */
+export const HOUSE_AV_BLOB_MAX_BYTES = 48 * 1024 * 1024;
 
 type AuthKv = {
   get(key: string, type?: "text" | "arrayBuffer"): Promise<string | ArrayBuffer | null>;
@@ -557,6 +566,69 @@ async function putKvMedia(key: string, data: ArrayBuffer, contentType: string): 
   );
 }
 
+async function readKvMeta(key: string): Promise<{
+  contentType: string;
+  size: number;
+  parts: number;
+} | null> {
+  const kv = await getAuthKv();
+  if (!kv) throw new MediaStoreUnavailableError();
+  const metaRaw = await kv.get(`${KV_PREFIX}${key}:meta`, "text");
+  if (!metaRaw || typeof metaRaw !== "string") return null;
+  try {
+    const meta = JSON.parse(metaRaw) as {
+      contentType?: string;
+      size?: number;
+      parts?: number;
+    };
+    if (typeof meta.size !== "number" || meta.size < 0) return null;
+    if (typeof meta.parts !== "number" || meta.parts < 1) return null;
+    return {
+      contentType: meta.contentType || "application/octet-stream",
+      size: meta.size,
+      parts: meta.parts,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** Read only the KV parts that cover [offset, offset+length) — no full-file reassembly. */
+async function getKvMediaRange(
+  key: string,
+  offset: number,
+  length: number,
+): Promise<{
+  body: Uint8Array;
+  contentType: string;
+  size: number;
+} | null> {
+  const kv = await getAuthKv();
+  if (!kv) throw new MediaStoreUnavailableError();
+  const meta = await readKvMeta(key);
+  if (!meta) return null;
+  if (offset < 0 || length <= 0 || offset >= meta.size) return null;
+  const end = Math.min(meta.size, offset + length);
+  const out = new Uint8Array(end - offset);
+  const firstPart = Math.floor(offset / KV_CHUNK);
+  const lastPart = Math.floor((end - 1) / KV_CHUNK);
+  if (lastPart >= meta.parts) return null;
+  let writeAt = 0;
+  for (let i = firstPart; i <= lastPart; i++) {
+    const part = await kv.get(`${KV_PREFIX}${key}:${i}`, "arrayBuffer");
+    if (!part || !(part instanceof ArrayBuffer)) return null;
+    const chunk = new Uint8Array(part);
+    const partStart = i * KV_CHUNK;
+    const from = Math.max(0, offset - partStart);
+    const to = Math.min(chunk.byteLength, end - partStart);
+    if (from >= to) continue;
+    out.set(chunk.subarray(from, to), writeAt);
+    writeAt += to - from;
+  }
+  if (writeAt !== out.byteLength) return null;
+  return { body: out, contentType: meta.contentType, size: meta.size };
+}
+
 async function getKvMedia(key: string): Promise<{
   body: Uint8Array;
   contentType: string;
@@ -564,14 +636,8 @@ async function getKvMedia(key: string): Promise<{
 } | null> {
   const kv = await getAuthKv();
   if (!kv) throw new MediaStoreUnavailableError();
-  const metaRaw = await kv.get(`${KV_PREFIX}${key}:meta`, "text");
-  if (!metaRaw || typeof metaRaw !== "string") return null;
-  let meta: { contentType: string; size: number; parts: number };
-  try {
-    meta = JSON.parse(metaRaw) as { contentType: string; size: number; parts: number };
-  } catch {
-    return null;
-  }
+  const meta = await readKvMeta(key);
+  if (!meta) return null;
   const out = new Uint8Array(meta.size);
   let offset = 0;
   for (let i = 0; i < meta.parts; i++) {
@@ -630,7 +696,7 @@ export async function putHouseMedia(
   await writeFile(full, Buffer.from(data));
 }
 
-/** Meta-only probe for HEAD — avoids loading the full object from KV. */
+/** Meta-only probe for HEAD — avoids loading the full object from KV / R2. */
 export async function getHouseMediaMeta(key: string): Promise<{
   contentType: string;
   size: number;
@@ -640,7 +706,17 @@ export async function getHouseMediaMeta(key: string): Promise<{
   if (mode === "r2") {
     const r2 = await getMediaR2();
     if (!r2) throw new MediaStoreUnavailableError();
-    const obj = await r2.get(key);
+    // Prefer head() — never pull the body just to answer size/type.
+    if (typeof r2.head === "function") {
+      const head = await r2.head(key);
+      if (!head) return null;
+      return {
+        contentType: head.httpMetadata?.contentType || "application/octet-stream",
+        size: head.size ?? 0,
+      };
+    }
+    // Fallback: zero-length range probe (some stubs lack head).
+    const obj = await r2.get(key, { range: { offset: 0, length: 1 } });
     if (!obj) return null;
     return {
       contentType: obj.httpMetadata?.contentType || "application/octet-stream",
@@ -648,20 +724,9 @@ export async function getHouseMediaMeta(key: string): Promise<{
     };
   }
   if (mode === "kv") {
-    const kv = await getAuthKv();
-    if (!kv) throw new MediaStoreUnavailableError();
-    const metaRaw = await kv.get(`${KV_PREFIX}${key}:meta`, "text");
-    if (!metaRaw || typeof metaRaw !== "string") return null;
-    try {
-      const meta = JSON.parse(metaRaw) as { contentType?: string; size?: number };
-      if (typeof meta.size !== "number" || meta.size < 0) return null;
-      return {
-        contentType: meta.contentType || "application/octet-stream",
-        size: meta.size,
-      };
-    } catch {
-      return null;
-    }
+    const meta = await readKvMeta(key);
+    if (!meta) return null;
+    return { contentType: meta.contentType, size: meta.size };
   }
   const path = await import("node:path");
   const { stat } = await import("node:fs/promises");
@@ -699,19 +764,11 @@ export async function getHouseMedia(
     };
   }
   if (mode === "kv") {
-    const hit = await getKvMedia(key);
-    if (!hit) return null;
     if (opts?.range) {
       const { offset, length } = opts.range;
-      const end = Math.min(hit.body.byteLength, offset + length);
-      if (offset < 0 || offset >= hit.body.byteLength || length <= 0) return null;
-      return {
-        body: hit.body.subarray(offset, end),
-        contentType: hit.contentType,
-        size: hit.size,
-      };
+      return getKvMediaRange(key, offset, length);
     }
-    return hit;
+    return getKvMedia(key);
   }
   const path = await import("node:path");
   const { readFile, open } = await import("node:fs/promises");

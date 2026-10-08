@@ -139,6 +139,11 @@ ok(
   (full.res.headers.get("accept-ranges") || "").toLowerCase() === "bytes",
   full.res.headers.get("accept-ranges") || "missing",
 );
+ok(
+  "serve-x-kn-media",
+  (full.res.headers.get("x-kn-media") || "") === "house-range",
+  full.res.headers.get("x-kn-media") || "missing",
+);
 ok("serve-full-bytes-match", full.buf.equals(short));
 
 const mid = await api(shortUrl, {
@@ -188,6 +193,18 @@ ok(
 ok(
   "head-accept-ranges",
   (head.headers.get("accept-ranges") || "").toLowerCase() === "bytes",
+);
+ok(
+  "head-x-kn-media",
+  (head.headers.get("x-kn-media") || "") === "house-range",
+  head.headers.get("x-kn-media") || "missing",
+);
+
+// Meta-only HEAD must not require a full body pull — Content-Length is enough
+// for the player blob-vs-progressive decision.
+ok(
+  "head-no-body",
+  Number(head.headers.get("content-length") || 0) === short.length,
 );
 
 // —— Multi-chunk upload (~9 MiB forces 2× 8 MiB parts) ——

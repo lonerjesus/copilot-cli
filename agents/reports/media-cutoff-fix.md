@@ -1,16 +1,22 @@
-# Media cutoff fix
+# Media cutoff fix — extreme harden
 
 ## Symptom
 Uploaded song cuts off early during playback.
 
 ## Root cause
-`/api/media` returned only full `200` responses with **no `Accept-Ranges` / `206`**. Safari and Chromium progressive AV stop once the initial buffer ends when Range is unsupported. Incomplete KV reassembly could also return trailing NULs (silent early end).
+1. Progressive `/api/media` without honest Range / incomplete KV reassembly → buffer dies mid-file → false `ended`.
+2. Full-object probe on every Range request (KV) burned CPU and risked truncated bodies.
+3. Bare `<audio src>` progressive play could stop once the initial buffer ended.
 
-## Fix
-- HTTP Range + HEAD on `/api/media` (`206` / `416` / `Accept-Ranges: bytes`)
-- KV get fails closed if reassembled bytes ≠ declared size
-- Native player: `preload="auto"`, timeupdate ↔ scrub sync
-- `qa:media-range` E2E: full-byte match + Range across chunk boundary (~9 MB WAV)
+## Fix (beyond industry baseline)
+- **Meta-first Range**: `getHouseMediaMeta` + partial KV reads (`getKvMediaRange`); R2 prefers `head()`.
+- **Integrity fail-closed**: 503 on length mismatch (`media_integrity_mismatch` / `media_range_incomplete`).
+- **`X-KN-Media: house-range`** + `Accept-Ranges` on GET/HEAD.
+- **NativeMedia extreme path**:
+  - credentialed full-file **blob** play for house AV ≤ 48 MiB (verified byte count)
+  - progressive Range fallback above ceiling
+  - stall recovery on `waiting` / `stalled` / `error`
+  - false-`ended` guard (only advance queue when truly at EOF)
 
 ## Verify
-media-range **30/30** · edit-save 15 · av-e2e 14 · smoke 60 · build:next green
+`qa:media-range` · guest E2E · build:next

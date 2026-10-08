@@ -5,6 +5,10 @@ import { usePlayer } from "@/components/player/PlayerContext";
 import { kindGlyph } from "@/lib/format";
 import { track } from "@/lib/analytics";
 import { ContentPayActions } from "@/components/ContentPayActions";
+import {
+  HOUSE_AV_BLOB_MAX_BYTES,
+  isHouseMediaUrl,
+} from "@/lib/media-store";
 
 function youtubeId(raw?: string): string | null {
   if (!raw) return null;
@@ -61,6 +65,118 @@ function albumIdFromOEmbedHtml(html?: string): string | null {
   return track?.[1] ?? null;
 }
 
+/**
+ * Resolve a playable src for house AV.
+ * ≤ HOUSE_AV_BLOB_MAX_BYTES → credentialed full-file blob (verified EOF, no progressive cutoff).
+ * Larger / remote → progressive URL (Range-capable `/api/media`).
+ */
+function useHouseAvSrc(src: string): {
+  playSrc: string | null;
+  mode: "blob" | "progressive" | "loading" | "failed";
+} {
+  const [playSrc, setPlaySrc] = useState<string | null>(null);
+  const [mode, setMode] = useState<"blob" | "progressive" | "loading" | "failed">(
+    () => (isHouseMediaUrl(src) ? "loading" : "progressive"),
+  );
+
+  useEffect(() => {
+    let alive = true;
+    let objectUrl: string | null = null;
+
+    if (!isHouseMediaUrl(src)) {
+      setPlaySrc(src);
+      setMode("progressive");
+      return;
+    }
+
+    setPlaySrc(null);
+    setMode("loading");
+
+    const run = async () => {
+      try {
+        // HEAD first — decide blob vs progressive without pulling the body twice.
+        const head = await fetch(src, {
+          method: "HEAD",
+          credentials: "same-origin",
+          cache: "no-store",
+        });
+        if (!alive) return;
+        if (!head.ok) throw new Error(`media_head_${head.status}`);
+
+        const lenHeader = head.headers.get("content-length");
+        const size = lenHeader ? Number(lenHeader) : NaN;
+        const useBlob =
+          Number.isFinite(size) && size > 0 && size <= HOUSE_AV_BLOB_MAX_BYTES;
+
+        if (!useBlob) {
+          // Oversized — stream via Range; cookies ride same-origin.
+          if (alive) {
+            setPlaySrc(src);
+            setMode("progressive");
+          }
+          return;
+        }
+
+        const res = await fetch(src, {
+          credentials: "same-origin",
+          cache: "no-store",
+          headers: { Accept: "audio/*,video/*,*/*" },
+        });
+        if (!alive) return;
+        if (!res.ok) throw new Error(`media_${res.status}`);
+        const blob = await res.blob();
+        if (!blob.size) throw new Error("empty_media");
+        // Integrity: declared Content-Length must match delivered bytes.
+        if (Number.isFinite(size) && blob.size !== size) {
+          throw new Error(`media_integrity_${blob.size}_${size}`);
+        }
+        objectUrl = URL.createObjectURL(blob);
+        if (!alive) {
+          URL.revokeObjectURL(objectUrl);
+          return;
+        }
+        setPlaySrc(objectUrl);
+        setMode("blob");
+      } catch {
+        // Fall back to progressive URL rather than hard-fail the dock.
+        if (alive) {
+          setPlaySrc(src);
+          setMode("progressive");
+        }
+      }
+    };
+
+    void run();
+    return () => {
+      alive = false;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [src]);
+
+  return { playSrc, mode };
+}
+
+function bufferedEnd(node: HTMLMediaElement): number {
+  try {
+    const { buffered } = node;
+    if (!buffered.length) return 0;
+    return buffered.end(buffered.length - 1);
+  } catch {
+    return 0;
+  }
+}
+
+function isTrulyEnded(node: HTMLMediaElement): boolean {
+  const { duration, currentTime, ended } = node;
+  if (!ended) return false;
+  if (!Number.isFinite(duration) || duration <= 0) return true;
+  // Within 350ms of declared duration, or buffer covers the tail.
+  if (currentTime >= duration - 0.35) return true;
+  const bufEnd = bufferedEnd(node);
+  if (bufEnd >= duration - 0.15 && currentTime >= bufEnd - 0.35) return true;
+  return false;
+}
+
 function NativeMedia({
   kind,
   src,
@@ -82,22 +198,34 @@ function NativeMedia({
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const seekingRef = useRef(false);
+  const recoveriesRef = useRef(0);
+  const lastStallAtRef = useRef(0);
+  const { playSrc, mode } = useHouseAvSrc(src);
+
+  const mediaNode = (): HTMLMediaElement | null =>
+    kind === "video" ? videoRef.current : audioRef.current;
 
   useEffect(() => {
-    const node = kind === "video" ? videoRef.current : audioRef.current;
-    if (!node) return;
+    recoveriesRef.current = 0;
+    lastStallAtRef.current = 0;
+  }, [src, playSrc]);
+
+  useEffect(() => {
+    const node = mediaNode();
+    if (!node || !playSrc) return;
     if (playing) {
       const p = node.play();
       if (p && typeof p.catch === "function") p.catch(() => undefined);
     } else {
       node.pause();
     }
-  }, [playing, kind, src]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mediaNode reads refs
+  }, [playing, kind, playSrc]);
 
   // Seek only when the scrubber fires (not on every timeupdate → progress tick).
   useEffect(() => {
     if (seekTo == null) return;
-    const node = kind === "video" ? videoRef.current : audioRef.current;
+    const node = mediaNode();
     if (!node || !Number.isFinite(node.duration) || node.duration <= 0) return;
     const target = (seekTo / 100) * node.duration;
     seekingRef.current = true;
@@ -107,41 +235,101 @@ function NativeMedia({
       /* ignore seek races while metadata loads */
     }
     seekingRef.current = false;
-  }, [seekTo, kind, src]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seekTo, kind, playSrc]);
+
+  const recoverStall = () => {
+    const node = mediaNode();
+    if (!node || !playing) return;
+    const now = Date.now();
+    if (now - lastStallAtRef.current < 400) return;
+    lastStallAtRef.current = now;
+    if (recoveriesRef.current >= 8) return;
+    recoveriesRef.current += 1;
+
+    const { duration, currentTime } = node;
+    const bufEnd = bufferedEnd(node);
+
+    // Jump just past a tiny buffer gap, then resume.
+    if (Number.isFinite(duration) && duration > 0 && currentTime < duration - 0.5) {
+      const nudge =
+        bufEnd > currentTime + 0.05
+          ? Math.min(bufEnd - 0.05, currentTime + 0.2)
+          : currentTime + 0.12;
+      try {
+        node.currentTime = Math.min(nudge, Math.max(0, duration - 0.05));
+      } catch {
+        /* seek not ready */
+      }
+    }
+    const p = node.play();
+    if (p && typeof p.catch === "function") p.catch(() => undefined);
+  };
 
   const onTimeUpdate = () => {
     if (seekingRef.current) return;
-    const node = kind === "video" ? videoRef.current : audioRef.current;
+    const node = mediaNode();
     if (!node || !Number.isFinite(node.duration) || node.duration <= 0) return;
     onProgress(Math.min(100, (node.currentTime / node.duration) * 100));
   };
+
+  const handleEnded = () => {
+    const node = mediaNode();
+    if (!node) {
+      onEnded?.();
+      return;
+    }
+    // Progressive streams sometimes fire `ended` when the buffer dies mid-file.
+    if (!isTrulyEnded(node)) {
+      recoverStall();
+      return;
+    }
+    onProgress(100);
+    onEnded?.();
+  };
+
+  if (!playSrc || mode === "loading") {
+    return (
+      <div className="deck__visual deck__visual--loading" aria-busy="true" aria-label="Loading media">
+        <div className="deck__orb" />
+      </div>
+    );
+  }
 
   if (kind === "video") {
     return (
       <video
         ref={videoRef}
         className="deck__frame deck__frame--native"
-        src={src}
+        src={playSrc}
         controls
         playsInline
         preload="auto"
         title={title}
+        data-kn-av-mode={mode}
         onTimeUpdate={onTimeUpdate}
-        onEnded={() => onEnded?.()}
+        onWaiting={recoverStall}
+        onStalled={recoverStall}
+        onError={recoverStall}
+        onEnded={handleEnded}
       />
     );
   }
 
   return (
-    <div className="deck__native-audio">
+    <div className="deck__native-audio" data-kn-av-mode={mode}>
       <audio
         ref={audioRef}
-        src={src}
+        src={playSrc}
         controls
         preload="auto"
         title={title}
+        data-kn-av-mode={mode}
         onTimeUpdate={onTimeUpdate}
-        onEnded={() => onEnded?.()}
+        onWaiting={recoverStall}
+        onStalled={recoverStall}
+        onError={recoverStall}
+        onEnded={handleEnded}
       />
       <div className={`deck__visual deck__visual--mini ${playing ? "is-playing" : ""}`} aria-hidden>
         <div className="deck__orb" />

@@ -43,7 +43,9 @@ function parseRange(
   size: number,
 ): { start: number; end: number } | "unsatisfiable" | null {
   if (!header || size <= 0) return null;
-  const m = /^bytes=(\d*)-(\d*)$/i.exec(header.trim());
+  // Support single range only (browsers); ignore multi-range for now.
+  const first = header.trim().split(",")[0]?.trim() ?? "";
+  const m = /^bytes=(\d*)-(\d*)$/i.exec(first);
   if (!m) return null;
   const startRaw = m[1] ?? "";
   const endRaw = m[2] ?? "";
@@ -51,7 +53,6 @@ function parseRange(
   let end: number;
   if (startRaw === "" && endRaw === "") return null;
   if (startRaw === "") {
-    // bytes=-N → last N bytes
     const suffix = Number(endRaw);
     if (!Number.isFinite(suffix) || suffix <= 0) return "unsatisfiable";
     start = Math.max(0, size - suffix);
@@ -69,50 +70,51 @@ function parseRange(
   return { start, end };
 }
 
-async function serveMedia(request: NextRequest, key: string): Promise<Response> {
-  // Probe full object size first (HEAD-equivalent) so Range can be validated.
-  const probe = await getHouseMedia(key);
-  if (!probe) return jsonError("not_found", 404);
-
-  const contentType = contentTypeFromKey(key, probe.contentType);
-  const probeBytes = toUint8Array(probe.body);
-  const size = probe.size ?? probeBytes?.byteLength;
-
-  const common: Record<string, string> = {
+function mediaHeaders(contentType: string, extra?: Record<string, string>): Record<string, string> {
+  return {
     "Content-Type": contentType,
-    "Cache-Control": "private, no-store",
+    // Session media — never CDN-cache a private body, but allow the browser to keep
+    // the decoded buffer for the life of the tab (helps seek without re-auth races).
+    "Cache-Control": "private, max-age=0, must-revalidate",
     "X-Content-Type-Options": "nosniff",
     "Accept-Ranges": "bytes",
+    // Hint clients that this endpoint is Range-capable progressive AV.
+    "X-KN-Media": "house-range",
+    ...extra,
   };
+}
 
-  // Safari / Chromium seek and progressive AV require 206 + Content-Range.
-  // Without this, songs often stop early once the initial buffer ends.
-  const range = parseRange(request.headers.get("range"), size ?? 0);
+async function serveMedia(request: NextRequest, key: string): Promise<Response> {
+  // Meta-only size probe — never load the full object just to answer Range.
+  const meta = await getHouseMediaMeta(key);
+  if (!meta) return jsonError("not_found", 404);
+
+  const contentType = contentTypeFromKey(key, meta.contentType);
+  const size = meta.size;
+  const common = mediaHeaders(contentType);
+  const range = parseRange(request.headers.get("range"), size);
 
   if (range === "unsatisfiable") {
     return new Response(null, {
       status: 416,
       headers: {
         ...common,
-        "Content-Range": `bytes */${size ?? 0}`,
+        "Content-Range": `bytes */${size}`,
       },
     });
   }
 
-  if (range && size != null) {
+  if (range) {
     const { start, end } = range;
     const length = end - start + 1;
-    const hit =
-      probeBytes != null
-        ? {
-            body: probeBytes.subarray(start, end + 1),
-            contentType: probe.contentType,
-            size,
-          }
-        : await getHouseMedia(key, { range: { offset: start, length } });
+    const hit = await getHouseMedia(key, { range: { offset: start, length } });
     if (!hit) return jsonError("not_found", 404);
     const bytes = toUint8Array(hit.body);
     if (bytes) {
+      // Exact length guard — never claim a longer Content-Range than delivered.
+      if (bytes.byteLength !== length) {
+        return jsonError("media_range_incomplete", 503);
+      }
       const copy = bytes.buffer.slice(
         bytes.byteOffset,
         bytes.byteOffset + bytes.byteLength,
@@ -138,37 +140,37 @@ async function serveMedia(request: NextRequest, key: string): Promise<Response> 
     }
   }
 
-  if (probe.body instanceof ReadableStream) {
-    return new Response(probe.body, {
-      status: 200,
-      headers: {
-        ...common,
-        ...(size != null ? { "Content-Length": String(size) } : {}),
-      },
-    });
-  }
-
-  if (probeBytes) {
-    const copy = probeBytes.buffer.slice(
-      probeBytes.byteOffset,
-      probeBytes.byteOffset + probeBytes.byteLength,
+  // Full GET — load once; browsers that omit Range still get Accept-Ranges for follow-ups.
+  const full = await getHouseMedia(key);
+  if (!full) return jsonError("not_found", 404);
+  const fullBytes = toUint8Array(full.body);
+  if (fullBytes) {
+    if (fullBytes.byteLength !== size) {
+      return jsonError("media_integrity_mismatch", 503);
+    }
+    const copy = fullBytes.buffer.slice(
+      fullBytes.byteOffset,
+      fullBytes.byteOffset + fullBytes.byteLength,
     ) as ArrayBuffer;
     return new Response(copy, {
       status: 200,
       headers: {
         ...common,
-        "Content-Length": String(probeBytes.byteLength),
+        "Content-Length": String(fullBytes.byteLength),
+      },
+    });
+  }
+  if (full.body instanceof ReadableStream) {
+    return new Response(full.body, {
+      status: 200,
+      headers: {
+        ...common,
+        "Content-Length": String(size),
       },
     });
   }
 
-  return new Response(probe.body as ArrayBuffer, {
-    status: 200,
-    headers: {
-      ...common,
-      ...(size != null ? { "Content-Length": String(size) } : {}),
-    },
-  });
+  return jsonError("media_unreadable", 503);
 }
 
 export async function GET(
@@ -213,13 +215,9 @@ export async function HEAD(
     const contentType = contentTypeFromKey(key, meta.contentType);
     return new Response(null, {
       status: 200,
-      headers: {
-        "Content-Type": contentType,
+      headers: mediaHeaders(contentType, {
         "Content-Length": String(meta.size),
-        "Accept-Ranges": "bytes",
-        "Cache-Control": "private, no-store",
-        "X-Content-Type-Options": "nosniff",
-      },
+      }),
     });
   } catch (err) {
     if (err instanceof MediaStoreUnavailableError) {
