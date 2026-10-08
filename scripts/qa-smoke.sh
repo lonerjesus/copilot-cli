@@ -82,6 +82,15 @@ check "feed-authed" "$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" -b "$JAR"
 check "ingest-authed" "$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" -b "$JAR" "$BASE/api/ingest")"
 check "catalog-authed" "$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" -b "$JAR" "$BASE/api/catalog")"
 check "catalog-auth" "$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" "$BASE/api/catalog")" "401"
+check "connections-authed" "$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" -b "$JAR" "$BASE/api/connections")"
+check "connections-auth" "$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" "$BASE/api/connections")" "401"
+conn="$(curl -s -A "$UA" -b "$JAR" "$BASE/api/connections")"
+echo "$conn" | grep -qE '"outlets"|"projects"|"archive"' \
+  && echo "PASS  connections-shape" && pass=$((pass+1)) \
+  || { echo "FAIL  connections-shape"; fail=$((fail+1)); }
+echo "$conn" | grep -q 'youtube\|FaustSociety\|magcloud-archive\|Telling Show Of Love' \
+  && echo "PASS  connections-has-bridges" && pass=$((pass+1)) \
+  || { echo "FAIL  connections-has-bridges"; fail=$((fail+1)); }
 
 catalog="$(curl -s -A "$UA" -b "$JAR" "$BASE/api/catalog")"
 echo "$catalog" | grep -qE '"items"' \
@@ -113,6 +122,7 @@ home="$(curl -s -A "$UA" -b "$JAR" "$BASE/")"
 echo "$home" | grep -qi '18+' && echo "PASS  compliance-18plus-marker" && pass=$((pass+1)) || { echo "FAIL  compliance-18plus-marker"; fail=$((fail+1)); }
 echo "$home" | grep -q 'shell__rail-layout\|rail__nav\|shell--rail' && echo "PASS  home-rail-menu" && pass=$((pass+1)) || { echo "FAIL  home-rail-menu"; fail=$((fail+1)); }
 echo "$home" | grep -q 'stream' && echo "PASS  home-stream-nav" && pass=$((pass+1)) || { echo "FAIL  home-stream-nav"; fail=$((fail+1)); }
+echo "$home" | grep -qi 'house\|IconHome\|aria-label="house"' && echo "PASS  home-house-nav" && pass=$((pass+1)) || { echo "FAIL  home-house-nav"; fail=$((fail+1)); }
 echo "$home" | grep -q 'browse' && echo "PASS  home-browse-nav" && pass=$((pass+1)) || { echo "FAIL  home-browse-nav"; fail=$((fail+1)); }
 echo "$home" | grep -q 'data-age-gate' && echo "PASS  age-gate-flag" && pass=$((pass+1)) || { echo "FAIL  age-gate-flag"; fail=$((fail+1)); }
 echo "$home" | grep -q '/privacy' && echo "PASS  home-privacy-link" && pass=$((pass+1)) || { echo "FAIL  home-privacy-link"; fail=$((fail+1)); }

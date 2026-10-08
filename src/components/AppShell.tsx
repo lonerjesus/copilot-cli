@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, type ComponentType } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { AgeGate } from "@/components/AgeGate";
 import { BootSequence } from "@/components/BootSequence";
@@ -8,6 +9,11 @@ import { Hero } from "@/components/Hero";
 import { StreamDeck } from "@/components/StreamDeck";
 import { CategoryBrowser } from "@/components/CategoryBrowser";
 import { MagazineReader } from "@/components/MagazineReader";
+
+const HouseAtlas = dynamic(
+  () => import("@/components/HouseAtlas").then((m) => m.HouseAtlas),
+  { ssr: false, loading: () => <p className="atlas__boot">Loading house…</p> },
+);
 import { MagazineProvider, useMagazine } from "@/components/MagazineContext";
 import { PlayerDock } from "@/components/player/PlayerDock";
 import { PlayerProvider, usePlayerState } from "@/components/player/PlayerContext";
@@ -19,12 +25,13 @@ import { SiteTicker } from "@/components/SiteTicker";
 import {
   IconAdmin,
   IconBrowse,
+  IconHome,
   IconStream,
   IconSupport,
 } from "@/components/NavIcons";
 import { SITE } from "@/data/identity";
 
-type ViewId = "stream" | "browse" | "support";
+type ViewId = "stream" | "house" | "browse" | "support";
 
 function ShellInner() {
   const [booted, setBooted] = useState(false);
@@ -44,8 +51,11 @@ function ShellInner() {
   useEffect(() => {
     const applyHash = () => {
       const id = window.location.hash.replace(/^#/, "").toLowerCase();
-      if (id === "stream" || id === "browse" || id === "support") setView(id);
+      if (id === "stream" || id === "house" || id === "browse" || id === "support") {
+        setView(id);
+      }
       if (id === "categories") setView("browse");
+      if (id === "connections" || id === "projects") setView("house");
       if (id === "donate") setView("support");
     };
     applyHash();
@@ -61,6 +71,7 @@ function ShellInner() {
 
   const nav: { id: ViewId; label: string; Icon: ComponentType<{ className?: string }> }[] = [
     { id: "stream", label: "stream", Icon: IconStream },
+    { id: "house", label: "house", Icon: IconHome },
     { id: "browse", label: "browse", Icon: IconBrowse },
     { id: "support", label: "support", Icon: IconSupport },
   ];
@@ -157,6 +168,8 @@ function ShellInner() {
                   <StreamDeck compact />
                 </>
               ) : null}
+
+              {view === "house" ? <HouseAtlas compact /> : null}
 
               {view === "browse" ? <CategoryBrowser compact /> : null}
 

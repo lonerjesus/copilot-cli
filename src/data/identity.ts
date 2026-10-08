@@ -161,6 +161,20 @@ export const PLATFORMS = [
     kind: "stream" as const,
   },
   {
+    id: "twitch-faust",
+    label: "Twitch · FaustSociety",
+    handle: "FaustSociety",
+    url: "https://www.twitch.tv/FaustSociety",
+    kind: "stream" as const,
+  },
+  {
+    id: "youtube",
+    label: "YouTube · Kamau Negasi",
+    handle: "KamauNegasi",
+    url: "https://www.youtube.com/@KamauNegasi",
+    kind: "video" as const,
+  },
+  {
     id: "vimeo",
     label: "Vimeo",
     handle: "streetpolitik",
@@ -173,6 +187,20 @@ export const PLATFORMS = [
     handle: "streetpolitk",
     url: "https://www.toneden.io/streetpolitk",
     kind: "audio" as const,
+  },
+  {
+    id: "faust-spirit",
+    label: "Faust Spirit Social Society Inc.",
+    handle: "faustspirit",
+    url: "https://faustspiritsocialsocietyincorp.godaddysites.com/",
+    kind: "web" as const,
+  },
+  {
+    id: "magcloud",
+    label: "MagCloud · streetpolitik",
+    handle: "streetpolitik",
+    url: "https://www.magcloud.com/user/streetpolitik",
+    kind: "blog" as const,
   },
   {
     id: "web",
