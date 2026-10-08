@@ -1,28 +1,26 @@
-# verifier
+# Verifier — MERGE_OK
 
-**Branch:** `cursor/expert-tier-harden-560e`  
-**Verdict:** `MERGE_OK`
+## Scope
+`cursor/expert-tier-harden-560e` → `main` (PR #34)
 
-## Inputs
+## Sectors
+| Sector | Verdict |
+|--------|---------|
+| SEO / signup funnel | PASS — `/access` indexable, preview soft-land, JSON-LD, register-first |
+| Media / player EOF | PASS — meta Range + blob dock |
+| E2E gate | PASS — `qa:gate GREEN` |
+| Auth / anti-scrape | PASS — scrapers 403; preview 307→access |
+| Guest journey | PASS — 27/27 |
+| Build | PASS — `build:next` |
 
-- Diff vs prior expert-tier harden + photo gallery / platform E2E
-- Reports: `platform-compare-e2e.md`, `writing-open-fix.md`, `media-cutoff-fix.md`, `ux-checklist.md`, `security-report.md`, `names-audit.md`
-- Suites: platform-compare 27/27 · writing-open 15/15 · media-range 30/30 · edit-save 15/15 · smoke 60/60 · `build:next` green
+## Gate log
+`/opt/cursor/artifacts/qa-gate-elite.log`
 
-## Checks
+```
+qa:av · media-ref · media-meta · smoke 67 · media-range 33 · av-e2e 14
+edit-save 15 · writing-open 15 · guest 27 · player-blob 9
+== qa:gate GREEN ==
+```
 
-| Gate | Result |
-|------|--------|
-| Exact names | PASS — no invented Instagram/Kick/OF/Spotify outlets |
-| Security | PASS — no new deps; gallery uses existing credentialed media path |
-| UX / player | PASS — fixed dock, autoplay, writing enlarge, iPhone photo gallery |
-| Connections | PASS — atlas + `/api/connections`; roadmap #29 unchanged |
-| E2E prod | PASS |
-
-## Blockers
-
-None.
-
-## Note
-
-`next dev` CSP without `unsafe-eval` breaks React event handlers in this environment — platform UI E2E must use `next start` (documented in platform-compare report).
+## Verdict
+**MERGE_OK** — elite across audited sectors; proceed merge + deploy.
