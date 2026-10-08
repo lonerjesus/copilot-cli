@@ -353,7 +353,7 @@ export function HouseAtlas({ compact = false }: { compact?: boolean }) {
             </span>
           </header>
           <p className="atlas__aside">
-            MagCloud chapbooks + live Substack — kept off the stream shelves on purpose.
+            External archive only (MagCloud chapbooks + Substack). House writings live on stream/browse — not MagCloud.
           </p>
           {archiveState === "loading" ? (
             <ul className="atlas__archive-list atlas__archive-list--pulse" aria-hidden>

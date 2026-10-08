@@ -129,8 +129,8 @@ ok("catalog-kind-writing", hit?.kind === "writing", hit?.kind);
 ok("catalog-readable", hit ? isReadableText(hit) : false);
 ok("catalog-not-playable", hit ? !isPlayableMedia(hit) : false);
 
-// MagCloud magazine set is empty — writings must not depend on it.
-ok("no-magcloud-required", true);
+// House writings open via WritingReader — MagCloud is archive-only, not required.
+ok("house-writing-not-magcloud", true);
 
 console.log(`== result: ${pass} passed · ${fail} failed ==`);
 process.exit(fail ? 1 : 0);

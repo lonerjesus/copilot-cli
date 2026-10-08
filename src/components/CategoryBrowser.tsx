@@ -18,7 +18,7 @@ import {
 } from "@/lib/search";
 import { kindGlyph } from "@/lib/format";
 import { usePlayerState } from "@/components/player/PlayerContext";
-import { useMagazine } from "@/components/MagazineContext";
+import { useReader } from "@/components/ReaderContext";
 import { track } from "@/lib/analytics";
 import { MediaPoster } from "@/components/MediaPoster";
 
@@ -35,7 +35,7 @@ export function CategoryBrowser({
   compact = false,
 }: CategoryBrowserProps & { compact?: boolean }) {
   const { current, playItem } = usePlayerState();
-  const { openMagazine, openReadable, hasMagazine, isReadable } = useMagazine();
+  const { openReadable, isReadable } = useReader();
   const [query, setQuery] = useState(initialQuery);
   const [category, setCategory] = useState<CategoryId | "all">(initialCategory);
   const [subcategory, setSubcategory] = useState<SubcategoryId | "all">(initialSubcategory);
@@ -371,15 +371,6 @@ export function CategoryBrowser({
                           </p>
                         </div>
                       </button>
-                      {hasMagazine(item.id) ? (
-                        <button
-                          type="button"
-                          className="tile__mag"
-                          onClick={() => openMagazine(item.id)}
-                        >
-                          magazine view
-                        </button>
-                      ) : null}
                     </div>
                   ))}
                 </div>

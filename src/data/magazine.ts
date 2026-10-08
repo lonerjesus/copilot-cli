@@ -20,7 +20,10 @@ export type MagazineIssue = {
   spreads: MagazineSpread[];
 };
 
-/** Seed empty — magazine issues attach to admin-published house catalog ids. */
+/**
+ * Empty on purpose. House writings open via WritingReader (admin `body`), not MagCloud.
+ * MagCloud chapbooks stay on the House Atlas archive bridge as external link-outs only.
+ */
 export const MAGAZINE_ISSUES: MagazineIssue[] = [];
 
 export function getMagazineByCatalogId(catalogId: string): MagazineIssue | undefined {

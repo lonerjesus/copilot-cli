@@ -21,7 +21,7 @@ import {
 } from "@/data/catalog";
 import { kindGlyph, kindLabel } from "@/lib/format";
 import { usePlayerState } from "@/components/player/PlayerContext";
-import { useMagazine } from "@/components/MagazineContext";
+import { useReader } from "@/components/ReaderContext";
 import { MediaPoster } from "@/components/MediaPoster";
 import { track } from "@/lib/analytics";
 
@@ -161,7 +161,7 @@ function rowItems(rowId: string, pinnedIds: string[], house: CatalogItem[]): Cat
 
 export function StreamDeck({ compact = false }: { compact?: boolean }) {
   const { current, playItem, queueNext } = usePlayerState();
-  const { openReadable, isReadable } = useMagazine();
+  const { openReadable, isReadable } = useReader();
   const [live, setLive] = useState<CatalogItem[]>(() => houseCatalog(CATALOG));
 
   useEffect(() => {

@@ -3,8 +3,7 @@
 import Link from "next/link";
 import { AgeGate } from "@/components/AgeGate";
 import { AuthProvider, useAuth } from "@/components/AuthContext";
-import { MagazineProvider, useMagazine } from "@/components/MagazineContext";
-import { MagazineReader } from "@/components/MagazineReader";
+import { ReaderProvider, useReader } from "@/components/ReaderContext";
 import { WritingReader } from "@/components/WritingReader";
 import { PhotoGallery } from "@/components/PhotoGallery";
 import { FootprintArchive } from "@/components/FootprintArchive";
@@ -18,14 +17,12 @@ import { SITE } from "@/data/identity";
 function FootprintInner({ footprint }: { footprint: FootprintItem[] }) {
   const { user, logout } = useAuth();
   const {
-    openId,
     writingItem,
     gallery,
-    closeMagazine,
     closeWriting,
     closeGallery,
     setGalleryIndex,
-  } = useMagazine();
+  } = useReader();
 
   return (
     <>
@@ -75,7 +72,6 @@ function FootprintInner({ footprint }: { footprint: FootprintItem[] }) {
 
       {/* Viewport-fixed overlays — outside .shell so transform/relative never traps them */}
       <PlayerDock />
-      <MagazineReader catalogId={openId} onClose={closeMagazine} />
       <WritingReader item={writingItem} onClose={closeWriting} />
       {gallery ? (
         <PhotoGallery
@@ -93,9 +89,9 @@ export function FootprintShell({ footprint }: { footprint: FootprintItem[] }) {
   return (
     <AuthProvider>
       <PlayerProvider>
-        <MagazineProvider>
+        <ReaderProvider>
           <FootprintInner footprint={footprint} />
-        </MagazineProvider>
+        </ReaderProvider>
       </PlayerProvider>
     </AuthProvider>
   );

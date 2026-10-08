@@ -8,7 +8,6 @@ import { BootSequence } from "@/components/BootSequence";
 import { Hero } from "@/components/Hero";
 import { StreamDeck } from "@/components/StreamDeck";
 import { CategoryBrowser } from "@/components/CategoryBrowser";
-import { MagazineReader } from "@/components/MagazineReader";
 import { WritingReader } from "@/components/WritingReader";
 import { PhotoGallery } from "@/components/PhotoGallery";
 
@@ -16,7 +15,7 @@ const HouseAtlas = dynamic(
   () => import("@/components/HouseAtlas").then((m) => m.HouseAtlas),
   { ssr: false, loading: () => <p className="atlas__boot">Loading house…</p> },
 );
-import { MagazineProvider, useMagazine } from "@/components/MagazineContext";
+import { ReaderProvider, useReader } from "@/components/ReaderContext";
 import { PlayerDock } from "@/components/player/PlayerDock";
 import { PlayerProvider, usePlayerState } from "@/components/player/PlayerContext";
 import { AuthProvider, useAuth } from "@/components/AuthContext";
@@ -41,14 +40,12 @@ function ShellInner() {
   const [menuOpen, setMenuOpen] = useState(false);
   const { setExpanded, toggle } = usePlayerState();
   const {
-    openId,
     writingItem,
     gallery,
-    closeMagazine,
     closeWriting,
     closeGallery,
     setGalleryIndex,
-  } = useMagazine();
+  } = useReader();
   const { user, logout, refresh } = useAuth();
 
   useEffect(() => {
@@ -195,7 +192,6 @@ function ShellInner() {
 
       {/* Viewport-fixed overlays — outside .shell so transform/relative never traps them */}
       <PlayerDock />
-      <MagazineReader catalogId={openId} onClose={closeMagazine} />
       <WritingReader item={writingItem} onClose={closeWriting} />
       {gallery ? (
         <PhotoGallery
@@ -213,9 +209,9 @@ export function AppShell() {
   return (
     <AuthProvider>
       <PlayerProvider>
-        <MagazineProvider>
+        <ReaderProvider>
           <ShellInner />
-        </MagazineProvider>
+        </ReaderProvider>
       </PlayerProvider>
     </AuthProvider>
   );

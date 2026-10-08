@@ -68,12 +68,13 @@ export function engagementSummary() {
   return {
     count: events.length,
     hasPlay: signals.has("play") || signals.has("enter_stream"),
-    hasMagazine: signals.has("magazine_open") || signals.has("writing_open"),
+    hasWriting: signals.has("writing_open"),
+    /** @deprecated MagCloud path retired — alias of hasWriting */
+    hasMagazine: signals.has("writing_open") || signals.has("magazine_open"),
     hasDepth: signals.has("footprint_open") || signals.has("category_filter"),
     lowBounce:
       signals.has("enter_stream") ||
       signals.has("play") ||
-      signals.has("magazine_open") ||
       signals.has("writing_open"),
   };
 }

@@ -58,6 +58,7 @@ export function WritingReader({ item, onClose }: WritingReaderProps) {
       <div className="writing-reader__card">
         <div className="writing-reader__chrome">
           <div className="writing-reader__mast">
+            <span>house writing</span>
             <span>{kindLabel(item.kind)}</span>
             <span>{item.publishedAt}</span>
             {item.platform ? <span>{item.platform}</span> : null}

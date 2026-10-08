@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { usePlayer } from "@/components/player/PlayerContext";
-import { useMagazine } from "@/components/MagazineContext";
 import { kindGlyph } from "@/lib/format";
 import { track } from "@/lib/analytics";
 import { ContentPayActions } from "@/components/ContentPayActions";
@@ -399,7 +398,6 @@ export function PlayerDock() {
     setAutoplay,
     setProgress,
   } = usePlayer();
-  const { openMagazine, hasMagazine } = useMagazine();
   const [seekTo, setSeekTo] = useState<number | null>(null);
 
   const label = useMemo(() => {
@@ -462,15 +460,6 @@ export function PlayerDock() {
               {current.subtitle ? <p className="deck__sub">{current.subtitle}</p> : null}
               <RemoteMeta key={current.id} url={current.externalUrl} localTitle={current.title} />
               <p className="deck__blurb">{current.blurb}</p>
-              {hasMagazine(current.id) ? (
-                <button
-                  type="button"
-                  className="deck__external deck__mag"
-                  onClick={() => openMagazine(current.id)}
-                >
-                  magazine ▦
-                </button>
-              ) : null}
               <ContentPayActions catalogId={current.id} title={current.title} />
               {upNext.length ? (
                 <div className="deck__upnext" aria-label="Up next">
