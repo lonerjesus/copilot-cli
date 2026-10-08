@@ -341,7 +341,7 @@ export function HouseAtlas({ compact = false }: { compact?: boolean }) {
               ))}
             </ul>
           ) : (
-            <p className="atlas__empty">No outlets in this lane.</p>
+            <p className="atlas__empty">Nothing in this lane. Pick another lane above.</p>
           )}
         </div>
       ) : null}
@@ -364,7 +364,7 @@ export function HouseAtlas({ compact = false }: { compact?: boolean }) {
               ))}
             </ul>
           ) : (
-            <p className="atlas__empty">No projects touch this lane.</p>
+            <p className="atlas__empty">No projects in this lane. Pick another lane above.</p>
           )}
         </div>
       ) : null}
@@ -396,9 +396,11 @@ export function HouseAtlas({ compact = false }: { compact?: boolean }) {
               ))}
             </ul>
           ) : archiveState === "error" ? (
-            <p className="atlas__empty">Archive bridge unreachable — try again in a moment.</p>
+            <p className="atlas__empty">
+              Archive bridge offline. Wait ~30 seconds, then open archive again.
+            </p>
           ) : archiveState === "quiet" ? (
-            <p className="atlas__empty">Archive feeds quiet right now.</p>
+            <p className="atlas__empty">No archive items right now. Check outlets or stack.</p>
           ) : (
             <ul className="atlas__archive-list">
               {archive.map((item, i) => (
@@ -482,13 +484,15 @@ export function HouseAtlas({ compact = false }: { compact?: boolean }) {
             </span>
           </header>
           <p className="atlas__aside">
-            Free GitHub tools rack — MIT portable skills vendored locally when verified;
-            full apps stay link-out. {GITHUB_TOOLS_SOURCE}.
+            Open a row to leave for GitHub. Rows marked local are installed under{" "}
+            <code>agents/skills</code>. Source: {GITHUB_TOOLS_SOURCE}.
           </p>
           <ul className="atlas__outlet-list" aria-label="GitHub tools">
-            {GITHUB_TOOLS.map((tool, i) => (
-              <StackRow key={tool.id} tool={tool} index={i} />
-            ))}
+            {[...GITHUB_TOOLS]
+              .sort((a, b) => Number(b.verdict === "vendored") - Number(a.verdict === "vendored"))
+              .map((tool, i) => (
+                <StackRow key={tool.id} tool={tool} index={i} />
+              ))}
           </ul>
         </div>
       ) : null}

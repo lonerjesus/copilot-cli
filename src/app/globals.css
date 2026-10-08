@@ -661,6 +661,14 @@ body:has(.agebanner) .topbar {
   font-size: 0.72rem;
 }
 
+.section__sub {
+  margin: 0.35rem 0 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.4;
+  letter-spacing: 0.02em;
+}
+
 .section__head h2 {
   margin: 0;
   font-family: var(--font-display);
@@ -3877,6 +3885,20 @@ a.drive .drive__face {
   color: var(--steel);
   font-size: 0.78rem;
   line-height: 1.5;
+}
+
+.access__steps {
+  margin: -0.35rem 0 1rem;
+  padding: 0.55rem 0.7rem 0.55rem 1.45rem;
+  border: 1px solid var(--line);
+  background: color-mix(in oklab, var(--panel) 88%, transparent);
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.access__steps li + li {
+  margin-top: 0.2rem;
 }
 
 .access__notice {

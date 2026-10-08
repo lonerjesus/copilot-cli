@@ -26,8 +26,8 @@ function AdminInner() {
         <p className="section__eyebrow">denied</p>
         <h1>NO CLEARANCE</h1>
         <p className="admin-gate__hint">
-          Signed in as <strong>{user?.email ?? "guest"}</strong>. Sign in as the owner, then use
-          admin in the menu.
+          Signed in as <strong>{user?.email ?? "guest"}</strong>. Next: sign out, then sign in as
+          the owner and open admin from the menu.
         </p>
         <div className="admin-gate__actions">
           <Link className="btn btn--ghost" href="/">

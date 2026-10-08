@@ -16,5 +16,13 @@ Permanent multi-agent protocol for **www.kamaunegasi.net**:
 - [`agents/RUNBOOK.md`](./agents/RUNBOOK.md) — wave order + trigger matrix
 - [`agents/squad.json`](./agents/squad.json) — machine-readable roster
 - [`agents/checkers/`](./agents/checkers/) — task code-checker packs (responsive · stream · Netflix house · deploy)
+- [`agents/skills/`](./agents/skills/) — vendored portable skills (mirrors under `.cursor/skills/`)
+
+## Copy & UX skills (binding on user-facing text)
+
+When editing UI copy, empty states, errors, CTAs, or docs the member reads:
+
+1. Run [`agents/skills/no-ai-slop/SKILL.md`](./agents/skills/no-ai-slop/SKILL.md) — cut AI tells; keep house voice and exact names.
+2. Run [`agents/skills/i-have-adhd/SKILL.md`](./agents/skills/i-have-adhd/SKILL.md) — lead with the next action; number multi-step paths; matter-of-fact errors; one concrete next step.
 
 **Verifier always runs last.** Exact house names only — never invent third-party identities.

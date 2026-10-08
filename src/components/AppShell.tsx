@@ -12,7 +12,7 @@ import { MagazineReader } from "@/components/MagazineReader";
 
 const HouseAtlas = dynamic(
   () => import("@/components/HouseAtlas").then((m) => m.HouseAtlas),
-  { ssr: false, loading: () => <p className="atlas__boot">Loading house…</p> },
+  { ssr: false, loading: () => <p className="atlas__boot">Opening house…</p> },
 );
 import { MagazineProvider, useMagazine } from "@/components/MagazineContext";
 import { PlayerDock } from "@/components/player/PlayerDock";

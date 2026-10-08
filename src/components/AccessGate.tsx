@@ -5,6 +5,7 @@ import Link from "next/link";
 import { SITE } from "@/data/identity";
 import { MIN_PASSWORD_LENGTH } from "@/data/commerce";
 import { BrandMark, BrandWatermark } from "@/components/BrandMark";
+import { humanAuthError, humanNetworkError } from "@/lib/human-errors";
 
 type Mode = "login" | "register";
 
@@ -72,15 +73,15 @@ export function AccessGate() {
         message?: string;
       };
       if (!res.ok) {
-        setForgotStatus(data.error ?? "Request failed");
+        setForgotStatus(humanAuthError(data.error));
         return;
       }
       setForgotStatus(
         data.message ??
-          "If an account exists for that email, a reset link will be sent when email reset is enabled.",
+          "Reset email is not live yet. If that changes, we email only when the address matches an account — we never say which.",
       );
     } catch {
-      setForgotStatus("Network error");
+      setForgotStatus(humanNetworkError());
     } finally {
       setForgotBusy(false);
     }
@@ -107,12 +108,12 @@ export function AccessGate() {
       });
       const data = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {
-        setError(data.error ?? "Request failed");
+        setError(humanAuthError(data.error));
         return;
       }
       window.location.href = nextPath;
     } catch {
-      setError("Network error");
+      setError(humanNetworkError());
     } finally {
       setBusy(false);
     }
@@ -131,12 +132,24 @@ export function AccessGate() {
           {SITE.title}
         </h1>
         <p className="access__tagline">{SITE.tagline}</p>
-        <p className="access__copy">Account required.</p>
-        <p className="access__commerce">House downloads checkout via Stripe after sign-in.</p>
+        <p className="access__copy">
+          {mode === "login"
+            ? "Enter email and password to open the stream."
+            : "Create an account (about 1 minute), then the stream opens."}
+        </p>
+        <p className="access__commerce">Paid house downloads use Stripe after you sign in.</p>
         {sessionNotice ? (
           <p className="access__notice" role="status" aria-live="polite">
             {sessionNotice}
           </p>
+        ) : null}
+
+        {mode === "register" ? (
+          <ol className="access__steps" aria-label="Create account steps">
+            <li>Birth date + 18+ check</li>
+            <li>Email + password ({MIN_PASSWORD_LENGTH}+ characters)</li>
+            <li>Create & enter</li>
+          </ol>
         ) : null}
 
         <div className="access__tabs" role="tablist" aria-label="Account mode">
@@ -269,8 +282,8 @@ export function AccessGate() {
               {forgotOpen ? (
                 <div className="access__forgot-panel">
                   <p className="access__forgot-stub" role="status">
-                    Email reset is not live yet (Auth pack). You can still POST the stub with the
-                    email above — we never confirm whether an account exists.
+                    Email reset is not live yet. Fill email above, then request. We never say whether
+                    that address has an account.
                   </p>
                   <button
                     type="button"
@@ -278,7 +291,7 @@ export function AccessGate() {
                     disabled={forgotBusy || !email.trim()}
                     onClick={() => void requestPasswordReset()}
                   >
-                    {forgotBusy ? "sending…" : "request reset stub"}
+                    {forgotBusy ? "sending…" : "request reset"}
                   </button>
                   {forgotStatus ? (
                     <p className="access__hint" role="status">
@@ -309,13 +322,17 @@ export function AccessGate() {
           ) : null}
 
           <button type="submit" className="btn btn--primary" disabled={busy}>
-            {busy ? "securing…" : mode === "login" ? "enter stream" : "create & enter"}
+            {busy
+              ? mode === "login"
+                ? "signing in…"
+                : "creating…"
+              : mode === "login"
+                ? "enter stream"
+                : "create & enter"}
           </button>
         </form>
 
-        <p className="access__fine">
-          Viewing requires an account. Redistribution is prohibited.
-        </p>
+        <p className="access__fine">18+ · no redistribution of house media</p>
         <nav className="access__legal" aria-label="Legal">
           <Link href="/privacy">Privacy</Link>
           <span aria-hidden>·</span>

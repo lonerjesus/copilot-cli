@@ -10,7 +10,7 @@ export const SITE = {
   url: "https://www.kamaunegasi.net",
   title: "KAMAU NEGASI",
   tagline: "portfolio · vlog · stream",
-  description: "18+ only. Portfolio · vlog · stream.",
+  description: "18+. Portfolio, vlog, and stream for KAMAU NEGASI.",
   logo: "/logo-kn-phosphor.png",
   logoLight: "/logo-kn-light.png",
   logoInk: "/logo-kn.png",
