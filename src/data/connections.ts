@@ -177,12 +177,28 @@ export const HOUSE_OUTLETS: HouseOutlet[] = [
     blurb: "QUARANTINED THOUGHTS OF A STREET STATISTIC archive",
   },
   {
+    id: "magcloud-qtoss-vol1",
+    label: "MagCloud · QTOASS Vol.1",
+    handle: "streetpolitik",
+    url: "https://www.magcloud.com/browse/issue/665683",
+    lane: "archive",
+    blurb: "Chapbook Vol.1 — archive link-out only",
+  },
+  {
+    id: "magcloud-qtoss-vol2",
+    label: "MagCloud · QTOASS Vol.2",
+    handle: "streetpolitik",
+    url: "https://www.magcloud.com/browse/issue/672460",
+    lane: "archive",
+    blurb: "Chapbook Vol.2 — archive link-out only",
+  },
+  {
     id: "web-me",
     label: "KamauNegasi.me",
     handle: "kamaunegasi",
     url: "https://www.kamaunegasi.me",
-    lane: "web",
-    blurb: "Legacy domain — prefer this hub",
+    lane: "archive",
+    blurb: "Parked legacy domain — prefer www.kamaunegasi.net",
   },
 ];
 
@@ -249,7 +265,7 @@ export const HOUSE_PROJECTS: HouseProject[] = [
     name: "QUARANTINED THOUGHTS OF A STREET STATISTIC",
     kind: "project",
     blurb: "Chapbook archive on MagCloud — house reprint optional.",
-    outletIds: ["magcloud-archive"],
+    outletIds: ["magcloud-archive", "magcloud-qtoss-vol1", "magcloud-qtoss-vol2"],
   },
   {
     id: "faust-society",

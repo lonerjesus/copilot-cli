@@ -196,9 +196,10 @@ export const PLATFORMS = [
     kind: "web" as const,
   },
   // MagCloud lives only on House Atlas archive bridge — never stream ingest.
+  // kamaunegasi.me DNS is parked (AboveDomains) — keep registered, do not promote.
   {
     id: "web",
-    label: "KamauNegasi.me",
+    label: "KamauNegasi.me (parked)",
     handle: "kamaunegasi",
     url: "https://www.kamaunegasi.me",
     kind: "web" as const,

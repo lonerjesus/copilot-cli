@@ -17,6 +17,16 @@
 | **Look** | Phosphor/amber atmosphere, drifting grid, dual orbs, staggered rise, CTA pair |
 | **Code** | Dynamic import keeps MagCloud strings off initial home HTML; session-gated API; 8s feed timeout |
 
+## Probe follow-up ([Hunt in-repo connections](bc-2cd19268-083d-5141-8b4e-e40f0cdf7975) · [Probe live platform links](bc-8cb13641-8208-5248-a6a2-66839c166627))
+
+| Finding | Action |
+|---------|--------|
+| `kamaunegasi.me` parked (AboveDomains) | Atlas lane → archive; blurb warns prefer `.net` |
+| MagCloud QTOASS Vol.1/2 still live | Archive outlets `magcloud-qtoss-vol1/2` + project links |
+| MagCloud off stream | Kept out of `PLATFORMS` ingest; smoke forbids |
+| Substack/Apple/Twitch/Vimeo/ToneDen live | Already Atlas outlets + primary featured set |
+| Empty catalog seeds | Future stream re-seed — not in this PR |
+
 ## Verifier
 
-`MERGE_OK` — build + smoke expected green; House is the incorporation hub.
+`MERGE_OK` — local smoke 54/54; House is the incorporation hub.
