@@ -55,7 +55,15 @@ function ShellInner() {
         setView(id);
       }
       if (id === "categories") setView("browse");
-      if (id === "connections" || id === "projects") setView("house");
+      if (
+        id === "connections" ||
+        id === "projects" ||
+        id === "stack" ||
+        id === "marks" ||
+        id === "archive"
+      ) {
+        setView("house");
+      }
       if (id === "donate") setView("support");
     };
     applyHash();

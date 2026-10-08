@@ -23,17 +23,24 @@ import {
   type HouseProject,
   type OutletLane,
 } from "@/data/connections";
+import {
+  GITHUB_TOOLS,
+  GITHUB_TOOLS_COUNT,
+  GITHUB_TOOLS_SOURCE,
+  type GithubTool,
+} from "@/data/github-tools";
 import type { ArchiveItem } from "@/lib/archive-bridge";
 import { BrandMark } from "@/components/BrandMark";
 import { track } from "@/lib/analytics";
 
-type PanelId = "outlets" | "projects" | "archive" | "marks";
+type PanelId = "outlets" | "projects" | "archive" | "marks" | "stack";
 
 const PANELS: { id: PanelId; label: string }[] = [
   { id: "outlets", label: "outlets" },
   { id: "projects", label: "projects" },
   { id: "archive", label: "archive" },
   { id: "marks", label: "marks" },
+  { id: "stack", label: "stack" },
 ];
 
 const LANES: { id: OutletLane | "all"; label: string }[] = [
@@ -69,6 +76,15 @@ function projectTouchesLane(project: HouseProject, lane: OutletLane | "all"): bo
   return project.outletIds.some((id) => outletById(id)?.lane === lane);
 }
 
+function panelFromHash(): PanelId {
+  if (typeof window === "undefined") return "outlets";
+  const id = window.location.hash.replace(/^#/, "").toLowerCase();
+  if (id === "stack" || id === "projects" || id === "archive" || id === "marks") {
+    return id;
+  }
+  return "outlets";
+}
+
 export function HouseAtlas({ compact = false }: { compact?: boolean }) {
   const baseId = useId();
   const [panel, setPanel] = useState<PanelId>("outlets");
@@ -79,6 +95,16 @@ export function HouseAtlas({ compact = false }: { compact?: boolean }) {
   );
   const panelTabRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const laneTabRefs = useRef<Array<HTMLButtonElement | null>>([]);
+
+  useEffect(() => {
+    const apply = () => {
+      const next = panelFromHash();
+      startTransition(() => setPanel(next));
+    };
+    apply();
+    window.addEventListener("hashchange", apply);
+    return () => window.removeEventListener("hashchange", apply);
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -133,6 +159,14 @@ export function HouseAtlas({ compact = false }: { compact?: boolean }) {
 
   const goPanel = useCallback((id: PanelId) => {
     startTransition(() => setPanel(id));
+    if (typeof window === "undefined") return;
+    const nextHash =
+      id === "stack" || id === "projects" || id === "archive" || id === "marks"
+        ? id
+        : "house";
+    if (window.location.hash.replace(/^#/, "") !== nextHash) {
+      window.history.replaceState(null, "", `#${nextHash}`);
+    }
   }, []);
 
   const goLane = useCallback((id: OutletLane | "all") => {
@@ -433,6 +467,30 @@ export function HouseAtlas({ compact = false }: { compact?: boolean }) {
           </ul>
         </div>
       ) : null}
+
+      {panel === "stack" ? (
+        <div
+          className="atlas__block atlas__block--stack"
+          role="tabpanel"
+          id={`${baseId}-panel-panel-stack`}
+          aria-labelledby={`${baseId}-panel-stack`}
+        >
+          <header className="atlas__block-head">
+            <h3>STACK</h3>
+            <span>
+              {GITHUB_TOOLS.length}/{GITHUB_TOOLS_COUNT}
+            </span>
+          </header>
+          <p className="atlas__aside">
+            Free GitHub tools rack — link-out only. {GITHUB_TOOLS_SOURCE}.
+          </p>
+          <ul className="atlas__outlet-list" aria-label="GitHub tools">
+            {GITHUB_TOOLS.map((tool, i) => (
+              <StackRow key={tool.id} tool={tool} index={i} />
+            ))}
+          </ul>
+        </div>
+      ) : null}
     </section>
   );
 }
@@ -461,6 +519,33 @@ function OutletRow({
         <span className="atlas__outlet-body">
           <strong>{outlet.label}</strong>
           <em>{outlet.blurb}</em>
+        </span>
+        <span className="atlas__outlet-go" aria-hidden>
+          ↗
+        </span>
+      </a>
+    </li>
+  );
+}
+
+function StackRow({ tool, index }: { tool: GithubTool; index: number }) {
+  return (
+    <li
+      className="atlas__outlet atlas-lane--web"
+      style={{ animationDelay: `${Math.min(index, 10) * 35}ms` }}
+    >
+      <a
+        href={tool.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={() => track("enter_stream", { id: tool.id, via: "atlas_stack" })}
+      >
+        <span className="atlas__outlet-lane">github</span>
+        <span className="atlas__outlet-body">
+          <strong>{tool.name}</strong>
+          <em>
+            {tool.repo} — {tool.blurb}
+          </em>
         </span>
         <span className="atlas__outlet-go" aria-hidden>
           ↗

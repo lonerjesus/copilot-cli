@@ -4960,6 +4960,10 @@ a.drive .drive__face {
   gap: 0.5rem;
 }
 
+.atlas__block--stack .atlas__aside {
+  margin-bottom: 0.65rem;
+}
+
 .atlas__featured {
   gap: 0.55rem;
   margin-bottom: 0.35rem;
