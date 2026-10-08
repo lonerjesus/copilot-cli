@@ -32,6 +32,11 @@ export async function middleware(request: NextRequest) {
   const botty = isSuspiciousBot(request);
   const preview = isLinkPreviewBot(request);
 
+  // Local / memory-auth QA runs many suites back-to-back — raise auth ceilings.
+  const qaAuth = process.env.ALLOW_MEMORY_AUTH === "1";
+  const authLimit = qaAuth ? 180 : 12;
+  const forgotLimit = qaAuth ? 60 : 6;
+
   if (pathname.startsWith("/api/auth/register") || pathname.startsWith("/api/auth/login")) {
     if (botty) {
       return withSecurity(
@@ -39,7 +44,7 @@ export async function middleware(request: NextRequest) {
         NextResponse.json({ error: "forbidden" }, { status: 403 }),
       );
     }
-    if (!rateLimitAllow(`auth:${ip}`, 12, 60_000)) {
+    if (!rateLimitAllow(`auth:${ip}`, authLimit, 60_000)) {
       return withSecurity(
         pathname,
         NextResponse.json({ error: "rate_limited" }, { status: 429 }),
@@ -54,7 +59,7 @@ export async function middleware(request: NextRequest) {
         NextResponse.json({ error: "forbidden" }, { status: 403 }),
       );
     }
-    if (!rateLimitAllow(`forgot:${ip}`, 6, 60_000)) {
+    if (!rateLimitAllow(`forgot:${ip}`, forgotLimit, 60_000)) {
       return withSecurity(
         pathname,
         NextResponse.json({ error: "rate_limited" }, { status: 429 }),

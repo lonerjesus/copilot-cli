@@ -74,7 +74,7 @@ ok(
 );
 
 const jar = cookieJar();
-let { json } = await api("/api/auth/register", {
+let { json, res: authRes } = await api("/api/auth/register", {
   method: "POST",
   jar,
   headers: { "content-type": "application/json" },
@@ -88,14 +88,18 @@ let { json } = await api("/api/auth/register", {
   }),
 });
 if (!json?.user?.email) {
-  ({ json } = await api("/api/auth/login", {
+  ({ json, res: authRes } = await api("/api/auth/login", {
     method: "POST",
     jar,
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ email: ADMIN, password: PASS, website: "" }),
   }));
 }
-ok("admin-session", Boolean(json?.user?.isAdmin || json?.user?.email));
+ok(
+  "admin-session",
+  json?.user?.isAdmin === true,
+  `status=${authRes.status} email=${json?.user?.email} isAdmin=${json?.user?.isAdmin}`,
+);
 
 const title = `Writing Open Probe ${Date.now()}`;
 const bodyText =
