@@ -10,7 +10,14 @@ export const SITE = {
   url: "https://www.kamaunegasi.net",
   title: "KAMAU NEGASI",
   tagline: "portfolio · vlog · stream",
+  /** Short line for dense UI chrome. */
   description: "18+ only. Portfolio · vlog · stream.",
+  /**
+   * Share / search blurb — drives Discord/X/IG cards + /access CTR.
+   * Keep 18+ first; name Streetpolitik + TSOL for discoverability.
+   */
+  shareDescription:
+    "18+ house of Kendrick-Kamau Negasi — Streetpolitik, Telling Show Of Love, GrownAssKids. Create an account to enter the portfolio, vlog, and stream.",
   logo: "/logo-kn-phosphor.png",
   logoLight: "/logo-kn-light.png",
   logoInk: "/logo-kn.png",

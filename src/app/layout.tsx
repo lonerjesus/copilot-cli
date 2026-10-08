@@ -33,7 +33,7 @@ export const metadata: Metadata = {
     default: `${SITE.title} · ${SITE.domain}`,
     template: `%s · ${SITE.title}`,
   },
-  description: SITE.description,
+  description: SITE.shareDescription,
   applicationName: SITE.title,
   icons: {
     icon: [
@@ -66,7 +66,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: SITE.title,
-    description: SITE.description,
+    description: SITE.shareDescription,
     url: SITE.url,
     siteName: SITE.title,
     type: "website",
@@ -83,11 +83,12 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: SITE.title,
-    description: SITE.description,
+    description: SITE.shareDescription,
     images: [`${SITE.url}/og.png`],
   },
+  // Root canonical points at the signup door — stream is session-gated.
   alternates: {
-    canonical: SITE.url,
+    canonical: `${SITE.url}/access`,
   },
 };
 

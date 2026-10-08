@@ -4,8 +4,9 @@ import { SITE } from "@/data/identity";
 
 export const metadata: Metadata = {
   title: "Privacy",
-  description: `Privacy policy for ${SITE.domain}.`,
-  robots: { index: false, follow: false },
+  description: `Privacy policy for ${SITE.domain} — what we collect, why, and how accounts work.`,
+  alternates: { canonical: `${SITE.url}/privacy` },
+  robots: { index: true, follow: true },
 };
 
 export default function PrivacyPage() {

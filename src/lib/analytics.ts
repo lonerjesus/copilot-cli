@@ -12,7 +12,14 @@ type Signal =
   | "category_filter"
   | "command"
   | "footprint_open"
-  | "cosmogram_view";
+  | "cosmogram_view"
+  | "register_submit"
+  | "register_ok"
+  | "register_fail"
+  | "login_submit"
+  | "login_ok"
+  | "login_fail"
+  | "access_mode";
 
 type AnalyticsEvent = {
   signal: Signal;

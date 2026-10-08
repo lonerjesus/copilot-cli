@@ -14,7 +14,7 @@
     "cf:build": "opennextjs-cloudflare build",
     "cf:deploy": "opennextjs-cloudflare deploy",
     "cf:ensure-r2": "bash scripts/ensure-r2-bucket.sh",
-    "qa:smoke": "bash scripts/qa-smoke.sh http://localhost:3000",
+    "qa:smoke": "bash scripts/qa-smoke.sh \"${BASE:-http://127.0.0.1:3000}\"",
     "qa:av": "node --experimental-strip-types scripts/check-av-upload-types.mjs",
     "qa:av-e2e": "node scripts/e2e-av-upload.mjs",
     "qa:edit-save": "node scripts/e2e-admin-edit-save.mjs",
@@ -23,7 +23,9 @@
     "qa:media-range": "node scripts/e2e-media-range.mjs",
     "qa:writing-open": "node --experimental-strip-types scripts/e2e-writing-open.mjs",
     "qa:platform-compare": "node --experimental-strip-types scripts/e2e-platform-compare.mjs",
-    "qa:guest": "node scripts/e2e-guest-user.mjs"
+    "qa:guest": "node scripts/e2e-guest-user.mjs",
+    "qa:player-blob": "node scripts/e2e-player-blob.mjs",
+    "qa:gate": "bash scripts/qa-gate.sh"
   },
   "dependencies": {
     "@opennextjs/cloudflare": "^1.20.8",
@@ -40,7 +42,8 @@
   },
   "devDependencies": {
     "eslint": "^9",
-    "eslint-config-next": "16.3.8"
+    "eslint-config-next": "16.3.8",
+    "playwright": "^1.64.0"
   },
   "engines": {
     "node": ">=22"

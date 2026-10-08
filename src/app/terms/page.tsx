@@ -5,7 +5,8 @@ import { SITE } from "@/data/identity";
 export const metadata: Metadata = {
   title: "Terms",
   description: `Terms of use for ${SITE.domain}. Account gate, 18+, streaming, and house download rules.`,
-  robots: { index: false, follow: false },
+  alternates: { canonical: `${SITE.url}/terms` },
+  robots: { index: true, follow: true },
 };
 
 export default function TermsPage() {

@@ -19,4 +19,4 @@ Uploaded song cuts off early during playback.
   - false-`ended` guard (only advance queue when truly at EOF)
 
 ## Verify
-`qa:media-range` **33/30+** (33/33) on local `:3040` · `tsc --noEmit` green · `build:next` green
+`qa:media-range` **33/33** on local `:3040` · `tsc --noEmit` green · `build:next` green

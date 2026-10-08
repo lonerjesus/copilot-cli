@@ -1,14 +1,29 @@
 import type { NextRequest } from "next/server";
 
+/**
+ * Link-preview / unfurl clients — allowed to soft-land on /access for OG cards
+ * (Discord, X, Meta, Slack, etc.). Still blocked from auth APIs.
+ */
+const LINK_PREVIEW_UA =
+  /\b(facebookexternalhit|facebot|twitterbot|linkedinbot|slackbot|discordbot|telegrambot|whatsapp|embedly|redditbot|pinterest|vkshare|bingpreview|skypeuripreview|applebot|google-pagerenderer|iframely)\b/i;
+
 /** Known scraper / non-browser fetch clients. Session still required; this is belt-and-suspenders. */
 const BOT_UA =
-  /\b(bot|crawler|spider|crawling|slurp|wget|curl|python-requests|python-urllib|scrapy|httpclient|go-http-client|libwww|mechanize|headlesschrome|phantomjs|selenium|puppeteer|playwright|axios\/|node-fetch|okhttp|java\/|perl|ruby|php\/|aiohttp|httpx|postman|insomnia|scrapy|bytespider|gptbot|claudebot|anthropic|ccbot|petalbot|semrush|ahrefs|dataforseo|mj12bot|dotbot|bingpreview|facebookexternalhit|twitterbot|linkedinbot|embedly|quora|redditbot|discordbot|telegrambot|whatsapp|preview)\b/i;
+  /\b(bot|crawler|spider|crawling|slurp|wget|curl|python-requests|python-urllib|scrapy|httpclient|go-http-client|libwww|mechanize|headlesschrome|phantomjs|selenium|puppeteer|playwright|axios\/|node-fetch|okhttp|java\/|perl|ruby|php\/|aiohttp|httpx|postman|insomnia|bytespider|gptbot|claudebot|anthropic|ccbot|petalbot|semrush|ahrefs|dataforseo|mj12bot|dotbot|preview)\b/i;
 
 const rateBuckets = new Map<string, { count: number; resetAt: number }>();
+
+export function isLinkPreviewBot(request: NextRequest): boolean {
+  const ua = request.headers.get("user-agent")?.trim() ?? "";
+  if (!ua) return false;
+  return LINK_PREVIEW_UA.test(ua);
+}
 
 export function isSuspiciousBot(request: NextRequest): boolean {
   const ua = request.headers.get("user-agent")?.trim() ?? "";
   if (!ua || ua.length < 12) return true;
+  // Preview bots are "bots" for auth API denial, but get a soft page landing.
+  if (isLinkPreviewBot(request)) return true;
   if (BOT_UA.test(ua)) return true;
   return false;
 }
