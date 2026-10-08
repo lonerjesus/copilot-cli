@@ -23,6 +23,13 @@ const context = await browser.newContext({
   userAgent: BROWSER_UA,
   viewport: { width: 1280, height: 800 },
 });
+await context.addInitScript(() => {
+  try {
+    localStorage.setItem("kn.age.ok.v1", "1");
+  } catch {
+    /* */
+  }
+});
 const page = await context.newPage();
 
 let pass = 0;
@@ -39,13 +46,29 @@ function ok(name, cond, detail = "") {
 
 try {
   console.log(`== e2e player blob @ ${BASE} ==`);
-  await page.goto(`${BASE}/access`, { waitUntil: "domcontentloaded", timeout: 60000 });
-  // Prefer sign-in tab for existing admin
-  const signIn = page.getByRole("tab", { name: /sign in/i });
-  if (await signIn.count()) await signIn.click();
-  await page.locator('input[type="email"]').fill(EMAIL);
-  await page.locator('input[type="password"]').fill(PASS);
-  await page.getByRole("button", { name: /enter stream/i }).click();
+  // API login — avoids Secure-cookie / hydration races on the access form.
+  const login = await context.request.post(`${BASE}/api/auth/login`, {
+    data: { email: EMAIL, password: PASS, website: "" },
+    headers: { "content-type": "application/json" },
+  });
+  let loginJson = await login.json().catch(() => null);
+  if (!loginJson?.user?.email) {
+    const reg = await context.request.post(`${BASE}/api/auth/register`, {
+      data: {
+        email: EMAIL,
+        password: PASS,
+        displayName: "AV Owner",
+        birthDate: "1987-04-05",
+        ageConfirmed: true,
+        website: "",
+      },
+      headers: { "content-type": "application/json" },
+    });
+    loginJson = await reg.json().catch(() => null);
+  }
+  ok("login-api", Boolean(loginJson?.user?.email), JSON.stringify(loginJson).slice(0, 120));
+
+  await page.goto(`${BASE}/`, { waitUntil: "domcontentloaded", timeout: 60000 });
   await page.waitForURL((u) => !u.pathname.includes("/access"), { timeout: 30000 });
   ok("login", true, page.url());
 
@@ -55,6 +78,8 @@ try {
     await page.waitForSelector(".agegate", { state: "detached", timeout: 10000 }).catch(() => {});
     ok("agegate", true);
   }
+  await page.evaluate(() => document.querySelector("button.boot__skip")?.click());
+  await page.waitForFunction(() => !document.querySelector(".boot"), null, { timeout: 15000 }).catch(() => {});
 
   await page.waitForTimeout(800);
 

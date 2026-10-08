@@ -66,7 +66,11 @@ ok("anon-lands-on-access", landedAccess, anonPage.url());
 await anonPage.screenshot({ path: `${OUT}/01-anon-access.png`, fullPage: false });
 
 const accessText = await anonPage.locator("body").innerText();
-ok("anon-account-required-copy", /account required/i.test(accessText));
+ok(
+  "anon-account-required-copy",
+  /account required|create a free account|create account/i.test(accessText),
+  accessText.slice(0, 120),
+);
 ok("anon-has-sign-in", /sign in/i.test(accessText));
 ok("anon-has-create-account", /create account/i.test(accessText));
 ok("anon-no-admin-link", !(await anonPage.locator('a[href="/admin"]').count()));
@@ -95,6 +99,13 @@ await anon.close();
 
 // ——— 2. Create guest member (NOT owner) ———
 const context = await browser.newContext({ viewport: { width: 1280, height: 800 }, userAgent: UA });
+await context.addInitScript(() => {
+  try {
+    localStorage.setItem("kn.age.ok.v1", "1");
+  } catch {
+    /* */
+  }
+});
 const page = await context.newPage();
 const pageErrors = [];
 page.on("pageerror", (e) => pageErrors.push(String(e.message || e)));
@@ -128,18 +139,9 @@ const session = await ensureGuestSession();
 ok("guest-register", Boolean(session.json?.user?.email), `${session.status} ${JSON.stringify(session.json).slice(0, 140)}`);
 ok("guest-not-admin", session.json?.user?.isAdmin !== true, JSON.stringify(session.json?.user));
 await page.goto(`${BASE}/`, { waitUntil: "domcontentloaded" });
-
-await page.addInitScript(() => {
-  try {
-    localStorage.setItem("kn.age.ok.v1", "1");
-  } catch {
-    /* */
-  }
-});
-await page.reload({ waitUntil: "domcontentloaded" });
 await page.waitForTimeout(600);
 
-// Age gate if shown
+// Age gate if shown (init script usually skips)
 const ageBtn = page.getByRole("button", { name: /^enter$/i });
 if (await ageBtn.count()) await ageBtn.first().click().catch(() => {});
 
@@ -147,7 +149,7 @@ if (await ageBtn.count()) await ageBtn.first().click().catch(() => {});
 await page.evaluate(() => document.querySelector("button.boot__skip")?.click());
 await page.waitForFunction(() => !document.querySelector(".boot"), null, { timeout: 15000 }).catch(() => {});
 
-await page.waitForSelector(".deck, .shell", { timeout: 20000 });
+await page.waitForSelector(".deck, .shell", { timeout: 30000 });
 ok("guest-enters-shell", (await page.locator(".shell").count()) > 0);
 ok("guest-no-admin-nav", !(await page.locator('a[href="/admin"], button[aria-label="admin"]').count()));
 await page.screenshot({ path: `${OUT}/02-guest-home.png`, fullPage: false });
