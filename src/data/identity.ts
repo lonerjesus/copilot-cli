@@ -195,13 +195,7 @@ export const PLATFORMS = [
     url: "https://faustspiritsocialsocietyincorp.godaddysites.com/",
     kind: "web" as const,
   },
-  {
-    id: "magcloud",
-    label: "MagCloud · streetpolitik",
-    handle: "streetpolitik",
-    url: "https://www.magcloud.com/user/streetpolitik",
-    kind: "blog" as const,
-  },
+  // MagCloud lives only on House Atlas archive bridge — never stream ingest.
   {
     id: "web",
     label: "KamauNegasi.me",
