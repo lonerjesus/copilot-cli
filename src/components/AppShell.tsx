@@ -8,13 +8,14 @@ import { BootSequence } from "@/components/BootSequence";
 import { Hero } from "@/components/Hero";
 import { StreamDeck } from "@/components/StreamDeck";
 import { CategoryBrowser } from "@/components/CategoryBrowser";
-import { MagazineReader } from "@/components/MagazineReader";
+import { WritingReader } from "@/components/WritingReader";
+import { PhotoGallery } from "@/components/PhotoGallery";
 
 const HouseAtlas = dynamic(
   () => import("@/components/HouseAtlas").then((m) => m.HouseAtlas),
   { ssr: false, loading: () => <p className="atlas__boot">Loading house…</p> },
 );
-import { MagazineProvider, useMagazine } from "@/components/MagazineContext";
+import { ReaderProvider, useReader } from "@/components/ReaderContext";
 import { PlayerDock } from "@/components/player/PlayerDock";
 import { PlayerProvider, usePlayerState } from "@/components/player/PlayerContext";
 import { AuthProvider, useAuth } from "@/components/AuthContext";
@@ -38,7 +39,13 @@ function ShellInner() {
   const [view, setView] = useState<ViewId>("stream");
   const [menuOpen, setMenuOpen] = useState(false);
   const { setExpanded, toggle } = usePlayerState();
-  const { openId, closeMagazine } = useMagazine();
+  const {
+    writingItem,
+    gallery,
+    closeWriting,
+    closeGallery,
+    setGalleryIndex,
+  } = useReader();
   const { user, logout, refresh } = useAuth();
 
   useEffect(() => {
@@ -66,7 +73,10 @@ function ShellInner() {
   const go = useCallback((id: ViewId) => {
     setView(id);
     setMenuOpen(false);
-    window.history.replaceState(null, "", `#${id}`);
+    // Prefer hash assignment so deep-links and back/forward stay in sync.
+    if (window.location.hash.replace(/^#/, "") !== id) {
+      window.location.hash = id;
+    }
   }, []);
 
   const nav: { id: ViewId; label: string; Icon: ComponentType<{ className?: string }> }[] = [
@@ -178,10 +188,19 @@ function ShellInner() {
             <SiteFooter />
           </div>
         </div>
-
-        <PlayerDock />
-        <MagazineReader catalogId={openId} onClose={closeMagazine} />
       </div>
+
+      {/* Viewport-fixed overlays — outside .shell so transform/relative never traps them */}
+      <PlayerDock />
+      <WritingReader item={writingItem} onClose={closeWriting} />
+      {gallery ? (
+        <PhotoGallery
+          items={gallery.items}
+          index={gallery.index}
+          onIndexChange={setGalleryIndex}
+          onClose={closeGallery}
+        />
+      ) : null}
     </>
   );
 }
@@ -190,9 +209,9 @@ export function AppShell() {
   return (
     <AuthProvider>
       <PlayerProvider>
-        <MagazineProvider>
+        <ReaderProvider>
           <ShellInner />
-        </MagazineProvider>
+        </ReaderProvider>
       </PlayerProvider>
     </AuthProvider>
   );

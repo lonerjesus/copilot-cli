@@ -1,19 +1,26 @@
-# verifier — 2026-10-04 full audit
+# Verifier — MERGE_OK
 
-## Inputs
-- security-report.md → PASS (+ OPS)
-- deploy-check.md → PASS (+ OPS)
-- catalog-names (inline) → PASS after GrownAssKids/GRUNGEzhou cleanup
-- full-audit.md
+## Scope
+`cursor/expert-tier-harden-560e` → `main` (PR #34)
 
-## Checks
-- [x] No FAIL left open in code
-- Exact-name policy clean on touched catalog copy
-- OpenNext build path coherent
-- Auth store no longer silent-memory on Workers production
+## Sectors
+| Sector | Verdict |
+|--------|---------|
+| SEO / signup funnel | PASS — `/access` indexable, preview soft-land, JSON-LD, register-first |
+| Media / player EOF | PASS — meta Range + blob dock |
+| E2E gate | PASS — `qa:gate GREEN` |
+| Auth / anti-scrape | PASS — scrapers 403; preview 307→access |
+| Guest journey | PASS — 27/27 |
+| Build | PASS — `build:next` |
+
+## Gate log
+`/opt/cursor/artifacts/qa-gate-elite.log`
+
+```
+qa:av · media-ref · media-meta · smoke 67 · media-range 33 · av-e2e 14
+edit-save 15 · writing-open 15 · guest 27 · player-blob 9
+== qa:gate GREEN ==
+```
 
 ## Verdict
-
-**MERGE_OK**
-
-Go-live remains blocked until AUTH_SECRET + AUTH_KV are configured in Cloudflare (documented; not a code defect).
+**MERGE_OK** — elite across audited sectors; proceed merge + deploy.

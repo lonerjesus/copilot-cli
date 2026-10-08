@@ -1,14 +1,27 @@
 import type { MetadataRoute } from "next";
 import { SITE } from "@/data/identity";
 
-/** Account gate — only advertise the access door. */
+/** Advertise the account door + legal trust pages — never the gated stream. */
 export default function sitemap(): MetadataRoute.Sitemap {
+  const now = new Date();
   return [
     {
       url: `${SITE.url}/access`,
-      lastModified: new Date(),
-      changeFrequency: "monthly",
-      priority: 0.3,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 1,
+    },
+    {
+      url: `${SITE.url}/privacy`,
+      lastModified: now,
+      changeFrequency: "yearly",
+      priority: 0.4,
+    },
+    {
+      url: `${SITE.url}/terms`,
+      lastModified: now,
+      changeFrequency: "yearly",
+      priority: 0.4,
     },
   ];
 }

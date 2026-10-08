@@ -1,15 +1,16 @@
 import { NextResponse, type NextRequest } from "next/server";
 import {
   clientKey,
+  isLinkPreviewBot,
   isPublicPath,
   isSuspiciousBot,
   rateLimitAllow,
 } from "@/lib/auth/bot";
 import { hasValidSessionCookie, SESSION_COOKIE } from "@/lib/auth/token";
-import { SECURITY_HEADERS } from "@/lib/security-headers";
+import { securityHeadersForPath } from "@/lib/security-headers";
 
-function withSecurity(response: NextResponse) {
-  for (const [key, value] of Object.entries(SECURITY_HEADERS)) {
+function withSecurity(pathname: string, response: NextResponse) {
+  for (const [key, value] of Object.entries(securityHeadersForPath(pathname))) {
     response.headers.set(key, value);
   }
   return response;
@@ -20,21 +21,33 @@ export async function middleware(request: NextRequest) {
   const ip = clientKey(request);
   const sessionOk = await hasValidSessionCookie(request.cookies.get(SESSION_COOKIE)?.value);
 
-  if (!rateLimitAllow(`global:${ip}`, 120, 60_000)) {
+  // Local / memory-auth QA runs many suites back-to-back — raise ceilings.
+  const qaAuth = process.env.ALLOW_MEMORY_AUTH === "1";
+  const globalLimit = qaAuth ? 5000 : 120;
+  const authLimit = qaAuth ? 500 : 12;
+  const forgotLimit = qaAuth ? 120 : 6;
+
+  if (!rateLimitAllow(`global:${ip}`, globalLimit, 60_000)) {
     return withSecurity(
+      pathname,
       NextResponse.json({ error: "rate_limited" }, { status: 429 }),
     );
   }
 
   const isPublic = isPublicPath(pathname);
   const botty = isSuspiciousBot(request);
+  const preview = isLinkPreviewBot(request);
 
   if (pathname.startsWith("/api/auth/register") || pathname.startsWith("/api/auth/login")) {
     if (botty) {
-      return withSecurity(NextResponse.json({ error: "forbidden" }, { status: 403 }));
-    }
-    if (!rateLimitAllow(`auth:${ip}`, 12, 60_000)) {
       return withSecurity(
+        pathname,
+        NextResponse.json({ error: "forbidden" }, { status: 403 }),
+      );
+    }
+    if (!rateLimitAllow(`auth:${ip}`, authLimit, 60_000)) {
+      return withSecurity(
+        pathname,
         NextResponse.json({ error: "rate_limited" }, { status: 429 }),
       );
     }
@@ -42,10 +55,14 @@ export async function middleware(request: NextRequest) {
 
   if (pathname.startsWith("/api/auth/forgot-password")) {
     if (botty) {
-      return withSecurity(NextResponse.json({ error: "forbidden" }, { status: 403 }));
-    }
-    if (!rateLimitAllow(`forgot:${ip}`, 6, 60_000)) {
       return withSecurity(
+        pathname,
+        NextResponse.json({ error: "forbidden" }, { status: 403 }),
+      );
+    }
+    if (!rateLimitAllow(`forgot:${ip}`, forgotLimit, 60_000)) {
+      return withSecurity(
+        pathname,
         NextResponse.json({ error: "rate_limited" }, { status: 429 }),
       );
     }
@@ -53,12 +70,18 @@ export async function middleware(request: NextRequest) {
 
   if (pathname.startsWith("/api/") && !isPublic) {
     if (botty && !sessionOk) {
-      return withSecurity(NextResponse.json({ error: "forbidden" }, { status: 403 }));
+      return withSecurity(
+        pathname,
+        NextResponse.json({ error: "forbidden" }, { status: 403 }),
+      );
     }
     if (!sessionOk) {
-      return withSecurity(NextResponse.json({ error: "auth_required" }, { status: 401 }));
+      return withSecurity(
+        pathname,
+        NextResponse.json({ error: "auth_required" }, { status: 401 }),
+      );
     }
-    const response = withSecurity(NextResponse.next());
+    const response = withSecurity(pathname, NextResponse.next());
     response.headers.set("Cache-Control", "private, no-store");
     return response;
   }
@@ -66,10 +89,20 @@ export async function middleware(request: NextRequest) {
   if (!isPublic && !pathname.startsWith("/_next") && !sessionOk) {
     const accountGate = process.env.ACCOUNT_GATE !== "0";
     if (!accountGate) {
-      return withSecurity(NextResponse.next());
+      return withSecurity(pathname, NextResponse.next());
     }
+
+    // Share cards: send preview bots to /access (indexable OG) instead of 403.
+    if (preview) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/access";
+      url.search = "";
+      return withSecurity("/access", NextResponse.redirect(url));
+    }
+
     if (botty && pathname !== "/access") {
       return withSecurity(
+        pathname,
         new NextResponse("Account required. Automated access denied.", {
           status: 403,
           headers: { "Content-Type": "text/plain; charset=utf-8" },
@@ -82,7 +115,7 @@ export async function middleware(request: NextRequest) {
     if (pathname !== "/") {
       url.searchParams.set("next", pathname);
     }
-    return withSecurity(NextResponse.redirect(url));
+    return withSecurity("/access", NextResponse.redirect(url));
   }
 
   if (pathname === "/access" && sessionOk) {
@@ -94,10 +127,10 @@ export async function middleware(request: NextRequest) {
     } else {
       url.pathname = "/";
     }
-    return withSecurity(NextResponse.redirect(url));
+    return withSecurity(url.pathname, NextResponse.redirect(url));
   }
 
-  const response = withSecurity(NextResponse.next());
+  const response = withSecurity(pathname, NextResponse.next());
   if (!isPublic) {
     response.headers.set("Cache-Control", "private, no-store");
   }

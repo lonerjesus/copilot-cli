@@ -16,12 +16,21 @@ import {
 
 export { SESSION_COOKIE } from "@/lib/auth/token";
 
+/** Secure cookies on real HTTPS prod; plain HTTP local QA needs Secure=false. */
+function cookieSecure(): boolean {
+  if (process.env.COOKIE_SECURE === "0") return false;
+  if (process.env.COOKIE_SECURE === "1") return true;
+  // Memory-auth local gates run `next start` (NODE_ENV=production) over http://
+  if (process.env.ALLOW_MEMORY_AUTH === "1") return false;
+  return process.env.NODE_ENV === "production";
+}
+
 export function sessionCookieOptions(token: string) {
   return {
     name: SESSION_COOKIE,
     value: token,
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: cookieSecure(),
     sameSite: "lax" as const,
     path: "/",
     maxAge: MAX_AGE_SEC,
@@ -42,7 +51,7 @@ export function clearSession(response: NextResponse): NextResponse {
     name: SESSION_COOKIE,
     value: "",
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: cookieSecure(),
     sameSite: "lax",
     path: "/",
     maxAge: 0,

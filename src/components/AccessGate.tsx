@@ -1,12 +1,15 @@
 "use client";
 
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { SITE } from "@/data/identity";
 import { MIN_PASSWORD_LENGTH } from "@/data/commerce";
 import { BrandMark, BrandWatermark } from "@/components/BrandMark";
+import { track } from "@/lib/analytics";
 
 type Mode = "login" | "register";
+
+const VISITED_KEY = "kn.access.visited";
 
 /** Block open redirects: only same-origin relative paths. */
 function safeInternalPath(raw: string | null): string {
@@ -17,8 +20,23 @@ function safeInternalPath(raw: string | null): string {
   return raw;
 }
 
+function initialMode(): Mode {
+  if (typeof window === "undefined") return "register";
+  const params = new URLSearchParams(window.location.search);
+  const q = params.get("mode");
+  if (q === "login" || q === "signin") return "login";
+  if (q === "register" || q === "signup" || q === "create") return "register";
+  // Returning visitors default to sign-in; first visit → create account.
+  try {
+    if (window.localStorage.getItem(VISITED_KEY) === "1") return "login";
+  } catch {
+    /* private mode */
+  }
+  return "register";
+}
+
 export function AccessGate() {
-  const [mode, setMode] = useState<Mode>("login");
+  const [mode, setMode] = useState<Mode>("register");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -31,6 +49,17 @@ export function AccessGate() {
   const [forgotOpen, setForgotOpen] = useState(false);
   const [forgotBusy, setForgotBusy] = useState(false);
   const [forgotStatus, setForgotStatus] = useState("");
+
+  useEffect(() => {
+    const next = initialMode();
+    setMode(next);
+    track("access_mode", { mode: next });
+    try {
+      window.localStorage.setItem(VISITED_KEY, "1");
+    } catch {
+      /* private mode */
+    }
+  }, []);
 
   const nextPath = useMemo(() => {
     if (typeof window === "undefined") return "/";
@@ -90,6 +119,10 @@ export function AccessGate() {
     event.preventDefault();
     setError("");
     setBusy(true);
+    const signalSubmit = mode === "login" ? "login_submit" : "register_submit";
+    const signalOk = mode === "login" ? "login_ok" : "register_ok";
+    const signalFail = mode === "login" ? "login_fail" : "register_fail";
+    track(signalSubmit, { mode });
     try {
       const endpoint = mode === "login" ? "/api/auth/login" : "/api/auth/register";
       const res = await fetch(endpoint, {
@@ -107,11 +140,14 @@ export function AccessGate() {
       });
       const data = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {
+        track(signalFail, { mode, status: res.status });
         setError(data.error ?? "Request failed");
         return;
       }
+      track(signalOk, { mode });
       window.location.href = nextPath;
     } catch {
+      track(signalFail, { mode, status: 0 });
       setError("Network error");
     } finally {
       setBusy(false);
@@ -131,8 +167,10 @@ export function AccessGate() {
           {SITE.title}
         </h1>
         <p className="access__tagline">{SITE.tagline}</p>
-        <p className="access__copy">Account required.</p>
-        <p className="access__commerce">House downloads checkout via Stripe after sign-in.</p>
+        <p className="access__copy">
+          Create a free account to enter the house stream — audio, video, stills, and writings.
+        </p>
+        <p className="access__commerce">18+ · House downloads checkout via Stripe after sign-in.</p>
         {sessionNotice ? (
           <p className="access__notice" role="status" aria-live="polite">
             {sessionNotice}
@@ -269,8 +307,8 @@ export function AccessGate() {
               {forgotOpen ? (
                 <div className="access__forgot-panel">
                   <p className="access__forgot-stub" role="status">
-                    Email reset is not live yet (Auth pack). You can still POST the stub with the
-                    email above — we never confirm whether an account exists.
+                    Password email reset is coming soon. Enter your email above to queue a request —
+                    we never confirm whether an account exists.
                   </p>
                   <button
                     type="button"
@@ -278,7 +316,7 @@ export function AccessGate() {
                     disabled={forgotBusy || !email.trim()}
                     onClick={() => void requestPasswordReset()}
                   >
-                    {forgotBusy ? "sending…" : "request reset stub"}
+                    {forgotBusy ? "sending…" : "request reset"}
                   </button>
                   {forgotStatus ? (
                     <p className="access__hint" role="status">

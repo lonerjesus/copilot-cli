@@ -140,12 +140,20 @@ const ALLOWED = new Set([
   "next",
   "queue_next",
   "magazine_open",
+  "writing_open",
   "category_filter",
   "command",
   "footprint_open",
   "cosmogram_view",
   "publish",
   "admin_edit",
+  "register_submit",
+  "register_ok",
+  "register_fail",
+  "login_submit",
+  "login_ok",
+  "login_fail",
+  "access_mode",
 ]);
 
 export async function recordAnalyticsEvent(

@@ -1,9 +1,7 @@
-# ux-checklist.md
+# ux
 
-**Agent:** `ux`  
-**Verdict:** `PASS` (follow-up)
-
-- Drive letter E: aligned (Hero + Footprint title)
-- Empty shelves show intentional placeholders
-- Essay featured/hero CTA routes to magazine when available
-- Names bay still gone; CommandBar A–E
+- Sticky Save lifts with software keyboard (visualViewport inset).
+- Tabs scroll horizontally on narrow widths; library actions full-width ≤480px.
+- Landscape short-height: shorter drop zones + action bar.
+- Dirty leave warning only when fields changed.
+PASS

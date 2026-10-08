@@ -8,10 +8,18 @@ type Signal =
   | "next"
   | "queue_next"
   | "magazine_open"
+  | "writing_open"
   | "category_filter"
   | "command"
   | "footprint_open"
-  | "cosmogram_view";
+  | "cosmogram_view"
+  | "register_submit"
+  | "register_ok"
+  | "register_fail"
+  | "login_submit"
+  | "login_ok"
+  | "login_fail"
+  | "access_mode";
 
 type AnalyticsEvent = {
   signal: Signal;
@@ -67,8 +75,13 @@ export function engagementSummary() {
   return {
     count: events.length,
     hasPlay: signals.has("play") || signals.has("enter_stream"),
-    hasMagazine: signals.has("magazine_open"),
+    hasWriting: signals.has("writing_open"),
+    /** @deprecated MagCloud path retired — alias of hasWriting */
+    hasMagazine: signals.has("writing_open") || signals.has("magazine_open"),
     hasDepth: signals.has("footprint_open") || signals.has("category_filter"),
-    lowBounce: signals.has("enter_stream") || signals.has("play") || signals.has("magazine_open"),
+    lowBounce:
+      signals.has("enter_stream") ||
+      signals.has("play") ||
+      signals.has("writing_open"),
   };
 }

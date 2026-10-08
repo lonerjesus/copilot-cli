@@ -16,8 +16,17 @@ type R2Bucket = {
     value: ReadableStream | ArrayBuffer | string,
     options?: { httpMetadata?: { contentType?: string } },
   ): Promise<unknown>;
-  get(key: string): Promise<R2Object | null>;
+  get(
+    key: string,
+    options?: { range?: { offset: number; length: number } },
+  ): Promise<R2Object | null>;
+  head?(key: string): Promise<R2ObjectHead | null>;
   delete(key: string): Promise<void>;
+};
+
+type R2ObjectHead = {
+  httpMetadata?: { contentType?: string };
+  size?: number;
 };
 
 type R2Object = {
@@ -25,6 +34,9 @@ type R2Object = {
   httpMetadata?: { contentType?: string };
   size?: number;
 };
+
+/** Credentialed full-file blob play ceiling — above this, progressive Range streams. */
+export const HOUSE_AV_BLOB_MAX_BYTES = 48 * 1024 * 1024;
 
 type AuthKv = {
   get(key: string, type?: "text" | "arrayBuffer"): Promise<string | ArrayBuffer | null>;
@@ -541,15 +553,80 @@ async function putKvMedia(key: string, data: ArrayBuffer, contentType: string): 
   if (!kv) throw new MediaStoreUnavailableError();
   const bytes = new Uint8Array(data);
   const parts = Math.max(1, Math.ceil(bytes.byteLength / KV_CHUNK));
-  await kv.put(
-    `${KV_PREFIX}${key}:meta`,
-    JSON.stringify({ contentType, size: bytes.byteLength, parts }),
-  );
+  // Write parts first, then meta — so a mid-write failure never leaves
+  // meta.size > reassembled bytes (players would cut off on trailing NULs).
   for (let i = 0; i < parts; i++) {
     const slice = bytes.subarray(i * KV_CHUNK, Math.min(bytes.byteLength, (i + 1) * KV_CHUNK));
     const copy = slice.buffer.slice(slice.byteOffset, slice.byteOffset + slice.byteLength);
     await kv.put(`${KV_PREFIX}${key}:${i}`, copy as ArrayBuffer);
   }
+  await kv.put(
+    `${KV_PREFIX}${key}:meta`,
+    JSON.stringify({ contentType, size: bytes.byteLength, parts }),
+  );
+}
+
+async function readKvMeta(key: string): Promise<{
+  contentType: string;
+  size: number;
+  parts: number;
+} | null> {
+  const kv = await getAuthKv();
+  if (!kv) throw new MediaStoreUnavailableError();
+  const metaRaw = await kv.get(`${KV_PREFIX}${key}:meta`, "text");
+  if (!metaRaw || typeof metaRaw !== "string") return null;
+  try {
+    const meta = JSON.parse(metaRaw) as {
+      contentType?: string;
+      size?: number;
+      parts?: number;
+    };
+    if (typeof meta.size !== "number" || meta.size < 0) return null;
+    if (typeof meta.parts !== "number" || meta.parts < 1) return null;
+    return {
+      contentType: meta.contentType || "application/octet-stream",
+      size: meta.size,
+      parts: meta.parts,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** Read only the KV parts that cover [offset, offset+length) — no full-file reassembly. */
+async function getKvMediaRange(
+  key: string,
+  offset: number,
+  length: number,
+): Promise<{
+  body: Uint8Array;
+  contentType: string;
+  size: number;
+} | null> {
+  const kv = await getAuthKv();
+  if (!kv) throw new MediaStoreUnavailableError();
+  const meta = await readKvMeta(key);
+  if (!meta) return null;
+  if (offset < 0 || length <= 0 || offset >= meta.size) return null;
+  const end = Math.min(meta.size, offset + length);
+  const out = new Uint8Array(end - offset);
+  const firstPart = Math.floor(offset / KV_CHUNK);
+  const lastPart = Math.floor((end - 1) / KV_CHUNK);
+  if (lastPart >= meta.parts) return null;
+  let writeAt = 0;
+  for (let i = firstPart; i <= lastPart; i++) {
+    const part = await kv.get(`${KV_PREFIX}${key}:${i}`, "arrayBuffer");
+    if (!part || !(part instanceof ArrayBuffer)) return null;
+    const chunk = new Uint8Array(part);
+    const partStart = i * KV_CHUNK;
+    const from = Math.max(0, offset - partStart);
+    const to = Math.min(chunk.byteLength, end - partStart);
+    if (from >= to) continue;
+    out.set(chunk.subarray(from, to), writeAt);
+    writeAt += to - from;
+  }
+  if (writeAt !== out.byteLength) return null;
+  return { body: out, contentType: meta.contentType, size: meta.size };
 }
 
 async function getKvMedia(key: string): Promise<{
@@ -559,23 +636,20 @@ async function getKvMedia(key: string): Promise<{
 } | null> {
   const kv = await getAuthKv();
   if (!kv) throw new MediaStoreUnavailableError();
-  const metaRaw = await kv.get(`${KV_PREFIX}${key}:meta`, "text");
-  if (!metaRaw || typeof metaRaw !== "string") return null;
-  let meta: { contentType: string; size: number; parts: number };
-  try {
-    meta = JSON.parse(metaRaw) as { contentType: string; size: number; parts: number };
-  } catch {
-    return null;
-  }
+  const meta = await readKvMeta(key);
+  if (!meta) return null;
   const out = new Uint8Array(meta.size);
   let offset = 0;
   for (let i = 0; i < meta.parts; i++) {
     const part = await kv.get(`${KV_PREFIX}${key}:${i}`, "arrayBuffer");
     if (!part || !(part instanceof ArrayBuffer)) return null;
     const chunk = new Uint8Array(part);
+    if (offset + chunk.byteLength > meta.size) return null;
     out.set(chunk, offset);
     offset += chunk.byteLength;
   }
+  // Incomplete reassembly used to return trailing NULs — players cut songs short.
+  if (offset !== meta.size) return null;
   return { body: out, contentType: meta.contentType, size: meta.size };
 }
 
@@ -622,7 +696,54 @@ export async function putHouseMedia(
   await writeFile(full, Buffer.from(data));
 }
 
-export async function getHouseMedia(key: string): Promise<{
+/** Meta-only probe for HEAD — avoids loading the full object from KV / R2. */
+export async function getHouseMediaMeta(key: string): Promise<{
+  contentType: string;
+  size: number;
+} | null> {
+  if (!key.startsWith(HOUSE_PREFIX) || key.includes("..")) return null;
+  const mode = await resolveBackend();
+  if (mode === "r2") {
+    const r2 = await getMediaR2();
+    if (!r2) throw new MediaStoreUnavailableError();
+    // Prefer head() — never pull the body just to answer size/type.
+    if (typeof r2.head === "function") {
+      const head = await r2.head(key);
+      if (!head) return null;
+      return {
+        contentType: head.httpMetadata?.contentType || "application/octet-stream",
+        size: head.size ?? 0,
+      };
+    }
+    // Fallback: zero-length range probe (some stubs lack head).
+    const obj = await r2.get(key, { range: { offset: 0, length: 1 } });
+    if (!obj) return null;
+    return {
+      contentType: obj.httpMetadata?.contentType || "application/octet-stream",
+      size: obj.size ?? 0,
+    };
+  }
+  if (mode === "kv") {
+    const meta = await readKvMeta(key);
+    if (!meta) return null;
+    return { contentType: meta.contentType, size: meta.size };
+  }
+  const path = await import("node:path");
+  const { stat } = await import("node:fs/promises");
+  const rel = localPathForKey(key);
+  const full = path.join(process.cwd(), ".data", "media", rel);
+  try {
+    const s = await stat(full);
+    return { contentType: "application/octet-stream", size: s.size };
+  } catch {
+    return null;
+  }
+}
+
+export async function getHouseMedia(
+  key: string,
+  opts?: { range?: { offset: number; length: number } },
+): Promise<{
   body: ReadableStream | ArrayBuffer | Uint8Array;
   contentType: string;
   size?: number;
@@ -632,7 +753,9 @@ export async function getHouseMedia(key: string): Promise<{
   if (mode === "r2") {
     const r2 = await getMediaR2();
     if (!r2) throw new MediaStoreUnavailableError();
-    const obj = await r2.get(key);
+    const obj = opts?.range
+      ? await r2.get(key, { range: opts.range })
+      : await r2.get(key);
     if (!obj?.body) return null;
     return {
       body: obj.body,
@@ -641,13 +764,35 @@ export async function getHouseMedia(key: string): Promise<{
     };
   }
   if (mode === "kv") {
+    if (opts?.range) {
+      const { offset, length } = opts.range;
+      return getKvMediaRange(key, offset, length);
+    }
     return getKvMedia(key);
   }
   const path = await import("node:path");
-  const { readFile } = await import("node:fs/promises");
+  const { readFile, open } = await import("node:fs/promises");
   const rel = localPathForKey(key);
   const full = path.join(process.cwd(), ".data", "media", rel);
   try {
+    if (opts?.range) {
+      const fh = await open(full, "r");
+      try {
+        const stat = await fh.stat();
+        const { offset, length } = opts.range;
+        if (offset < 0 || offset >= stat.size || length <= 0) return null;
+        const readLen = Math.min(length, stat.size - offset);
+        const buf = Buffer.alloc(readLen);
+        await fh.read(buf, 0, readLen, offset);
+        return {
+          body: new Uint8Array(buf),
+          contentType: "application/octet-stream",
+          size: stat.size,
+        };
+      } finally {
+        await fh.close();
+      }
+    }
     const buf = await readFile(full);
     const bytes = new Uint8Array(buf);
     return {
@@ -851,7 +996,11 @@ export async function putChunkedUploadPart(
   if (!session) throw new Error("upload_not_found");
   if (index < 0 || index >= session.totalChunks) throw new Error("invalid_chunk");
   if (data.byteLength <= 0) throw new Error("empty_file");
-  if (data.byteLength > session.chunkBytes + 64) throw new Error("chunk_too_large");
+  const isLast = index === session.totalChunks - 1;
+  const expected = isLast
+    ? session.size - session.chunkBytes * (session.totalChunks - 1)
+    : session.chunkBytes;
+  if (data.byteLength !== expected) throw new Error("chunk_size_mismatch");
   await putUploadChunk(uploadId, index, data);
   if (!session.received.includes(index)) {
     session.received.push(index);

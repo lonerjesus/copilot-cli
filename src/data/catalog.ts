@@ -31,7 +31,39 @@ export type CatalogItem = {
   };
   tags: string[];
   blurb: string;
+  /** Long-form house writing / notes (admin compose). */
+  body?: string;
 };
+
+/** House stills — open in the Photos-style gallery, not the AV player. */
+export function isPhotoStill(item: CatalogItem): boolean {
+  return normalizeMediaKind(item.kind) === "still";
+}
+
+/** Best URL for a still (full image preferred over poster). */
+export function photoSrc(item: CatalogItem): string | null {
+  const candidates = [item.src, item.poster, item.externalUrl];
+  for (const raw of candidates) {
+    const v = (raw || "").trim();
+    if (!v) continue;
+    if (v.startsWith("/api/media/") || v.startsWith("https://") || v.startsWith("/")) {
+      return v;
+    }
+  }
+  return null;
+}
+
+/** Non-AV items that should open a reader or gallery (not the player). */
+export function isReadableText(item: CatalogItem): boolean {
+  const kind = normalizeMediaKind(item.kind);
+  if (kind === "writing") return true;
+  if (kind === "still") return true;
+  return Boolean(item.body?.trim());
+}
+
+export function photoCatalog(items: CatalogItem[]): CatalogItem[] {
+  return items.filter(isPhotoStill);
+}
 
 export function isPaywalled(item: CatalogItem): boolean {
   if (typeof item.paywalled === "boolean") return item.paywalled;

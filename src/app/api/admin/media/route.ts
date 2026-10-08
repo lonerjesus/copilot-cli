@@ -33,8 +33,17 @@ export async function POST(request: Request) {
   try {
     const key = newHouseObjectKey(file.name || "upload.bin");
     const data = await file.arrayBuffer();
+    // Reject size/buffer drift — otherwise players get a short object while
+    // the client duration probe used the full local File.
+    if (data.byteLength !== file.size) {
+      return jsonError("upload_size_mismatch", 400);
+    }
     // Sniff bytes — mobile Safari often sends empty/`image/jpg` MIME for photos.
-    const { contentType } = validateUploadFile(file, role, data);
+    const { contentType } = validateUploadFile(
+      { type: file.type, size: data.byteLength, name: file.name },
+      role,
+      data,
+    );
     await putHouseMedia(key, data, contentType);
     const url = buildMediaUrl(key);
     return NextResponse.json(

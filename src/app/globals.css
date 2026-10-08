@@ -298,7 +298,7 @@ body:has(.agebanner) .topbar {
   transform: translateY(-3vh);
 }
 
-.shell > *:not(.brand-watermark),
+.shell > *:not(.brand-watermark):not(.deck):not(.writing-reader):not(.magazine):not(.photo-gallery),
 .access > *:not(.brand-watermark) {
   position: relative;
   z-index: 1;
@@ -2044,11 +2044,19 @@ a.drive .drive__face {
 
 .admin__tabs {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 0.35rem;
   margin: 1.25rem 0 0.5rem;
   border-bottom: 1px solid var(--line);
   padding-bottom: 0.35rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+}
+
+.admin__tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .admin__tab {
@@ -2249,8 +2257,9 @@ a.drive .drive__face {
 }
 
 .admin__compose-actions {
+  /* Fixed on narrow viewports — sticky bottom was overlapping the thumbnail. */
   position: sticky;
-  bottom: max(0.65rem, var(--safe-b));
+  bottom: calc(max(0.65rem, var(--safe-b)) + var(--admin-keyboard-inset, 0px));
   z-index: 8;
   display: flex;
   flex-wrap: wrap;
@@ -2373,11 +2382,21 @@ a.drive .drive__face {
   }
 
   .admin__compose-actions {
-    margin-left: calc(-1 * max(var(--page-x), var(--safe-l)));
-    margin-right: calc(-1 * max(var(--page-x), var(--safe-r)));
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: calc(var(--admin-keyboard-inset, 0px));
+    margin: 0;
     padding-left: max(var(--page-x), var(--safe-l));
     padding-right: max(var(--page-x), var(--safe-r));
+    padding-top: 0.75rem;
     padding-bottom: max(0.75rem, var(--safe-b));
+    box-shadow: 0 -12px 28px color-mix(in oklab, var(--void) 70%, transparent);
+  }
+
+  .admin__compose {
+    /* Clear the fixed Save/Publish bar + home indicator. */
+    padding-bottom: calc(6.5rem + var(--safe-b) + var(--admin-keyboard-inset, 0px));
   }
 
   .admin__stat-grid {
@@ -2504,11 +2523,48 @@ a.drive .drive__face {
   }
 
   .admin__library-actions {
-    justify-content: flex-end;
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .admin__library-actions .admin__edit,
+  .admin__library-actions .admin__delete {
+    flex: 1;
   }
 
   .admin__tab {
+    min-height: 2.75rem;
+    flex: 0 0 auto;
+  }
+
+  .admin__presets {
+    gap: 0.45rem;
+  }
+
+  .admin__preset {
+    width: 3rem;
+    height: 3rem;
+  }
+
+  .admin__drop-title {
+    font-size: 0.95rem;
+  }
+}
+
+@media (max-height: 480px) and (orientation: landscape) {
+  .admin__compose-actions {
+    bottom: var(--admin-keyboard-inset, 0px);
+    padding-top: 0.45rem;
+    padding-bottom: max(0.45rem, var(--safe-b));
+  }
+
+  .admin__action-cancel,
+  .admin__action-save {
     min-height: 2.5rem;
+  }
+
+  .admin__drop {
+    min-height: 6.5rem;
   }
 }
 
@@ -2919,7 +2975,7 @@ a.drive .drive__face {
   color: var(--phosphor);
 }
 
-/* Player dock */
+/* Player dock — always viewport-fixed (Spotify / Apple TV hover bar) */
 .deck {
   position: fixed;
   left: 0;
@@ -2930,6 +2986,9 @@ a.drive .drive__face {
   background: color-mix(in oklab, #070b08 94%, transparent);
   backdrop-filter: blur(12px);
   padding-bottom: var(--safe-b);
+  /* Escape any ancestor containing-block quirks */
+  transform: translateZ(0);
+  will-change: transform;
 }
 
 .deck__bar {
@@ -3064,6 +3123,20 @@ a.drive .drive__face {
 .deck__controls {
   display: flex;
   gap: 0.35rem;
+  align-items: center;
+}
+
+.deck__autoplay {
+  min-width: 2.75rem;
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.deck__autoplay.is-on {
+  color: var(--phosphor);
+  border-color: var(--phosphor-dim);
 }
 
 .deck__play {
@@ -3760,6 +3833,389 @@ a.drive .drive__face {
 
 .magazine__dots button.is-on {
   background: #c6f54a;
+}
+
+/* House writing / notes — social enlarge lightbox */
+.writing-reader {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: max(0.75rem, var(--safe-t)) max(var(--page-x), var(--safe-r))
+    calc(var(--deck-h) + 1.25rem + var(--safe-b)) max(var(--page-x), var(--safe-l));
+  color: var(--text);
+  overflow: hidden;
+  animation: compose-in 0.28s ease both;
+  transform: translateZ(0);
+}
+
+.writing-reader__scrim {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+  background: color-mix(in oklab, #020403 72%, transparent);
+  backdrop-filter: blur(10px);
+}
+
+.writing-reader__card {
+  position: relative;
+  z-index: 1;
+  width: min(40rem, 100%);
+  max-height: min(86vh, 920px);
+  display: grid;
+  grid-template-rows: auto 1fr;
+  border: 1px solid var(--line-hot);
+  background:
+    linear-gradient(180deg, color-mix(in oklab, var(--panel) 96%, #0a120e), var(--void));
+  box-shadow: 0 28px 80px color-mix(in oklab, #000 55%, transparent);
+  animation: writing-pop 0.32s cubic-bezier(0.2, 0.85, 0.25, 1) both;
+  overflow: hidden;
+}
+
+@keyframes writing-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.94) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.writing-reader__chrome {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in oklab, var(--panel) 92%, transparent);
+}
+
+.writing-reader__mast {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem 1rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.writing-reader__close {
+  appearance: none;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--text);
+  padding: 0.45rem 0.75rem;
+  font: inherit;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  min-height: 2.5rem;
+}
+
+.writing-reader__sheet {
+  overflow: auto;
+  padding: 1.25rem 1.25rem 1.75rem;
+  min-height: 0;
+  width: 100%;
+}
+
+.writing-reader__poster {
+  margin: 0 0 1.25rem;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  max-height: 16rem;
+  overflow: hidden;
+}
+
+.writing-reader__poster-img {
+  width: 100%;
+  max-height: 16rem;
+  object-fit: cover;
+  display: block;
+}
+
+.writing-reader__kicker {
+  margin: 0 0 0.35rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--phosphor);
+}
+
+.writing-reader__head h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.45rem, 4vw, 2rem);
+  letter-spacing: 0.04em;
+  line-height: 1.15;
+}
+
+.writing-reader__dek {
+  margin: 0.55rem 0 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+.writing-reader__pay {
+  margin: 1rem 0 1.25rem;
+}
+
+.writing-reader__body {
+  display: grid;
+  gap: 1rem;
+}
+
+.writing-reader__body p {
+  margin: 0;
+  font-size: 1.02rem;
+  line-height: 1.65;
+  color: var(--text);
+  white-space: pre-wrap;
+}
+
+.writing-reader__empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.writing-reader__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 1.75rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.writing-reader__tags span {
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  padding: 0.25rem 0.45rem;
+}
+
+@media (max-width: 720px) {
+  .writing-reader {
+    padding: max(0.5rem, var(--safe-t)) 0.65rem
+      calc(var(--deck-h) + 0.85rem + var(--safe-b));
+    place-items: end center;
+  }
+
+  .writing-reader__card {
+    width: 100%;
+    max-height: min(88vh, 920px);
+  }
+
+  .writing-reader__sheet {
+    padding: 1rem 1rem 1.35rem;
+  }
+
+  .writing-reader__head h2 {
+    font-size: 1.35rem;
+  }
+}
+
+/* iPhone Photos–style still gallery */
+.photo-gallery {
+  position: fixed;
+  inset: 0;
+  z-index: 75;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  color: #f5f5f5;
+  touch-action: none;
+  user-select: none;
+  transform: translateZ(0);
+  animation: compose-in 0.22s ease both;
+}
+
+.photo-gallery__backdrop {
+  position: absolute;
+  inset: 0;
+  background: #000;
+  z-index: 0;
+}
+
+.photo-gallery__top,
+.photo-gallery__foot,
+.photo-gallery__stage {
+  position: relative;
+  z-index: 1;
+}
+
+.photo-gallery__top,
+.photo-gallery__foot {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.photo-gallery--chrome .photo-gallery__top,
+.photo-gallery--chrome .photo-gallery__foot {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.photo-gallery__top {
+  display: grid;
+  grid-template-columns: 2.75rem 1fr 2.75rem;
+  align-items: center;
+  gap: 0.5rem;
+  padding: max(0.65rem, var(--safe-t)) 0.85rem 0.55rem;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.72), transparent);
+}
+
+.photo-gallery__close {
+  appearance: none;
+  border: 0;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.photo-gallery__meta {
+  min-width: 0;
+  text-align: center;
+}
+
+.photo-gallery__count {
+  margin: 0;
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.photo-gallery__title {
+  margin: 0.15rem 0 0;
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.photo-gallery__spacer {
+  width: 2.5rem;
+}
+
+.photo-gallery__stage {
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.photo-gallery__slide {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+}
+
+.photo-gallery__img {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  transform-origin: center center;
+  transition: transform 0.12s ease-out;
+  will-change: transform;
+}
+
+.photo-gallery__loading {
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.photo-gallery__foot {
+  padding: 0.55rem 0.85rem max(0.85rem, var(--safe-b));
+  background: linear-gradient(0deg, rgba(0, 0, 0, 0.78), transparent);
+  display: grid;
+  gap: 0.55rem;
+}
+
+.photo-gallery__caption {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.82rem;
+  line-height: 1.4;
+  max-height: 3.6em;
+  overflow: hidden;
+}
+
+.photo-gallery__pay {
+  max-width: 22rem;
+}
+
+.photo-gallery__strip {
+  display: flex;
+  gap: 0.35rem;
+  overflow-x: auto;
+  padding-bottom: 0.15rem;
+  scrollbar-width: none;
+}
+
+.photo-gallery__strip::-webkit-scrollbar {
+  display: none;
+}
+
+.photo-gallery__thumb {
+  flex: 0 0 auto;
+  width: 2.1rem;
+  height: 2.1rem;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.68rem;
+  cursor: pointer;
+}
+
+.photo-gallery__thumb.is-on {
+  border-color: var(--phosphor);
+  color: var(--phosphor);
+}
+
+.photo-gallery__nav {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.photo-gallery__nav button {
+  appearance: none;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: transparent;
+  color: #fff;
+  min-width: 3rem;
+  min-height: 2.4rem;
+  cursor: pointer;
+}
+
+.photo-gallery__nav button:disabled {
+  opacity: 0.28;
+  cursor: default;
 }
 
 .topbar__account {

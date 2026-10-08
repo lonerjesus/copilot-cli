@@ -5,7 +5,7 @@ import { CATALOG, isPlayableMedia, type CatalogItem, type MediaKind } from "@/da
 import type { FootprintItem } from "@/lib/feed";
 import { decodeEntities, relativePulse } from "@/lib/format";
 import { usePlayerState } from "@/components/player/PlayerContext";
-import { useMagazine } from "@/components/MagazineContext";
+import { useReader } from "@/components/ReaderContext";
 import { MediaPoster } from "@/components/MediaPoster";
 import { track } from "@/lib/analytics";
 
@@ -44,7 +44,7 @@ function posterItem(item: FootprintItem, catalog: CatalogItem[]): CatalogItem {
 
 export function FootprintArchive({ initial }: FootprintArchiveProps) {
   const { playItem, current } = usePlayerState();
-  const { openMagazine, hasMagazine } = useMagazine();
+  const { openReadable } = useReader();
   const [items, setItems] = useState(initial);
   const [liveCatalog, setLiveCatalog] = useState<CatalogItem[]>(CATALOG);
   const [filter, setFilter] = useState<string>("all");
@@ -110,8 +110,7 @@ export function FootprintArchive({ initial }: FootprintArchiveProps) {
       playItem(catalogMatch);
       return;
     }
-    if (catalogMatch && hasMagazine(catalogMatch.id)) {
-      openMagazine(catalogMatch.id);
+    if (catalogMatch && openReadable(catalogMatch, liveCatalog)) {
       return;
     }
     try {

@@ -3,6 +3,7 @@ import type { CategoryId, SubcategoryId } from "@/data/taxonomy";
 import { getSubcategory, normalizeSubcategoryId } from "@/data/taxonomy";
 import { SITE } from "@/data/identity";
 import { AuthStoreUnavailableError } from "@/lib/auth/store";
+import { normalizeMediaRef } from "@/lib/media-ref";
 
 /**
  * Durable store for admin-uploaded catalog entries.
@@ -87,6 +88,17 @@ async function resolveBackend(): Promise<Backend> {
   }
 }
 
+function parseUploadsPayload(raw: string): UploadedContent[] {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    throw new Error("catalog_corrupt");
+  }
+  if (!Array.isArray(parsed)) throw new Error("catalog_corrupt");
+  return parsed.map((item) => normalizeUpload(item as UploadedContent));
+}
+
 async function readUploads(): Promise<UploadedContent[]> {
   const mode = await resolveBackend();
   if (mode === "kv") {
@@ -94,12 +106,7 @@ async function readUploads(): Promise<UploadedContent[]> {
     if (!kv) throw new AuthStoreUnavailableError();
     const raw = await kv.get(UPLOADS_KEY);
     if (!raw) return [];
-    try {
-      const parsed = JSON.parse(raw) as UploadedContent[];
-      return Array.isArray(parsed) ? parsed.map(normalizeUpload) : [];
-    } catch {
-      return [];
-    }
+    return parseUploadsPayload(raw);
   }
   if (mode === "fs") {
     const { readFile } = await import("node:fs/promises");
@@ -107,37 +114,57 @@ async function readUploads(): Promise<UploadedContent[]> {
     const file = path.join(process.cwd(), ".data", "catalog-uploads.json");
     try {
       const raw = await readFile(file, "utf8");
-      const parsed = JSON.parse(raw) as UploadedContent[];
-      return Array.isArray(parsed) ? parsed.map(normalizeUpload) : [];
-    } catch {
-      return [];
+      return parseUploadsPayload(raw);
+    } catch (err) {
+      const code = (err as NodeJS.ErrnoException)?.code;
+      if (code === "ENOENT") return [];
+      if (err instanceof Error && err.message === "catalog_corrupt") throw err;
+      throw err;
     }
   }
   if (!g.__knUploads) g.__knUploads = [];
   return g.__knUploads.map(normalizeUpload);
 }
 
-async function writeUploads(items: UploadedContent[]): Promise<void> {
+async function writeUploadsNow(items: UploadedContent[]): Promise<void> {
   const mode = await resolveBackend();
   const payload = JSON.stringify(items);
-  writeQueue = writeQueue.then(async () => {
-    if (mode === "kv") {
-      const kv = await getAuthKv();
-      if (!kv) throw new AuthStoreUnavailableError();
-      await kv.put(UPLOADS_KEY, payload);
-      return;
-    }
-    if (mode === "fs") {
-      const { writeFile, mkdir } = await import("node:fs/promises");
-      const path = await import("node:path");
-      const dataDir = path.join(process.cwd(), ".data");
-      await mkdir(dataDir, { recursive: true });
-      await writeFile(path.join(dataDir, "catalog-uploads.json"), payload, "utf8");
-      return;
-    }
-    g.__knUploads = items;
-  });
-  await writeQueue;
+  if (mode === "kv") {
+    const kv = await getAuthKv();
+    if (!kv) throw new AuthStoreUnavailableError();
+    await kv.put(UPLOADS_KEY, payload);
+    return;
+  }
+  if (mode === "fs") {
+    const { writeFile, mkdir } = await import("node:fs/promises");
+    const path = await import("node:path");
+    const dataDir = path.join(process.cwd(), ".data");
+    await mkdir(dataDir, { recursive: true });
+    await writeFile(path.join(dataDir, "catalog-uploads.json"), payload, "utf8");
+    return;
+  }
+  g.__knUploads = items;
+}
+
+/**
+ * Serialize full read-modify-write so concurrent thumb auto-save + Save
+ * cannot drop catalog rows (same pattern as auth store).
+ */
+async function mutateUploads<T>(
+  mutator: (items: UploadedContent[]) => T | Promise<T>,
+): Promise<T> {
+  const run = async () => {
+    const items = await readUploads();
+    const result = await mutator(items);
+    await writeUploadsNow(items);
+    return result;
+  };
+  const queued = writeQueue.then(run, run);
+  writeQueue = queued.then(
+    () => undefined,
+    () => undefined,
+  );
+  return queued;
 }
 
 const KINDS: MediaKind[] = ["video", "audio", "vlog", "writing", "still", "live"];
@@ -189,8 +216,8 @@ export function validateCreateInput(raw: unknown): CreateContentInput {
   const category = String(o.category ?? "").trim() as CategoryId;
   const subcategory = normalizeSubcategoryId(String(o.subcategory ?? "").trim());
   const platform = String(o.platform ?? "").trim().toLowerCase();
-  const externalUrlRaw = String(o.externalUrl ?? "").trim();
-  const srcRaw = o.src ? String(o.src).trim() : "";
+  const externalUrlRaw = normalizeMediaRef(String(o.externalUrl ?? ""));
+  const srcRaw = o.src != null && String(o.src).trim() ? normalizeMediaRef(String(o.src)) : "";
   const subtitle = o.subtitle ? String(o.subtitle).trim().slice(0, 200) : undefined;
   const blurbRaw = String(o.blurb ?? "").trim();
   const blurb = (blurbRaw || subtitle || title).slice(0, 600);
@@ -206,11 +233,13 @@ export function validateCreateInput(raw: unknown): CreateContentInput {
   if (!mediaCandidate) throw new Error("invalid_url");
 
   function assertMediaRef(value: string, err: string): string {
-    if (value.startsWith("/api/media/house/") && !value.includes("..")) {
-      return value;
+    const normalized = normalizeMediaRef(value);
+    if (normalized.includes("..") || normalized.includes("\\")) throw new Error(err);
+    if (normalized.startsWith("/api/media/house/")) {
+      return normalized;
     }
     try {
-      const parsed = new URL(value);
+      const parsed = new URL(normalized);
       if (parsed.protocol !== "https:") throw new Error(err);
       return parsed.toString();
     } catch {
@@ -223,7 +252,10 @@ export function validateCreateInput(raw: unknown): CreateContentInput {
     externalUrl = assertMediaRef(externalUrlRaw, "invalid_url");
   }
 
-  const posterRaw = o.poster ? String(o.poster).trim() : undefined;
+  const posterRaw =
+    o.poster != null && String(o.poster).trim()
+      ? normalizeMediaRef(String(o.poster))
+      : undefined;
   let poster: string | undefined;
   if (posterRaw) {
     poster = assertMediaRef(posterRaw, "invalid_poster");
@@ -293,8 +325,10 @@ export async function listUploads(): Promise<UploadedContent[]> {
       (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime(),
     );
   } catch (err) {
-    // Propagate real store outages so admin/API can 503.
+    // Propagate store outages + corrupt catalog so admin/API can 503
+    // instead of quietly wiping uploads on the next write.
     if (err instanceof AuthStoreUnavailableError) throw err;
+    if (err instanceof Error && err.message === "catalog_corrupt") throw err;
     return [];
   }
 }
@@ -303,109 +337,110 @@ export async function createUpload(
   input: CreateContentInput,
   uploadedBy: string,
 ): Promise<UploadedContent> {
-  const items = await readUploads();
-  const base = slugify(input.title) || "piece";
-  let id = `up-${base}`;
-  let n = 2;
-  while (items.some((i) => i.id === id)) {
-    id = `up-${base}-${n++}`;
-  }
+  return mutateUploads((items) => {
+    const base = slugify(input.title) || "piece";
+    let id = `up-${base}`;
+    let n = 2;
+    while (items.some((i) => i.id === id)) {
+      id = `up-${base}-${n++}`;
+    }
 
-  const item: UploadedContent = {
-    id,
-    title: input.title,
-    subtitle: input.subtitle,
-    brand: input.brand,
-    kind: input.kind,
-    category: input.category,
-    subcategory: input.subcategory,
-    duration: input.duration,
-    publishedAt: new Date().toISOString().slice(0, 10),
-    platform: input.platform,
-    externalUrl: input.externalUrl,
-    src: input.src,
-    poster: input.poster,
-    source: "uploaded",
-    paywalled: input.paywalled !== false,
-    embed: input.embed,
-    tags: input.tags?.length ? input.tags : [input.kind, input.brand],
-    blurb: input.blurb,
-    body: input.body,
-    uploadedAt: new Date().toISOString(),
-    uploadedBy,
-  };
+    const item: UploadedContent = {
+      id,
+      title: input.title,
+      subtitle: input.subtitle,
+      brand: input.brand,
+      kind: input.kind,
+      category: input.category,
+      subcategory: input.subcategory,
+      duration: input.duration,
+      publishedAt: new Date().toISOString().slice(0, 10),
+      platform: input.platform,
+      externalUrl: input.externalUrl,
+      src: input.src,
+      poster: input.poster,
+      source: "uploaded",
+      paywalled: input.paywalled !== false,
+      embed: input.embed,
+      tags: input.tags?.length ? input.tags : [input.kind, input.brand],
+      blurb: input.blurb,
+      body: input.body,
+      uploadedAt: new Date().toISOString(),
+      uploadedBy,
+    };
 
-  items.unshift(item);
-  await writeUploads(items);
-  return item;
+    items.unshift(item);
+    return item;
+  });
 }
 
 export async function deleteUpload(id: string): Promise<boolean> {
-  const items = await readUploads();
-  const next = items.filter((i) => i.id !== id);
-  if (next.length === items.length) return false;
-  await writeUploads(next);
-  return true;
+  return mutateUploads((items) => {
+    const next = items.filter((i) => i.id !== id);
+    if (next.length === items.length) return false;
+    items.splice(0, items.length, ...next);
+    return true;
+  });
 }
 
 export async function updateUpload(
   id: string,
   patch: Partial<CreateContentInput>,
 ): Promise<UploadedContent | null> {
-  const items = await readUploads();
-  const idx = items.findIndex((i) => i.id === id);
-  if (idx < 0) return null;
-  const current = items[idx]!;
+  return mutateUploads((items) => {
+    const idx = items.findIndex((i) => i.id === id);
+    if (idx < 0) return null;
+    const current = items[idx]!;
 
-  const mergedRaw = {
-    title: patch.title ?? current.title,
-    subtitle: patch.subtitle !== undefined ? patch.subtitle : current.subtitle,
-    brand: patch.brand ?? current.brand,
-    kind: patch.kind ?? current.kind,
-    category: patch.category ?? current.category,
-    subcategory: patch.subcategory ?? current.subcategory,
-    platform: patch.platform ?? current.platform,
-    externalUrl: patch.externalUrl ?? current.externalUrl,
-    // Empty string clears optional media refs on edit.
-    poster:
-      patch.poster !== undefined
-        ? patch.poster
+    const mergedRaw = {
+      title: patch.title ?? current.title,
+      subtitle: patch.subtitle !== undefined ? patch.subtitle : current.subtitle,
+      brand: patch.brand ?? current.brand,
+      kind: patch.kind ?? current.kind,
+      category: patch.category ?? current.category,
+      subcategory: patch.subcategory ?? current.subcategory,
+      platform: patch.platform ?? current.platform,
+      externalUrl: patch.externalUrl ?? current.externalUrl,
+      // Empty string clears optional media refs on edit.
+      poster:
+        patch.poster !== undefined
           ? patch.poster
-          : undefined
-        : current.poster,
-    src: patch.src !== undefined ? (patch.src ? patch.src : undefined) : current.src,
-    duration: patch.duration !== undefined ? patch.duration : current.duration,
-    tags: patch.tags ?? current.tags,
-    blurb: patch.blurb ?? current.blurb,
-    body: patch.body !== undefined ? patch.body : current.body,
-    paywalled: patch.paywalled !== undefined ? patch.paywalled : current.paywalled,
-    embed: patch.embed !== undefined ? patch.embed : current.embed,
-  };
+            ? patch.poster
+            : undefined
+          : current.poster,
+      src: patch.src !== undefined ? (patch.src ? patch.src : undefined) : current.src,
+      duration: patch.duration !== undefined ? patch.duration : current.duration,
+      tags: patch.tags ?? current.tags,
+      blurb: patch.blurb ?? current.blurb,
+      body: patch.body !== undefined ? patch.body : current.body,
+      paywalled: patch.paywalled !== undefined ? patch.paywalled : current.paywalled,
+      embed: patch.embed !== undefined ? patch.embed : current.embed,
+    };
 
-  const validated = validateCreateInput(mergedRaw);
-  const next: UploadedContent = {
-    ...current,
-    title: validated.title,
-    subtitle: validated.subtitle,
-    brand: validated.brand,
-    kind: validated.kind,
-    category: validated.category,
-    subcategory: validated.subcategory,
-    platform: validated.platform,
-    externalUrl: validated.externalUrl,
-    poster: validated.poster,
-    src: validated.src,
-    duration: validated.duration,
-    tags: validated.tags?.length ? validated.tags : current.tags,
-    blurb: validated.blurb,
-    body: validated.body,
-    paywalled: validated.paywalled !== false,
-    embed: validated.embed,
-  };
+    const validated = validateCreateInput(mergedRaw);
+    const next: UploadedContent = {
+      ...current,
+      title: validated.title,
+      subtitle: validated.subtitle,
+      brand: validated.brand,
+      kind: validated.kind,
+      category: validated.category,
+      subcategory: validated.subcategory,
+      platform: validated.platform,
+      externalUrl: validated.externalUrl,
+      poster: validated.poster,
+      src: validated.src,
+      duration: validated.duration,
+      tags: validated.tags?.length ? validated.tags : current.tags,
+      blurb: validated.blurb,
+      body: validated.body,
+      paywalled: validated.paywalled !== false,
+      embed: validated.embed,
+    };
 
-  items[idx] = next;
-  await writeUploads(items);
-  return next;
+    items[idx] = next;
+    return next;
+  });
 }
 
 export async function findUpload(id: string): Promise<UploadedContent | undefined> {

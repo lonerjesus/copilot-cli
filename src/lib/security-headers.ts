@@ -7,7 +7,7 @@
  * remain platform-owned and are separate from this list.
  */
 
-export const SECURITY_HEADERS: Record<string, string> = {
+const BASE_HEADERS: Record<string, string> = {
   "X-Content-Type-Options": "nosniff",
   "X-Frame-Options": "DENY",
   "Referrer-Policy": "strict-origin-when-cross-origin",
@@ -17,7 +17,6 @@ export const SECURITY_HEADERS: Record<string, string> = {
   "Cross-Origin-Resource-Policy": "same-origin",
   "X-DNS-Prefetch-Control": "off",
   "Strict-Transport-Security": "max-age=63072000; includeSubDomains; preload",
-  "X-Robots-Tag": "noindex, nofollow, noarchive, nosnippet, noimageindex",
   "Content-Security-Policy": [
     "default-src 'self'",
     "base-uri 'self'",
@@ -34,3 +33,40 @@ export const SECURITY_HEADERS: Record<string, string> = {
     "upgrade-insecure-requests",
   ].join("; "),
 };
+
+/** Stream + private surfaces — never index. */
+export const SECURITY_HEADERS: Record<string, string> = {
+  ...BASE_HEADERS,
+  "X-Robots-Tag": "noindex, nofollow, noarchive, nosnippet, noimageindex",
+};
+
+/**
+ * Public signup / trust doors — indexable so share cards + Search can drive
+ * account creation. Stream stays noindex via SECURITY_HEADERS.
+ */
+export const PUBLIC_INDEX_HEADERS: Record<string, string> = {
+  ...BASE_HEADERS,
+  "X-Robots-Tag": "index, follow, max-image-preview:large",
+};
+
+/** Paths that may be crawled / shared (OG) without a session. */
+export const INDEXABLE_PATHS = new Set([
+  "/access",
+  "/privacy",
+  "/terms",
+  "/robots.txt",
+  "/sitemap.xml",
+  "/og.png",
+  "/favicon.svg",
+  "/favicon.ico",
+  "/logo-kn.png",
+  "/logo-kn-light.png",
+  "/logo-kn-phosphor.png",
+  "/logo-kn-64.png",
+  "/logo-kn-192.png",
+  "/logo-kn-512.png",
+]);
+
+export function securityHeadersForPath(pathname: string): Record<string, string> {
+  return INDEXABLE_PATHS.has(pathname) ? PUBLIC_INDEX_HEADERS : SECURITY_HEADERS;
+}

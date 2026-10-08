@@ -1,8 +1,6 @@
-# a11y-report.md
+# a11y
 
-**Agent:** `a11y`  
-**Verdict:** `PASS` (follow-up)
-
-- Tile / featured / + next / mag have aria-labels
-- Admin presets use `aria-pressed`
-- Session kick announces via `/access?reason=session` + `aria-live` notice
+- Sticky actions remain reachable above keyboard/safe-area.
+- Tab min-height 2.75rem on small phones; focus styles unchanged (phosphor outline).
+- Status/alert roles preserved on compose messages.
+PASS

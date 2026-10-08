@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { AgeGate } from "@/components/AgeGate";
 import { AuthProvider, useAuth } from "@/components/AuthContext";
-import { MagazineProvider, useMagazine } from "@/components/MagazineContext";
-import { MagazineReader } from "@/components/MagazineReader";
+import { ReaderProvider, useReader } from "@/components/ReaderContext";
+import { WritingReader } from "@/components/WritingReader";
+import { PhotoGallery } from "@/components/PhotoGallery";
 import { FootprintArchive } from "@/components/FootprintArchive";
 import { PlayerDock } from "@/components/player/PlayerDock";
 import { PlayerProvider } from "@/components/player/PlayerContext";
@@ -15,7 +16,13 @@ import { SITE } from "@/data/identity";
 
 function FootprintInner({ footprint }: { footprint: FootprintItem[] }) {
   const { user, logout } = useAuth();
-  const { openId, closeMagazine } = useMagazine();
+  const {
+    writingItem,
+    gallery,
+    closeWriting,
+    closeGallery,
+    setGalleryIndex,
+  } = useReader();
 
   return (
     <>
@@ -61,10 +68,19 @@ function FootprintInner({ footprint }: { footprint: FootprintItem[] }) {
         </main>
 
         <SiteFooter />
-
-        <PlayerDock />
-        <MagazineReader catalogId={openId} onClose={closeMagazine} />
       </div>
+
+      {/* Viewport-fixed overlays — outside .shell so transform/relative never traps them */}
+      <PlayerDock />
+      <WritingReader item={writingItem} onClose={closeWriting} />
+      {gallery ? (
+        <PhotoGallery
+          items={gallery.items}
+          index={gallery.index}
+          onIndexChange={setGalleryIndex}
+          onClose={closeGallery}
+        />
+      ) : null}
     </>
   );
 }
@@ -73,9 +89,9 @@ export function FootprintShell({ footprint }: { footprint: FootprintItem[] }) {
   return (
     <AuthProvider>
       <PlayerProvider>
-        <MagazineProvider>
+        <ReaderProvider>
           <FootprintInner footprint={footprint} />
-        </MagazineProvider>
+        </ReaderProvider>
       </PlayerProvider>
     </AuthProvider>
   );
