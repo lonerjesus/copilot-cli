@@ -36,17 +36,36 @@ const HOUSE_PREFIX = "house/";
 const KV_PREFIX = "media-bin:";
 const KV_CHUNK = 3 * 1024 * 1024;
 
+/** Browser-playable house AV + stills. MagCloud/docs stay out of this path. */
 export const ALLOWED_MEDIA_TYPES: Record<"media" | "poster", string[]> = {
   media: [
+    // video
     "video/mp4",
     "video/webm",
     "video/quicktime",
+    "video/x-m4v",
+    "video/ogg",
+    "video/3gpp",
+    "video/3gpp2",
+    // audio — mp3 + common variants phones / DAWs emit
     "audio/mpeg",
     "audio/mp3",
+    "audio/mp4",
+    "audio/x-m4a",
+    "audio/m4a",
+    "audio/aac",
     "audio/wav",
-    "audio/ogg",
-    "audio/webm",
     "audio/x-wav",
+    "audio/wave",
+    "audio/ogg",
+    "audio/opus",
+    "audio/webm",
+    "audio/flac",
+    "audio/x-flac",
+    "audio/x-mpeg",
+    "audio/mpeg3",
+    "application/ogg",
+    // stills (photo preset + writing attachments)
     "image/jpeg",
     "image/png",
     "image/webp",
@@ -54,6 +73,76 @@ export const ALLOWED_MEDIA_TYPES: Record<"media" | "poster", string[]> = {
   ],
   poster: ["image/jpeg", "image/png", "image/webp", "image/gif"],
 };
+
+/** Explicit extensions for `<input accept>` (Windows + Safari wildcards are flaky). */
+export const MEDIA_FILE_EXTENSIONS = [
+  ".mp3",
+  ".m4a",
+  ".aac",
+  ".wav",
+  ".flac",
+  ".ogg",
+  ".opus",
+  ".oga",
+  ".mp4",
+  ".m4v",
+  ".mov",
+  ".webm",
+  ".ogv",
+  ".3gp",
+  ".jpg",
+  ".jpeg",
+  ".png",
+  ".webp",
+  ".gif",
+] as const;
+
+export function mediaAcceptAttribute(): string {
+  return [
+    "audio/*",
+    "video/*",
+    "image/*",
+    ...MEDIA_FILE_EXTENSIONS,
+    ...ALLOWED_MEDIA_TYPES.media,
+  ].join(",");
+}
+
+export function audioAcceptAttribute(): string {
+  return [
+    "audio/*",
+    ".mp3",
+    ".m4a",
+    ".aac",
+    ".wav",
+    ".flac",
+    ".ogg",
+    ".opus",
+    ".oga",
+    "audio/mpeg",
+    "audio/mp4",
+    "audio/aac",
+    "audio/wav",
+    "audio/ogg",
+    "audio/flac",
+    "audio/webm",
+  ].join(",");
+}
+
+export function videoAcceptAttribute(): string {
+  return [
+    "video/*",
+    ".mp4",
+    ".m4v",
+    ".mov",
+    ".webm",
+    ".ogv",
+    ".3gp",
+    "video/mp4",
+    "video/quicktime",
+    "video/webm",
+    "video/ogg",
+  ].join(",");
+}
 
 /**
  * Max finished object size (chunked upload path).
@@ -192,6 +281,48 @@ const MIME_ALIASES: Record<string, string> = {
   "image/pjpeg": "image/jpeg",
   "image/x-png": "image/png",
   "audio/mp3": "audio/mpeg",
+  "audio/mpeg3": "audio/mpeg",
+  "audio/x-mpeg": "audio/mpeg",
+  "audio/x-mp3": "audio/mpeg",
+  "audio/m4a": "audio/mp4",
+  "audio/x-m4a": "audio/mp4",
+  "audio/aac": "audio/mp4",
+  "audio/x-aac": "audio/mp4",
+  "audio/wave": "audio/wav",
+  "audio/x-wav": "audio/wav",
+  "audio/x-flac": "audio/flac",
+  "application/ogg": "audio/ogg",
+  "video/x-m4v": "video/mp4",
+  "video/3gpp": "video/mp4",
+  "video/3gpp2": "video/mp4",
+};
+
+/** Extension → canonical MIME when browsers send empty/`octet-stream`. */
+const EXT_TO_MIME: Record<string, string> = {
+  ".mp3": "audio/mpeg",
+  ".mpga": "audio/mpeg",
+  ".m4a": "audio/mp4",
+  ".aac": "audio/mp4",
+  ".wav": "audio/wav",
+  ".wave": "audio/wav",
+  ".flac": "audio/flac",
+  ".ogg": "audio/ogg",
+  ".oga": "audio/ogg",
+  ".opus": "audio/ogg",
+  ".weba": "audio/webm",
+  ".mp4": "video/mp4",
+  ".m4v": "video/mp4",
+  ".mov": "video/quicktime",
+  ".qt": "video/quicktime",
+  ".webm": "video/webm",
+  ".ogv": "video/ogg",
+  ".3gp": "video/mp4",
+  ".3g2": "video/mp4",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".png": "image/png",
+  ".webp": "image/webp",
+  ".gif": "image/gif",
 };
 
 /** True for same-origin house binary URLs (`/api/media/house/…`). */
@@ -199,12 +330,30 @@ export function isHouseMediaUrl(url: string): boolean {
   return mediaKeyFromUrl(url) != null;
 }
 
-/** Sniff common image payloads — mobile Safari often omits or mangles MIME. */
-export function sniffImageContentType(data: ArrayBuffer): string | null {
+function asciiAt(u: Uint8Array, start: number, len: number): string {
+  let out = "";
+  for (let i = 0; i < len; i++) out += String.fromCharCode(u[start + i] ?? 0);
+  return out;
+}
+
+function looksLikeMp3Frame(u: Uint8Array, i: number): boolean {
+  if (i + 1 >= u.length) return false;
+  const b0 = u[i]!;
+  const b1 = u[i + 1]!;
+  if (b0 !== 0xff) return false;
+  // MPEG audio frame sync: 1111 1111 111x xxxx with layer bits not 00
+  return (b1 & 0xe0) === 0xe0 && (b1 & 0x18) !== 0x08 && (b1 & 0x06) !== 0x00;
+}
+
+/** Sniff image / AV payloads — phones often omit or mangle MIME. */
+export function sniffMediaContentType(data: ArrayBuffer): string | null {
   const u = new Uint8Array(data);
-  if (u.length >= 3 && u[0] === 0xff && u[1] === 0xd8 && u[2] === 0xff) {
-    return "image/jpeg";
-  }
+  if (u.length < 4) return null;
+
+  // JPEG
+  if (u[0] === 0xff && u[1] === 0xd8 && u[2] === 0xff) return "image/jpeg";
+
+  // PNG
   if (
     u.length >= 8 &&
     u[0] === 0x89 &&
@@ -218,6 +367,8 @@ export function sniffImageContentType(data: ArrayBuffer): string | null {
   ) {
     return "image/png";
   }
+
+  // GIF
   if (
     u.length >= 6 &&
     u[0] === 0x47 &&
@@ -229,44 +380,98 @@ export function sniffImageContentType(data: ArrayBuffer): string | null {
   ) {
     return "image/gif";
   }
+
+  // RIFF container — WAVE / WEBP / AVI
   if (
     u.length >= 12 &&
     u[0] === 0x52 &&
     u[1] === 0x49 &&
     u[2] === 0x46 &&
-    u[3] === 0x46 &&
-    u[8] === 0x57 &&
-    u[9] === 0x45 &&
-    u[10] === 0x42 &&
-    u[11] === 0x50
+    u[3] === 0x46
   ) {
-    return "image/webp";
+    const form = asciiAt(u, 8, 4);
+    if (form === "WAVE") return "audio/wav";
+    if (form === "WEBP") return "image/webp";
   }
-  // ISO-BMFF brands used by iPhone HEIC/HEIF
-  if (u.length >= 12) {
-    const box = String.fromCharCode(u[4]!, u[5]!, u[6]!, u[7]!);
-    if (box === "ftyp") {
-      const brand = String.fromCharCode(u[8]!, u[9]!, u[10]!, u[11]!).toLowerCase();
-      if (brand === "heic" || brand === "heif" || brand === "mif1" || brand === "msf1") {
-        return "image/heic";
-      }
+
+  // FLAC
+  if (u.length >= 4 && asciiAt(u, 0, 4) === "fLaC") return "audio/flac";
+
+  // Ogg
+  if (u.length >= 4 && asciiAt(u, 0, 4) === "OggS") {
+    const head = asciiAt(u, 0, Math.min(u.length, 96));
+    if (head.includes("theora") || head.includes("video")) return "video/ogg";
+    return "audio/ogg";
+  }
+
+  // WebM / Matroska EBML
+  if (
+    u.length >= 4 &&
+    u[0] === 0x1a &&
+    u[1] === 0x45 &&
+    u[2] === 0xdf &&
+    u[3] === 0xa3
+  ) {
+    return "video/webm";
+  }
+
+  // ID3-tagged MP3
+  if (u.length >= 3 && asciiAt(u, 0, 3) === "ID3") return "audio/mpeg";
+
+  // Raw MPEG audio frame (no ID3)
+  if (looksLikeMp3Frame(u, 0)) return "audio/mpeg";
+  for (let i = 1; i < Math.min(u.length - 1, 4096); i++) {
+    if (looksLikeMp3Frame(u, i)) return "audio/mpeg";
+  }
+
+  // ISO-BMFF (mp4 / m4a / mov / heic)
+  if (u.length >= 12 && asciiAt(u, 4, 4) === "ftyp") {
+    const brands: string[] = [];
+    brands.push(asciiAt(u, 8, 4).toLowerCase().trim());
+    for (let off = 16; off + 4 <= Math.min(u.length, 64); off += 4) {
+      brands.push(asciiAt(u, off, 4).toLowerCase().trim());
     }
+    if (brands.some((b) => b === "heic" || b === "heif" || b === "mif1" || b === "msf1")) {
+      return "image/heic";
+    }
+    const audioBrands = new Set(["m4a", "m4b", "m4p", "mp4a"]);
+    if (brands.some((b) => audioBrands.has(b))) return "audio/mp4";
+    if (brands.some((b) => b === "qt")) return "video/quicktime";
+    return "video/mp4";
   }
+
+  return null;
+}
+
+/** @deprecated use sniffMediaContentType — kept for call-site clarity in image paths */
+export function sniffImageContentType(data: ArrayBuffer): string | null {
+  const sniffed = sniffMediaContentType(data);
+  if (!sniffed) return null;
+  if (sniffed.startsWith("image/")) return sniffed;
   return null;
 }
 
 function normalizeDeclaredType(raw: string): string {
-  const type = (raw || "").toLowerCase().trim();
+  const type = (raw || "").toLowerCase().trim().split(";")[0]?.trim() ?? "";
   if (!type) return "";
   return MIME_ALIASES[type] || type;
 }
 
+function mimeFromFilename(name?: string): string {
+  if (!name) return "";
+  const lower = name.toLowerCase();
+  const dot = lower.lastIndexOf(".");
+  if (dot < 0) return "";
+  return EXT_TO_MIME[lower.slice(dot)] ?? "";
+}
+
 /**
  * Validate upload MIME/size. Pass `data` when available so empty/`image/jpg`
- * declarations from phones can be recovered via magic-byte sniffing.
+ * / missing audio MIME from phones can be recovered via magic-byte sniffing
+ * and filename extension.
  */
 export function validateUploadFile(
-  file: { type: string; size: number },
+  file: { type: string; size: number; name?: string },
   role: "media" | "poster",
   data?: ArrayBuffer,
 ): { contentType: string } {
@@ -282,13 +487,24 @@ export function validateUploadFile(
 
   const needsSniff =
     Boolean(data) &&
-    (!type || type === "application/octet-stream" || (role === "poster" && !allowed.includes(type)));
+    (!type ||
+      type === "application/octet-stream" ||
+      type === "binary/octet-stream" ||
+      !allowed.includes(type));
 
   if (needsSniff && data) {
-    const sniffed = sniffImageContentType(data);
+    const sniffed = sniffMediaContentType(data);
     if (sniffed === "image/heic") throw new Error("heic_unsupported");
-    if (sniffed) type = sniffed;
+    if (sniffed) type = normalizeDeclaredType(sniffed);
   }
+
+  if (!type || type === "application/octet-stream" || !allowed.includes(type)) {
+    const fromName = mimeFromFilename(file.name);
+    if (fromName) type = fromName;
+  }
+
+  // Canonicalize aliases after recovery
+  type = normalizeDeclaredType(type);
 
   if (!type) type = "application/octet-stream";
   if (!allowed.includes(type)) throw new Error("invalid_type");
@@ -306,7 +522,7 @@ export function uploadErrorMessage(
     case "invalid_type":
       return role === "poster"
         ? "Use JPEG, PNG, WebP, or GIF for thumbnails"
-        : "Unsupported file type for this upload";
+        : "Unsupported AV type — use MP3, M4A/AAC, WAV, FLAC, OGG, MP4, MOV, or WebM";
     case "empty_file":
       return "That file was empty";
     case "file_too_large":

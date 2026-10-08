@@ -14,7 +14,8 @@
     "cf:build": "opennextjs-cloudflare build",
     "cf:deploy": "opennextjs-cloudflare deploy",
     "cf:ensure-r2": "bash scripts/ensure-r2-bucket.sh",
-    "qa:smoke": "bash scripts/qa-smoke.sh http://localhost:3000"
+    "qa:smoke": "bash scripts/qa-smoke.sh http://localhost:3000",
+    "qa:av": "node --experimental-strip-types scripts/check-av-upload-types.mjs"
   },
   "dependencies": {
     "@opennextjs/cloudflare": "^1.20.8",

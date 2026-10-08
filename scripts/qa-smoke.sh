@@ -194,5 +194,15 @@ echo "$ingest" | grep -qi 'magcloud' \
   && { echo "FAIL  ingest-no-magcloud"; fail=$((fail+1)); } \
   || { echo "PASS  ingest-no-magcloud"; pass=$((pass+1)); }
 
+# AV upload allowlist / sniff (mp3, m4a, wav, flac…) — no server needed
+if node --experimental-strip-types scripts/check-av-upload-types.mjs >/tmp/kn-av-types.log 2>&1; then
+  echo "PASS  av-upload-types"
+  pass=$((pass + 1))
+else
+  echo "FAIL  av-upload-types"
+  tail -20 /tmp/kn-av-types.log || true
+  fail=$((fail + 1))
+fi
+
 echo "== result: $pass passed · $fail failed =="
 [[ "$fail" -eq 0 ]]
