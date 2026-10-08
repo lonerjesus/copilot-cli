@@ -105,7 +105,7 @@ try {
     data: { email: EMAIL, password: PASS, website: "" },
   });
   if (!auth.json?.user?.email) {
-    auth = await apiJson(context, "/api/auth/register", {
+    const reg = await apiJson(context, "/api/auth/register", {
       method: "POST",
       data: {
         email: EMAIL,
@@ -116,6 +116,15 @@ try {
         website: "",
       },
     });
+    if (reg.json?.user?.email) {
+      auth = reg;
+    } else {
+      // Account exists / race — login again
+      auth = await apiJson(context, "/api/auth/login", {
+        method: "POST",
+        data: { email: EMAIL, password: PASS, website: "" },
+      });
+    }
   }
   if (!ok("login-api", auth.json?.user?.isAdmin === true, auth.text.slice(0, 160))) {
     throw new Error("admin login required");

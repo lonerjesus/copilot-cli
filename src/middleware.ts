@@ -21,7 +21,13 @@ export async function middleware(request: NextRequest) {
   const ip = clientKey(request);
   const sessionOk = await hasValidSessionCookie(request.cookies.get(SESSION_COOKIE)?.value);
 
-  if (!rateLimitAllow(`global:${ip}`, 120, 60_000)) {
+  // Local / memory-auth QA runs many suites back-to-back — raise ceilings.
+  const qaAuth = process.env.ALLOW_MEMORY_AUTH === "1";
+  const globalLimit = qaAuth ? 5000 : 120;
+  const authLimit = qaAuth ? 500 : 12;
+  const forgotLimit = qaAuth ? 120 : 6;
+
+  if (!rateLimitAllow(`global:${ip}`, globalLimit, 60_000)) {
     return withSecurity(
       pathname,
       NextResponse.json({ error: "rate_limited" }, { status: 429 }),
@@ -31,11 +37,6 @@ export async function middleware(request: NextRequest) {
   const isPublic = isPublicPath(pathname);
   const botty = isSuspiciousBot(request);
   const preview = isLinkPreviewBot(request);
-
-  // Local / memory-auth QA runs many suites back-to-back — raise auth ceilings.
-  const qaAuth = process.env.ALLOW_MEMORY_AUTH === "1";
-  const authLimit = qaAuth ? 180 : 12;
-  const forgotLimit = qaAuth ? 60 : 6;
 
   if (pathname.startsWith("/api/auth/register") || pathname.startsWith("/api/auth/login")) {
     if (botty) {
