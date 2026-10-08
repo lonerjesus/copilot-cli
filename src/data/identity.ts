@@ -161,6 +161,20 @@ export const PLATFORMS = [
     kind: "stream" as const,
   },
   {
+    id: "twitch-faust",
+    label: "Twitch · FaustSociety",
+    handle: "FaustSociety",
+    url: "https://www.twitch.tv/FaustSociety",
+    kind: "stream" as const,
+  },
+  {
+    id: "youtube",
+    label: "YouTube · Kamau Negasi",
+    handle: "KamauNegasi",
+    url: "https://www.youtube.com/@KamauNegasi",
+    kind: "video" as const,
+  },
+  {
     id: "vimeo",
     label: "Vimeo",
     handle: "streetpolitik",
@@ -175,8 +189,17 @@ export const PLATFORMS = [
     kind: "audio" as const,
   },
   {
+    id: "faust-spirit",
+    label: "Faust Spirit Social Society Inc.",
+    handle: "faustspirit",
+    url: "https://faustspiritsocialsocietyincorp.godaddysites.com/",
+    kind: "web" as const,
+  },
+  // MagCloud lives only on House Atlas archive bridge — never stream ingest.
+  // kamaunegasi.me DNS is parked (AboveDomains) — keep registered, do not promote.
+  {
     id: "web",
-    label: "KamauNegasi.me",
+    label: "KamauNegasi.me (parked)",
     handle: "kamaunegasi",
     url: "https://www.kamaunegasi.me",
     kind: "web" as const,
