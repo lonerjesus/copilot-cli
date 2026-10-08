@@ -125,6 +125,10 @@ ok(
 );
 const shortUrl = upShort.json?.url;
 ok("short-url", Boolean(shortUrl), String(shortUrl));
+if (!shortUrl) {
+  console.log("== result: aborted — no short media url ==");
+  process.exit(1);
+}
 
 const full = await api(shortUrl, { jar });
 ok("serve-full-status", full.res.status === 200, String(full.res.status));
