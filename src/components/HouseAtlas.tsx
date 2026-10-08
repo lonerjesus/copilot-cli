@@ -482,7 +482,8 @@ export function HouseAtlas({ compact = false }: { compact?: boolean }) {
             </span>
           </header>
           <p className="atlas__aside">
-            Free GitHub tools rack — link-out only. {GITHUB_TOOLS_SOURCE}.
+            Free GitHub tools rack — MIT portable skills vendored locally when verified;
+            full apps stay link-out. {GITHUB_TOOLS_SOURCE}.
           </p>
           <ul className="atlas__outlet-list" aria-label="GitHub tools">
             {GITHUB_TOOLS.map((tool, i) => (
@@ -529,9 +530,10 @@ function OutletRow({
 }
 
 function StackRow({ tool, index }: { tool: GithubTool; index: number }) {
+  const lane = tool.verdict === "vendored" ? "local" : "github";
   return (
     <li
-      className="atlas__outlet atlas-lane--web"
+      className={`atlas__outlet ${tool.verdict === "vendored" ? "atlas-lane--writing" : "atlas-lane--web"}`}
       style={{ animationDelay: `${Math.min(index, 10) * 35}ms` }}
     >
       <a
@@ -540,11 +542,15 @@ function StackRow({ tool, index }: { tool: GithubTool; index: number }) {
         rel="noopener noreferrer"
         onClick={() => track("enter_stream", { id: tool.id, via: "atlas_stack" })}
       >
-        <span className="atlas__outlet-lane">github</span>
+        <span className="atlas__outlet-lane">{lane}</span>
         <span className="atlas__outlet-body">
-          <strong>{tool.name}</strong>
+          <strong>
+            {tool.name}
+            {tool.verdict === "vendored" ? " · skill" : ""}
+          </strong>
           <em>
             {tool.repo} — {tool.blurb}
+            {tool.localSkill ? ` · ${tool.localSkill}` : ""}
           </em>
         </span>
         <span className="atlas__outlet-go" aria-hidden>

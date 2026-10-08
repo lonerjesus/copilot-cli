@@ -19,5 +19,6 @@
 ## Notes
 
 - Meta AI extract did **not** land in the repo before this PR (0/9). This commit adds all nine.
-- Link-out only — not house uploads, not Netflix stream shelves.
+- Link-out by default — not house uploads, not Netflix stream shelves.
 - URLs verified `200` via GitHub API (2026-10-08).
+- Follow-up: see `github-tools-verify.md` — vendored **No AI Slop** + **I Have ADHD** only.

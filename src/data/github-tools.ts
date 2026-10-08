@@ -1,8 +1,12 @@
 /**
  * Curated free GitHub tools rack — exactly nine repos from the
  * @the_coding_wizard list (“These 9 GitHub repos feel way too powerful to be free”).
- * Outside house media; link-out only. Not streamed as house uploads.
+ * Outside house media; link-out only unless a portable MIT skill was verified and vendored.
  */
+
+export type GithubToolKind = "agent-skill" | "full-app" | "platform" | "framework";
+
+export type GithubToolVerdict = "vendored" | "link-only";
 
 export type GithubTool = {
   id: string;
@@ -10,6 +14,15 @@ export type GithubTool = {
   repo: string;
   url: string;
   blurb: string;
+  license: string;
+  kind: GithubToolKind;
+  verdict: GithubToolVerdict;
+  /** Why we did or did not vendor code */
+  note: string;
+  /** Local skill dir under agents/skills when vendored */
+  localSkill?: string;
+  /** Upstream commit pin when vendored */
+  pinnedCommit?: string;
 };
 
 export const GITHUB_TOOLS_SOURCE =
@@ -23,6 +36,10 @@ export const GITHUB_TOOLS: readonly GithubTool[] = [
     repo: "lfnovo/open-notebook",
     url: "https://github.com/lfnovo/open-notebook",
     blurb: "Turn PDFs, videos, websites, and notes into a private AI research assistant.",
+    license: "MIT",
+    kind: "full-app",
+    verdict: "link-only",
+    note: "Full self-hosted app — not a portable skill.",
   },
   {
     id: "no-ai-slop",
@@ -30,6 +47,12 @@ export const GITHUB_TOOLS: readonly GithubTool[] = [
     repo: "petergyang/no-ai-slop",
     url: "https://github.com/petergyang/no-ai-slop",
     blurb: "Remove generic AI-writing habits and make text feel more natural.",
+    license: "MIT",
+    kind: "agent-skill",
+    verdict: "vendored",
+    note: "MIT portable skill + eval — vendored under agents/skills/no-ai-slop.",
+    localSkill: "agents/skills/no-ai-slop",
+    pinnedCommit: "000650b15698",
   },
   {
     id: "i-have-adhd",
@@ -37,6 +60,12 @@ export const GITHUB_TOOLS: readonly GithubTool[] = [
     repo: "ayghri/i-have-adhd",
     url: "https://github.com/ayghri/i-have-adhd",
     blurb: "Make AI responses shorter, clearer, and straight to the point.",
+    license: "MIT",
+    kind: "agent-skill",
+    verdict: "vendored",
+    note: "MIT portable output-style skill — vendored under agents/skills/i-have-adhd.",
+    localSkill: "agents/skills/i-have-adhd",
+    pinnedCommit: "723af7d9afaf",
   },
   {
     id: "open-seo",
@@ -44,6 +73,10 @@ export const GITHUB_TOOLS: readonly GithubTool[] = [
     repo: "every-app/open-seo",
     url: "https://github.com/every-app/open-seo",
     blurb: "Open-source SEO research, audits, rankings, and competitor analysis.",
+    license: "MIT",
+    kind: "platform",
+    verdict: "link-only",
+    note: "Platform + MCP skills require DataForSEO API keys — not vendored.",
   },
   {
     id: "book-to-skill",
@@ -51,6 +84,10 @@ export const GITHUB_TOOLS: readonly GithubTool[] = [
     repo: "virgiliojr94/book-to-skill",
     url: "https://github.com/virgiliojr94/book-to-skill",
     blurb: "Turn books and documents into reusable knowledge for your AI coding agent.",
+    license: "MIT",
+    kind: "agent-skill",
+    verdict: "link-only",
+    note: "SKILL.md needs Python book_to_skill runtime — install upstream, not vendored incomplete.",
   },
   {
     id: "omni-route",
@@ -58,6 +95,10 @@ export const GITHUB_TOOLS: readonly GithubTool[] = [
     repo: "diegosouzapw/OmniRoute",
     url: "https://github.com/diegosouzapw/OmniRoute",
     blurb: "Route coding tasks across different AI models and providers.",
+    license: "MIT",
+    kind: "full-app",
+    verdict: "link-only",
+    note: "Full AI gateway app — link-only.",
   },
   {
     id: "ai-job-search",
@@ -65,6 +106,10 @@ export const GITHUB_TOOLS: readonly GithubTool[] = [
     repo: "MadsLorentzen/ai-job-search",
     url: "https://github.com/MadsLorentzen/ai-job-search",
     blurb: "Use AI to analyze jobs, tailor applications, and prepare for interviews.",
+    license: "MIT",
+    kind: "framework",
+    verdict: "link-only",
+    note: "Personal/regional job framework — out of house media scope.",
   },
   {
     id: "strix",
@@ -72,6 +117,10 @@ export const GITHUB_TOOLS: readonly GithubTool[] = [
     repo: "usestrix/strix",
     url: "https://github.com/usestrix/strix",
     blurb: "Autonomous AI agents for finding and validating security vulnerabilities.",
+    license: "Apache-2.0",
+    kind: "full-app",
+    verdict: "link-only",
+    note: "Offensive pentest tooling — link-only; no exploit code in house repo.",
   },
   {
     id: "open-generative-ai",
@@ -79,6 +128,10 @@ export const GITHUB_TOOLS: readonly GithubTool[] = [
     repo: "Anil-matcha/Open-Generative-AI",
     url: "https://github.com/Anil-matcha/Open-Generative-AI",
     blurb: "One open-source platform for experimenting with image, video, and generative AI models.",
+    license: "MIT",
+    kind: "full-app",
+    verdict: "link-only",
+    note: "Full Electron/studio app — link-only.",
   },
 ] as const;
 
@@ -92,4 +145,8 @@ if (GITHUB_TOOLS.length !== GITHUB_TOOLS_COUNT) {
 
 export function githubToolById(id: string): GithubTool | undefined {
   return GITHUB_TOOLS.find((t) => t.id === id);
+}
+
+export function vendoredGithubTools(): GithubTool[] {
+  return GITHUB_TOOLS.filter((t) => t.verdict === "vendored");
 }
