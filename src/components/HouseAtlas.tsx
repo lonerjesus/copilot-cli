@@ -1,6 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import {
+  startTransition,
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type MutableRefObject,
+} from "react";
 import { SITE } from "@/data/identity";
 import {
   ATLAS,
@@ -8,6 +18,7 @@ import {
   HOUSE_OUTLETS,
   HOUSE_PROJECTS,
   outletById,
+  primaryOutlets,
   type HouseOutlet,
   type HouseProject,
   type OutletLane,
@@ -15,6 +26,15 @@ import {
 import type { ArchiveItem } from "@/lib/archive-bridge";
 import { BrandMark } from "@/components/BrandMark";
 import { track } from "@/lib/analytics";
+
+type PanelId = "outlets" | "projects" | "archive" | "marks";
+
+const PANELS: { id: PanelId; label: string }[] = [
+  { id: "outlets", label: "outlets" },
+  { id: "projects", label: "projects" },
+  { id: "archive", label: "archive" },
+  { id: "marks", label: "marks" },
+];
 
 const LANES: { id: OutletLane | "all"; label: string }[] = [
   { id: "all", label: "all" },
@@ -43,10 +63,20 @@ function laneTone(lane: OutletLane): string {
   }
 }
 
+function projectTouchesLane(project: HouseProject, lane: OutletLane | "all"): boolean {
+  if (lane === "all") return true;
+  if (!project.outletIds.length) return lane === "web";
+  return project.outletIds.some((id) => outletById(id)?.lane === lane);
+}
+
 export function HouseAtlas({ compact = false }: { compact?: boolean }) {
+  const baseId = useId();
+  const [panel, setPanel] = useState<PanelId>("outlets");
   const [lane, setLane] = useState<OutletLane | "all">("all");
   const [archive, setArchive] = useState<ArchiveItem[]>([]);
-  const [loaded, setLoaded] = useState(false);
+  const [archiveState, setArchiveState] = useState<"loading" | "ready" | "quiet">("loading");
+  const panelTabRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const laneTabRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -56,13 +86,17 @@ export function HouseAtlas({ compact = false }: { compact?: boolean }) {
           credentials: "same-origin",
           signal: controller.signal,
         });
-        if (!res.ok) return;
+        if (!res.ok) {
+          setArchiveState("quiet");
+          return;
+        }
         const data = (await res.json()) as { archive?: ArchiveItem[] };
-        if (data.archive?.length) setArchive(data.archive);
+        const items = data.archive ?? [];
+        setArchive(items);
+        setArchiveState(items.length ? "ready" : "quiet");
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") return;
-      } finally {
-        setLoaded(true);
+        setArchiveState("quiet");
       }
     };
     void run();
@@ -74,8 +108,65 @@ export function HouseAtlas({ compact = false }: { compact?: boolean }) {
     return HOUSE_OUTLETS.filter((o) => o.lane === lane);
   }, [lane]);
 
-  const projects = HOUSE_PROJECTS;
-  const brands = HOUSE_BRANDS.filter((b) => b.kind !== "legal");
+  const featured = useMemo(() => {
+    if (lane !== "all") return [];
+    return primaryOutlets();
+  }, [lane]);
+
+  const listOutlets = useMemo(() => {
+    if (!featured.length) return outlets;
+    const featuredIds = new Set(featured.map((o) => o.id));
+    return outlets.filter((o) => !featuredIds.has(o.id));
+  }, [outlets, featured]);
+
+  const projects = useMemo(
+    () => HOUSE_PROJECTS.filter((p) => projectTouchesLane(p, lane)),
+    [lane],
+  );
+
+  const brands = useMemo(
+    () => HOUSE_BRANDS.filter((b) => b.kind !== "legal"),
+    [],
+  );
+
+  const goPanel = useCallback((id: PanelId) => {
+    startTransition(() => setPanel(id));
+  }, []);
+
+  const goLane = useCallback((id: OutletLane | "all") => {
+    startTransition(() => setLane(id));
+  }, []);
+
+  const onTabListKey = useCallback(
+    (
+      event: KeyboardEvent<HTMLDivElement>,
+      items: readonly { id: string }[],
+      current: string,
+      setCurrent: (id: string) => void,
+      refs: MutableRefObject<Array<HTMLButtonElement | null>>,
+    ) => {
+      const idx = items.findIndex((item) => item.id === current);
+      if (idx < 0) return;
+      let next = idx;
+      if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+        next = (idx + 1) % items.length;
+      } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+        next = (idx - 1 + items.length) % items.length;
+      } else if (event.key === "Home") {
+        next = 0;
+      } else if (event.key === "End") {
+        next = items.length - 1;
+      } else {
+        return;
+      }
+      event.preventDefault();
+      const id = items[next]?.id;
+      if (!id) return;
+      setCurrent(id);
+      refs.current[next]?.focus();
+    },
+    [],
+  );
 
   return (
     <section
@@ -85,107 +176,275 @@ export function HouseAtlas({ compact = false }: { compact?: boolean }) {
       <header className="atlas__hero">
         <div className="atlas__hero-atmosphere" aria-hidden>
           <div className="atlas__hero-grid" />
+          <div className="atlas__hero-orb atlas__hero-orb--a" />
+          <div className="atlas__hero-orb atlas__hero-orb--b" />
           <div className="atlas__hero-wash" />
         </div>
         <div className="atlas__hero-inner">
-          <BrandMark size={72} className="atlas__mark" />
+          <BrandMark size={80} className="atlas__mark" />
           <p className="atlas__eyebrow">{ATLAS.eyebrow}</p>
           <h2 className="atlas__title">{SITE.title}</h2>
           <p className="atlas__line">{ATLAS.line}</p>
+          <div className="atlas__cta">
+            <a
+              href="#stream"
+              className="atlas__cta-primary"
+              onClick={() => {
+                track("enter_stream", { via: "atlas_hero" });
+                if (window.location.hash !== "#stream") {
+                  window.location.hash = "stream";
+                } else {
+                  window.dispatchEvent(new HashChangeEvent("hashchange"));
+                }
+              }}
+            >
+              enter stream
+            </a>
+            <button
+              type="button"
+              className="atlas__cta-ghost"
+              onClick={() => goPanel("archive")}
+            >
+              archive bridge
+            </button>
+          </div>
         </div>
       </header>
 
-      <div className="atlas__lanes" role="tablist" aria-label="Outlet lanes">
-        {LANES.map((l) => (
-          <button
-            key={l.id}
-            type="button"
-            role="tab"
-            aria-selected={lane === l.id}
-            className={lane === l.id ? "is-active" : undefined}
-            onClick={() => setLane(l.id)}
-          >
-            {l.label}
-          </button>
-        ))}
+      <div
+        className="atlas__panels"
+        role="tablist"
+        aria-label="House panels"
+        onKeyDown={(e) =>
+          onTabListKey(e, PANELS, panel, (id) => goPanel(id as PanelId), panelTabRefs)
+        }
+      >
+        {PANELS.map((p, i) => {
+          const selected = panel === p.id;
+          return (
+            <button
+              key={p.id}
+              ref={(el) => {
+                panelTabRefs.current[i] = el;
+              }}
+              type="button"
+              role="tab"
+              id={`${baseId}-panel-${p.id}`}
+              aria-selected={selected}
+              aria-controls={`${baseId}-panel-panel-${p.id}`}
+              tabIndex={selected ? 0 : -1}
+              className={selected ? "is-active" : undefined}
+              onClick={() => goPanel(p.id)}
+            >
+              {p.label}
+            </button>
+          );
+        })}
       </div>
 
-      <div className="atlas__block atlas__block--outlets">
-        <header className="atlas__block-head">
-          <h3>OUTLETS</h3>
-          <span>{outlets.length}</span>
-        </header>
-        <ul className="atlas__outlet-list">
-          {outlets.map((outlet, i) => (
-            <OutletRow key={outlet.id} outlet={outlet} index={i} />
-          ))}
-        </ul>
-      </div>
+      {(panel === "outlets" || panel === "projects") && (
+        <div
+          className="atlas__lanes"
+          role="tablist"
+          aria-label="Outlet lanes"
+          onKeyDown={(e) =>
+            onTabListKey(
+              e,
+              LANES,
+              lane,
+              (id) => goLane(id as OutletLane | "all"),
+              laneTabRefs,
+            )
+          }
+        >
+          {LANES.map((l, i) => {
+            const selected = lane === l.id;
+            return (
+              <button
+                key={l.id}
+                ref={(el) => {
+                  laneTabRefs.current[i] = el;
+                }}
+                type="button"
+                role="tab"
+                id={`${baseId}-lane-${l.id}`}
+                aria-selected={selected}
+                tabIndex={selected ? 0 : -1}
+                className={selected ? "is-active" : undefined}
+                onClick={() => goLane(l.id)}
+              >
+                {l.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
-      <div className="atlas__block">
-        <header className="atlas__block-head">
-          <h3>PROJECTS</h3>
-          <span>{projects.length}</span>
-        </header>
-        <ul className="atlas__project-list">
-          {projects.map((project, i) => (
-            <ProjectRow key={project.id} project={project} index={i} />
-          ))}
-        </ul>
-      </div>
+      {panel === "outlets" ? (
+        <div
+          className="atlas__block atlas__block--outlets"
+          role="tabpanel"
+          id={`${baseId}-panel-panel-outlets`}
+          aria-labelledby={`${baseId}-panel-outlets`}
+        >
+          <header className="atlas__block-head">
+            <h3>OUTLETS</h3>
+            <span>{outlets.length}</span>
+          </header>
+          {featured.length ? (
+            <ul className="atlas__featured" aria-label="Primary outlets">
+              {featured.map((outlet, i) => (
+                <OutletRow key={outlet.id} outlet={outlet} index={i} featured />
+              ))}
+            </ul>
+          ) : null}
+          {listOutlets.length ? (
+            <ul className="atlas__outlet-list">
+              {listOutlets.map((outlet, i) => (
+                <OutletRow key={outlet.id} outlet={outlet} index={i} />
+              ))}
+            </ul>
+          ) : (
+            <p className="atlas__empty">No outlets in this lane.</p>
+          )}
+        </div>
+      ) : null}
 
-      <div className="atlas__block">
-        <header className="atlas__block-head">
-          <h3>ARCHIVE BRIDGE</h3>
-          <span>{loaded ? archive.length : "…"}</span>
-        </header>
-        <p className="atlas__aside">
-          MagCloud chapbooks + live Substack — outside the stream shelves on purpose.
-        </p>
-        {loaded && archive.length === 0 ? (
-          <p className="atlas__empty">Archive feeds quiet right now.</p>
-        ) : (
-          <ul className="atlas__archive-list">
-            {archive.map((item, i) => (
-              <li key={item.id} style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}>
-                <a
-                  href={item.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => track("enter_stream", { id: item.id, via: "atlas_archive" })}
+      {panel === "projects" ? (
+        <div
+          className="atlas__block"
+          role="tabpanel"
+          id={`${baseId}-panel-panel-projects`}
+          aria-labelledby={`${baseId}-panel-projects`}
+        >
+          <header className="atlas__block-head">
+            <h3>PROJECTS</h3>
+            <span>{projects.length}</span>
+          </header>
+          {projects.length ? (
+            <ul className="atlas__project-list">
+              {projects.map((project, i) => (
+                <ProjectRow key={project.id} project={project} index={i} />
+              ))}
+            </ul>
+          ) : (
+            <p className="atlas__empty">No projects touch this lane.</p>
+          )}
+        </div>
+      ) : null}
+
+      {panel === "archive" ? (
+        <div
+          className="atlas__block"
+          role="tabpanel"
+          id={`${baseId}-panel-panel-archive`}
+          aria-labelledby={`${baseId}-panel-archive`}
+        >
+          <header className="atlas__block-head">
+            <h3>ARCHIVE BRIDGE</h3>
+            <span>
+              {archiveState === "loading"
+                ? "…"
+                : archiveState === "ready"
+                  ? archive.length
+                  : "0"}
+            </span>
+          </header>
+          <p className="atlas__aside">
+            MagCloud chapbooks + live Substack — kept off the stream shelves on purpose.
+          </p>
+          {archiveState === "loading" ? (
+            <ul className="atlas__archive-list atlas__archive-list--pulse" aria-hidden>
+              {[0, 1, 2].map((n) => (
+                <li key={n} className="atlas__skeleton" />
+              ))}
+            </ul>
+          ) : archiveState === "quiet" ? (
+            <p className="atlas__empty">Archive feeds quiet right now.</p>
+          ) : (
+            <ul className="atlas__archive-list">
+              {archive.map((item, i) => (
+                <li
+                  key={item.id}
+                  className={item.poster ? "has-poster" : undefined}
+                  style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}
                 >
-                  <span className="atlas__archive-source">{item.sourceLabel}</span>
-                  <strong>{item.title}</strong>
-                  <span className="atlas__archive-meta">{item.publishedAt}</span>
-                </a>
+                  <a
+                    href={item.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() =>
+                      track("enter_stream", { id: item.id, via: "atlas_archive" })
+                    }
+                  >
+                    {item.poster ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        className="atlas__archive-poster"
+                        src={item.poster}
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <span className="atlas__archive-glyph" aria-hidden>
+                        {item.source === "magcloud" ? "◇" : "◈"}
+                      </span>
+                    )}
+                    <span className="atlas__archive-copy">
+                      <span className="atlas__archive-source">{item.sourceLabel}</span>
+                      <strong>{item.title}</strong>
+                      {item.summary ? (
+                        <em className="atlas__archive-summary">{item.summary}</em>
+                      ) : null}
+                      <span className="atlas__archive-meta">{item.publishedAt}</span>
+                    </span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      ) : null}
+
+      {panel === "marks" ? (
+        <div
+          className="atlas__block atlas__block--brands"
+          role="tabpanel"
+          id={`${baseId}-panel-panel-marks`}
+          aria-labelledby={`${baseId}-panel-marks`}
+        >
+          <header className="atlas__block-head">
+            <h3>MARKS</h3>
+            <span>{brands.length}</span>
+          </header>
+          <ul className="atlas__brand-strip" aria-label="House marks">
+            {brands.map((b) => (
+              <li key={b.name}>
+                <span>{b.short ?? b.name}</span>
+                <em>{b.kind}</em>
               </li>
             ))}
           </ul>
-        )}
-      </div>
-
-      <div className="atlas__block atlas__block--brands">
-        <header className="atlas__block-head">
-          <h3>MARKS</h3>
-          <span>{brands.length}</span>
-        </header>
-        <ul className="atlas__brand-strip" aria-label="House marks">
-          {brands.map((b) => (
-            <li key={b.name}>
-              <span>{b.short ?? b.name}</span>
-              <em>{b.kind}</em>
-            </li>
-          ))}
-        </ul>
-      </div>
+        </div>
+      ) : null}
     </section>
   );
 }
 
-function OutletRow({ outlet, index }: { outlet: HouseOutlet; index: number }) {
+function OutletRow({
+  outlet,
+  index,
+  featured = false,
+}: {
+  outlet: HouseOutlet;
+  index: number;
+  featured?: boolean;
+}) {
   return (
     <li
-      className={`atlas__outlet ${laneTone(outlet.lane)}`}
+      className={`atlas__outlet ${laneTone(outlet.lane)}${featured ? " atlas__outlet--featured" : ""}`}
       style={{ animationDelay: `${Math.min(index, 10) * 35}ms` }}
     >
       <a
@@ -233,9 +492,10 @@ function ProjectRow({ project, index }: { project: HouseProject; index: number }
               href={o.url}
               target="_blank"
               rel="noopener noreferrer"
+              title={o.label}
               onClick={() => track("enter_stream", { id: o.id, via: "atlas_project" })}
             >
-              {o.lane}
+              {o.label.split("·")[0]?.trim() || o.lane}
             </a>
           ))}
         </div>

@@ -4566,8 +4566,8 @@ a.drive .drive__face {
 /* —— House Atlas —— */
 .atlas {
   display: grid;
-  gap: 1.75rem;
-  padding-bottom: 2rem;
+  gap: 1.5rem;
+  padding-bottom: 2.5rem;
 }
 
 .atlas__boot {
@@ -4580,7 +4580,7 @@ a.drive .drive__face {
 
 .atlas__hero {
   position: relative;
-  min-height: clamp(220px, 42vw, 320px);
+  min-height: clamp(260px, 48vw, 380px);
   overflow: hidden;
   border-bottom: 1px solid var(--line);
   isolation: isolate;
@@ -4591,102 +4591,206 @@ a.drive .drive__face {
   inset: 0;
   z-index: 0;
   background:
-    radial-gradient(ellipse at 20% 0%, color-mix(in oklab, var(--phosphor) 22%, transparent), transparent 55%),
-    radial-gradient(ellipse at 90% 80%, color-mix(in oklab, var(--amber) 14%, transparent), transparent 50%),
-    linear-gradient(160deg, #0a100c 0%, #050806 55%, #0c1410 100%);
+    radial-gradient(ellipse at 18% 8%, color-mix(in oklab, var(--phosphor) 24%, transparent), transparent 52%),
+    radial-gradient(ellipse at 92% 78%, color-mix(in oklab, var(--amber) 16%, transparent), transparent 48%),
+    linear-gradient(155deg, #0a110d 0%, #040706 52%, #0d1511 100%);
 }
 
 .atlas__hero-grid {
   position: absolute;
   inset: 0;
-  opacity: 0.22;
+  opacity: 0.2;
   background-image:
     linear-gradient(color-mix(in oklab, var(--phosphor) 18%, transparent) 1px, transparent 1px),
     linear-gradient(90deg, color-mix(in oklab, var(--phosphor) 18%, transparent) 1px, transparent 1px);
-  background-size: 28px 28px;
-  mask-image: linear-gradient(180deg, #000 30%, transparent 95%);
+  background-size: 32px 32px;
+  mask-image: linear-gradient(180deg, #000 28%, transparent 92%);
+  animation: atlas-grid-drift 28s linear infinite;
+}
+
+.atlas__hero-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(40px);
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.atlas__hero-orb--a {
+  width: min(42vw, 280px);
+  height: min(42vw, 280px);
+  top: -12%;
+  left: -6%;
+  background: color-mix(in oklab, var(--phosphor) 35%, transparent);
+  animation: atlas-orb 9s ease-in-out infinite alternate;
+}
+
+.atlas__hero-orb--b {
+  width: min(36vw, 220px);
+  height: min(36vw, 220px);
+  right: -4%;
+  bottom: 8%;
+  background: color-mix(in oklab, var(--amber) 28%, transparent);
+  animation: atlas-orb 11s ease-in-out infinite alternate-reverse;
 }
 
 .atlas__hero-wash {
   position: absolute;
   inset: auto 0 0;
-  height: 40%;
-  background: linear-gradient(180deg, transparent, color-mix(in oklab, var(--void) 88%, transparent));
+  height: 46%;
+  background: linear-gradient(180deg, transparent, color-mix(in oklab, var(--void) 92%, transparent));
 }
 
 .atlas__hero-inner {
   position: relative;
   z-index: 1;
   display: grid;
-  gap: 0.55rem;
+  gap: 0.5rem;
   align-content: end;
   min-height: inherit;
-  padding: clamp(1.25rem, 4vw, 2.25rem) var(--page-x) 1.5rem;
-  animation: atlas-rise 520ms ease both;
+  padding: clamp(1.35rem, 4.5vw, 2.5rem) var(--page-x) 1.65rem;
+  animation: atlas-rise 560ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .atlas__mark {
-  margin-bottom: 0.35rem;
-  filter: drop-shadow(0 0 18px color-mix(in oklab, var(--phosphor) 35%, transparent));
+  margin-bottom: 0.4rem;
+  filter: drop-shadow(0 0 22px color-mix(in oklab, var(--phosphor) 40%, transparent));
+  animation: atlas-mark-in 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .atlas__eyebrow {
   margin: 0;
   color: var(--amber);
   font-size: 0.72rem;
-  letter-spacing: 0.22em;
+  letter-spacing: 0.26em;
   text-transform: uppercase;
 }
 
 .atlas__title {
   margin: 0;
   font-family: var(--font-display);
-  font-size: clamp(2rem, 7vw, 3.4rem);
-  letter-spacing: 0.06em;
-  line-height: 0.95;
-  text-shadow: 0 0 40px color-mix(in oklab, var(--phosphor) 25%, transparent);
+  font-size: clamp(2.2rem, 8vw, 3.75rem);
+  letter-spacing: 0.055em;
+  line-height: 0.92;
+  text-shadow: 0 0 48px color-mix(in oklab, var(--phosphor) 28%, transparent);
 }
 
 .atlas__line {
-  margin: 0;
-  max-width: 28rem;
+  margin: 0.15rem 0 0;
+  max-width: 30rem;
   color: var(--muted);
-  font-size: 0.92rem;
-  line-height: 1.45;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.atlas__cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 0.85rem;
+}
+
+.atlas__cta-primary,
+.atlas__cta-ghost {
+  appearance: none;
+  border: 1px solid transparent;
+  padding: 0.55rem 1rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: border-color 160ms ease, color 160ms ease, background 160ms ease, transform 160ms ease;
+}
+
+.atlas__cta-primary {
+  background: color-mix(in oklab, var(--phosphor) 18%, var(--panel));
+  border-color: color-mix(in oklab, var(--phosphor) 55%, var(--line));
+  color: var(--phosphor);
+}
+
+.atlas__cta-primary:hover {
+  background: color-mix(in oklab, var(--phosphor) 28%, var(--panel));
+  transform: translateY(-1px);
+}
+
+.atlas__cta-ghost {
+  background: transparent;
+  border-color: var(--line);
+  color: var(--steel);
+}
+
+.atlas__cta-ghost:hover {
+  border-color: var(--amber);
+  color: var(--amber);
+}
+
+.atlas__panels,
+.atlas__lanes {
+  display: flex;
+  gap: 0;
+  padding: 0 var(--page-x);
+  border-bottom: 1px solid var(--line);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.atlas__panels::-webkit-scrollbar,
+.atlas__lanes::-webkit-scrollbar {
+  display: none;
 }
 
 .atlas__lanes {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  padding: 0 var(--page-x);
+  border-bottom-color: color-mix(in oklab, var(--line) 70%, transparent);
 }
 
+.atlas__panels button,
 .atlas__lanes button {
   appearance: none;
-  border: 1px solid var(--line);
-  background: color-mix(in oklab, var(--panel) 80%, transparent);
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
   color: var(--steel);
-  padding: 0.35rem 0.7rem;
-  letter-spacing: 0.1em;
+  padding: 0.7rem 0.95rem 0.65rem;
+  margin-bottom: -1px;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   font-size: 0.68rem;
   cursor: pointer;
-  transition: border-color 160ms ease, color 160ms ease, background 160ms ease;
+  white-space: nowrap;
+  transition: color 160ms ease, border-color 160ms ease;
 }
 
-.atlas__lanes button:hover,
-.atlas__lanes button.is-active {
-  border-color: color-mix(in oklab, var(--phosphor) 55%, var(--line));
+.atlas__panels button:hover,
+.atlas__lanes button:hover {
+  color: var(--text);
+}
+
+.atlas__panels button.is-active {
   color: var(--phosphor);
-  background: color-mix(in oklab, var(--phosphor) 10%, var(--panel));
+  border-bottom-color: var(--phosphor);
+}
+
+.atlas__lanes button.is-active {
+  color: var(--amber);
+  border-bottom-color: var(--amber);
+}
+
+.atlas__panels button:focus-visible,
+.atlas__lanes button:focus-visible,
+.atlas__cta-primary:focus-visible,
+.atlas__cta-ghost:focus-visible,
+.atlas__outlet a:focus-visible,
+.atlas__project-links a:focus-visible,
+.atlas__archive-list a:focus-visible {
+  outline: 2px solid var(--phosphor);
+  outline-offset: 2px;
 }
 
 .atlas__block {
   display: grid;
-  gap: 0.85rem;
-  padding: 0 var(--page-x);
-  animation: atlas-rise 640ms ease both;
+  gap: 0.9rem;
+  padding: 0.25rem var(--page-x) 0;
+  animation: atlas-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .atlas__block-head {
@@ -4695,14 +4799,14 @@ a.drive .drive__face {
   justify-content: space-between;
   gap: 1rem;
   border-bottom: 1px solid var(--line);
-  padding-bottom: 0.35rem;
+  padding-bottom: 0.4rem;
 }
 
 .atlas__block-head h3 {
   margin: 0;
   font-family: var(--font-display);
   font-size: 0.95rem;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.16em;
 }
 
 .atlas__block-head span,
@@ -4718,6 +4822,7 @@ a.drive .drive__face {
   margin: 0;
 }
 
+.atlas__featured,
 .atlas__outlet-list,
 .atlas__project-list,
 .atlas__archive-list,
@@ -4726,11 +4831,16 @@ a.drive .drive__face {
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 0.45rem;
+  gap: 0.5rem;
+}
+
+.atlas__featured {
+  gap: 0.55rem;
+  margin-bottom: 0.35rem;
 }
 
 .atlas__outlet {
-  animation: atlas-rise 480ms ease both;
+  animation: atlas-rise 480ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .atlas__outlet a {
@@ -4738,22 +4848,32 @@ a.drive .drive__face {
   grid-template-columns: 5.5rem 1fr auto;
   gap: 0.75rem;
   align-items: center;
-  padding: 0.7rem 0.85rem;
-  border: 1px solid var(--line);
+  padding: 0.75rem 0.2rem 0.75rem 0;
+  border-bottom: 1px solid color-mix(in oklab, var(--line) 75%, transparent);
+  background: transparent;
+  transition: border-color 160ms ease, transform 180ms ease, color 160ms ease;
+}
+
+.atlas__outlet--featured a {
+  padding: 0.9rem 0.95rem;
+  border: 1px solid color-mix(in oklab, var(--phosphor) 28%, var(--line));
   background:
-    linear-gradient(90deg, color-mix(in oklab, var(--phosphor) 7%, transparent), transparent 40%),
-    color-mix(in oklab, var(--panel) 92%, transparent);
-  transition: border-color 160ms ease, transform 180ms ease, background 180ms ease;
+    linear-gradient(105deg, color-mix(in oklab, var(--phosphor) 10%, transparent), transparent 55%),
+    color-mix(in oklab, var(--panel) 88%, transparent);
 }
 
 .atlas__outlet a:hover {
-  border-color: color-mix(in oklab, var(--phosphor) 45%, var(--line));
-  transform: translateX(2px);
+  border-bottom-color: color-mix(in oklab, var(--phosphor) 45%, var(--line));
+  transform: translateX(3px);
+}
+
+.atlas__outlet--featured a:hover {
+  border-color: color-mix(in oklab, var(--phosphor) 55%, var(--line));
 }
 
 .atlas__outlet-lane {
   font-size: 0.65rem;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--phosphor-dim);
 }
@@ -4763,16 +4883,17 @@ a.drive .drive__face {
 .atlas-lane--video .atlas__outlet-lane { color: #ff8f8f; }
 .atlas-lane--live .atlas__outlet-lane { color: #ff6b6b; }
 .atlas-lane--archive .atlas__outlet-lane { color: var(--steel); }
+.atlas-lane--web .atlas__outlet-lane { color: #b8c9a8; }
 
 .atlas__outlet-body {
   display: grid;
-  gap: 0.15rem;
+  gap: 0.18rem;
   min-width: 0;
 }
 
 .atlas__outlet-body strong {
   font-family: var(--font-display);
-  font-size: 0.95rem;
+  font-size: 0.98rem;
   letter-spacing: 0.04em;
 }
 
@@ -4785,31 +4906,36 @@ a.drive .drive__face {
 
 .atlas__outlet-go {
   color: var(--phosphor);
-  font-size: 1.1rem;
+  font-size: 1.15rem;
+  transition: transform 180ms ease;
+}
+
+.atlas__outlet a:hover .atlas__outlet-go {
+  transform: translate(2px, -2px);
 }
 
 .atlas__project {
   display: grid;
   grid-template-columns: 1fr auto;
-  gap: 0.75rem;
+  gap: 0.85rem;
   align-items: center;
-  padding: 0.85rem 0;
+  padding: 0.95rem 0;
   border-bottom: 1px solid color-mix(in oklab, var(--line) 80%, transparent);
-  animation: atlas-rise 520ms ease both;
+  animation: atlas-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .atlas__project-kind {
   margin: 0 0 0.2rem;
   color: var(--amber);
   font-size: 0.62rem;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
 }
 
 .atlas__project-main h4 {
-  margin: 0 0 0.25rem;
+  margin: 0 0 0.28rem;
   font-family: var(--font-display);
-  font-size: 1.05rem;
+  font-size: 1.08rem;
   letter-spacing: 0.03em;
 }
 
@@ -4822,29 +4948,29 @@ a.drive .drive__face {
   margin: 0;
   color: var(--muted);
   font-size: 0.8rem;
-  line-height: 1.4;
+  line-height: 1.45;
   max-width: 36rem;
 }
 
 .atlas__project-links {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.35rem;
+  gap: 0.4rem;
   justify-content: flex-end;
 }
 
 .atlas__project-links a,
 .atlas__project-idle {
-  border: 1px solid var(--line);
-  padding: 0.25rem 0.5rem;
-  font-size: 0.65rem;
+  padding: 0.2rem 0;
+  border-bottom: 1px solid transparent;
+  font-size: 0.68rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--steel);
 }
 
 .atlas__project-links a:hover {
-  border-color: var(--phosphor);
+  border-bottom-color: var(--phosphor);
   color: var(--phosphor);
 }
 
@@ -4853,18 +4979,42 @@ a.drive .drive__face {
 }
 
 .atlas__archive-list li {
-  animation: atlas-rise 480ms ease both;
+  animation: atlas-rise 480ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .atlas__archive-list a {
   display: grid;
-  gap: 0.2rem;
-  padding: 0.65rem 0;
+  grid-template-columns: 3.25rem 1fr;
+  gap: 0.85rem;
+  align-items: start;
+  padding: 0.75rem 0;
   border-bottom: 1px solid color-mix(in oklab, var(--line) 70%, transparent);
 }
 
 .atlas__archive-list a:hover strong {
   color: var(--phosphor);
+}
+
+.atlas__archive-poster,
+.atlas__archive-glyph {
+  width: 3.25rem;
+  height: 3.25rem;
+  object-fit: cover;
+  background: color-mix(in oklab, var(--panel) 90%, transparent);
+  border: 1px solid var(--line);
+}
+
+.atlas__archive-glyph {
+  display: grid;
+  place-items: center;
+  color: var(--amber);
+  font-size: 1.1rem;
+}
+
+.atlas__archive-copy {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
 }
 
 .atlas__archive-source,
@@ -4877,27 +5027,52 @@ a.drive .drive__face {
 
 .atlas__archive-list strong {
   font-family: var(--font-display);
-  font-size: 0.95rem;
+  font-size: 0.98rem;
   letter-spacing: 0.02em;
   line-height: 1.25;
 }
 
+.atlas__archive-summary {
+  font-style: normal;
+  color: var(--muted);
+  font-size: 0.76rem;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.atlas__skeleton {
+  height: 4.25rem;
+  border-bottom: 1px solid color-mix(in oklab, var(--line) 70%, transparent);
+  background: linear-gradient(
+    90deg,
+    color-mix(in oklab, var(--panel) 70%, transparent) 0%,
+    color-mix(in oklab, var(--line) 55%, transparent) 50%,
+    color-mix(in oklab, var(--panel) 70%, transparent) 100%
+  );
+  background-size: 200% 100%;
+  animation: atlas-shimmer 1.2s linear infinite;
+}
+
 .atlas__brand-strip {
-  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
-  gap: 0.5rem;
+  grid-template-columns: 1fr;
+  gap: 0;
 }
 
 .atlas__brand-strip li {
-  display: grid;
-  gap: 0.15rem;
-  padding: 0.55rem 0.65rem;
-  border: 1px solid var(--line);
-  background: color-mix(in oklab, var(--panel) 85%, transparent);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.7rem 0;
+  border-bottom: 1px solid color-mix(in oklab, var(--line) 75%, transparent);
 }
 
 .atlas__brand-strip span {
   font-family: var(--font-display);
-  font-size: 0.82rem;
+  font-size: 0.95rem;
   letter-spacing: 0.04em;
 }
 
@@ -4905,14 +5080,14 @@ a.drive .drive__face {
   font-style: normal;
   color: var(--muted);
   font-size: 0.62rem;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
 @keyframes atlas-rise {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(12px);
   }
   to {
     opacity: 1;
@@ -4920,8 +5095,47 @@ a.drive .drive__face {
   }
 }
 
+@keyframes atlas-mark-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes atlas-orb {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(18px, 12px, 0) scale(1.08);
+  }
+}
+
+@keyframes atlas-grid-drift {
+  from {
+    background-position: 0 0, 0 0;
+  }
+  to {
+    background-position: 32px 32px, 32px 32px;
+  }
+}
+
+@keyframes atlas-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+
 @media (max-width: 720px) {
-  .atlas__outlet a {
+  .atlas__outlet a,
+  .atlas__outlet--featured a {
     grid-template-columns: 1fr auto;
     grid-template-areas:
       "lane go"
@@ -4936,14 +5150,30 @@ a.drive .drive__face {
   .atlas__project-links {
     justify-content: flex-start;
   }
+  .atlas__archive-list a {
+    grid-template-columns: 2.75rem 1fr;
+  }
+  .atlas__archive-poster,
+  .atlas__archive-glyph {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .atlas__hero-inner,
+  .atlas__mark,
   .atlas__block,
   .atlas__outlet,
   .atlas__project,
-  .atlas__archive-list li {
+  .atlas__archive-list li,
+  .atlas__hero-grid,
+  .atlas__hero-orb,
+  .atlas__skeleton {
     animation: none;
+  }
+  .atlas__outlet a:hover,
+  .atlas__cta-primary:hover {
+    transform: none;
   }
 }

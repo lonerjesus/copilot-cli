@@ -129,6 +129,22 @@ export const HOUSE_OUTLETS: HouseOutlet[] = [
     blurb: "Distribution outlet",
   },
   {
+    id: "shazam-357",
+    label: "Shazam · 357Itsumi",
+    handle: "357Itsumi",
+    url: "https://www.shazam.com/artist/-/1776608082",
+    lane: "audio",
+    blurb: "Shazam artist node",
+  },
+  {
+    id: "shazam-streetpolitik",
+    label: "Shazam · Streetpolitik",
+    handle: "Streetpolitik",
+    url: "https://www.shazam.com/artist/-/1188877723",
+    lane: "audio",
+    blurb: "Legacy Streetpolitik Shazam",
+  },
+  {
     id: "toneden",
     label: "ToneDen",
     handle: "streetpolitk",
@@ -268,5 +284,5 @@ export function legacyPlatformCount(): number {
 export const ATLAS = {
   title: SITE.title,
   eyebrow: "HOUSE",
-  line: "Projects · outlets · archive — one roof.",
+  line: "Projects · outlets · archive — one roof under the mark.",
 } as const;

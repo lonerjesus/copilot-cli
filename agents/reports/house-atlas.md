@@ -7,13 +7,15 @@
 
 | Surface | Detail |
 |---------|--------|
-| **House nav** | New rail view `#house` with brand-first atlas hero |
-| **Outlets** | Full connection map incl. YouTube, FaustSociety Twitch, Faust Spirit, MagCloud archive |
-| **Projects** | TSOL, Imponderabilia, STPK lounge, Good;Sloppy., QTOASS, Faust Society, etc. — exact names |
-| **Archive bridge** | Live MagCloud + Substack RSS via `/api/connections` (off Netflix shelves) |
-| **Marks** | Brand/artist/handle strip from `ALIASES` |
-| **Look** | Phosphor/amber atmosphere, grid wash, staggered rise motion, interactive rows (not card dump) |
-| **Code** | Dynamic import keeps MagCloud strings off initial home HTML; session-gated API |
+| **House nav** | Rail view `#house` (+ `#connections` / `#projects`) with brand-first atlas hero |
+| **Panels** | One-job tabs: outlets · projects · archive · marks (keyboard arrows) |
+| **Lanes** | Underline segment filter (not pill cluster) — writing/audio/video/live/archive/web |
+| **Outlets** | Full map incl. YouTube, FaustSociety, MagCloud, Shazam ×2; primary outlets featured |
+| **Projects** | TSOL, Imponderabilia, STPK lounge, Good;Sloppy., QTOASS, Faust Society — exact names; lane-aware |
+| **Archive bridge** | Live MagCloud + Substack RSS via `/api/connections` with posters/summaries (off Netflix shelves) |
+| **Marks** | Brand/artist/handle strip from `ALIASES` (list, not card dump) |
+| **Look** | Phosphor/amber atmosphere, drifting grid, dual orbs, staggered rise, CTA pair |
+| **Code** | Dynamic import keeps MagCloud strings off initial home HTML; session-gated API; 8s feed timeout |
 
 ## Verifier
 

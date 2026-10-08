@@ -64,6 +64,8 @@ function parseRssItems(xml: string, source: ArchiveItem["source"], sourceLabel: 
 }
 
 async function fetchXml(url: string): Promise<string | null> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 8_000);
   try {
     const res = await fetch(url, {
       headers: {
@@ -71,11 +73,14 @@ async function fetchXml(url: string): Promise<string | null> {
         "User-Agent": "kamaunegasi.net/1.0 (+https://www.kamaunegasi.net)",
       },
       cache: "no-store",
+      signal: controller.signal,
     });
     if (!res.ok) return null;
     return await res.text();
   } catch {
     return null;
+  } finally {
+    clearTimeout(timer);
   }
 }
 
