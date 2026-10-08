@@ -20,8 +20,11 @@ import {
   MAX_MEDIA_BYTES,
   SINGLE_SHOT_MAX_BYTES,
   UPLOAD_CHUNK_BYTES,
+  audioAcceptAttribute,
+  mediaAcceptAttribute,
   uploadErrorMessage,
   validateUploadFile,
+  videoAcceptAttribute,
 } from "@/lib/media-store";
 import { MAX_TICKER_CHARS } from "@/lib/ticker-store";
 import {
@@ -59,7 +62,7 @@ const PRESETS: UploadPreset[] = [
     category: "video",
     subcategory: "archive",
     blurbHint: "House video drop",
-    accept: "video/*",
+    accept: videoAcceptAttribute(),
   },
   {
     id: "photo",
@@ -69,7 +72,7 @@ const PRESETS: UploadPreset[] = [
     category: "visuals",
     subcategory: "stills",
     blurbHint: "House still",
-    accept: "image/*",
+    accept: "image/*,.jpg,.jpeg,.png,.webp,.gif",
   },
   {
     id: "music",
@@ -78,8 +81,8 @@ const PRESETS: UploadPreset[] = [
     kind: "audio",
     category: "audio",
     subcategory: "music",
-    blurbHint: "House track / mix",
-    accept: "audio/*",
+    blurbHint: "House track / mix — MP3, M4A, WAV, FLAC…",
+    accept: audioAcceptAttribute(),
   },
   {
     id: "writing",
@@ -89,7 +92,7 @@ const PRESETS: UploadPreset[] = [
     category: "writing",
     subcategory: "notes",
     blurbHint: "House writing",
-    accept: "video/*,audio/*,.mp4,.mov,.webm,.mp3,.wav",
+    accept: mediaAcceptAttribute(),
   },
 ];
 
@@ -187,10 +190,34 @@ function titleFromFilename(name: string): string {
 }
 
 function presetFromFile(file: File): UploadPreset {
-  const type = file.type.toLowerCase();
-  if (type.startsWith("image/")) return PRESETS.find((p) => p.id === "photo")!;
-  if (type.startsWith("audio/")) return PRESETS.find((p) => p.id === "music")!;
-  if (type.startsWith("video/")) return PRESETS.find((p) => p.id === "video")!;
+  const type = (file.type || "").toLowerCase().split(";")[0]?.trim() ?? "";
+  const name = (file.name || "").toLowerCase();
+  const ext = name.includes(".") ? name.slice(name.lastIndexOf(".")) : "";
+  const audioExt = new Set([
+    ".mp3",
+    ".mpga",
+    ".m4a",
+    ".aac",
+    ".wav",
+    ".wave",
+    ".flac",
+    ".ogg",
+    ".oga",
+    ".opus",
+    ".weba",
+  ]);
+  const videoExt = new Set([".mp4", ".m4v", ".mov", ".qt", ".webm", ".ogv", ".3gp", ".3g2"]);
+  const imageExt = new Set([".jpg", ".jpeg", ".png", ".webp", ".gif"]);
+
+  if (type.startsWith("image/") || imageExt.has(ext)) {
+    return PRESETS.find((p) => p.id === "photo")!;
+  }
+  if (type.startsWith("audio/") || type === "application/ogg" || audioExt.has(ext)) {
+    return PRESETS.find((p) => p.id === "music")!;
+  }
+  if (type.startsWith("video/") || videoExt.has(ext)) {
+    return PRESETS.find((p) => p.id === "video")!;
+  }
   return PRESETS[0]!;
 }
 
@@ -729,10 +756,7 @@ export function AdminStation() {
               ref={fileRef}
               type="file"
               className="admin__file-hidden"
-              accept={
-                activePreset.accept ||
-                [...ALLOWED_MEDIA_TYPES.media].join(",")
-              }
+              accept={activePreset.accept || mediaAcceptAttribute()}
               disabled={busy}
               onChange={onPickFile}
             />
@@ -752,7 +776,11 @@ export function AdminStation() {
                     ? uploadProgress || "Uploading…"
                     : preset === "writing"
                       ? "Drop long-form video / audio (optional)"
-                      : "Drop video, photo, or audio"}
+                      : preset === "music"
+                        ? "Drop MP3, M4A, WAV, FLAC, OGG…"
+                        : preset === "video"
+                          ? "Drop MP4, MOV, WebM…"
+                          : "Drop video, photo, or audio"}
                 </p>
                 <p className="admin__drop-hint">
                   or click · up to {Math.floor(MAX_MEDIA_BYTES / (1024 * 1024))} MB
