@@ -22,7 +22,8 @@
     "qa:media-meta": "node --experimental-strip-types scripts/check-media-meta.mjs",
     "qa:media-range": "node scripts/e2e-media-range.mjs",
     "qa:writing-open": "node --experimental-strip-types scripts/e2e-writing-open.mjs",
-    "qa:platform-compare": "node --experimental-strip-types scripts/e2e-platform-compare.mjs"
+    "qa:platform-compare": "node --experimental-strip-types scripts/e2e-platform-compare.mjs",
+    "qa:guest": "node scripts/e2e-guest-user.mjs"
   },
   "dependencies": {
     "@opennextjs/cloudflare": "^1.20.8",
