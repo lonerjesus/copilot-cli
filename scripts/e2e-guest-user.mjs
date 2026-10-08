@@ -5,7 +5,7 @@
  * Usage: BASE=http://127.0.0.1:3035 node scripts/e2e-guest-user.mjs
  */
 import { chromium } from "playwright";
-import { mkdirSync } from "node:fs";
+import { existsSync, mkdirSync } from "node:fs";
 
 const BASE = process.env.BASE || "http://127.0.0.1:3035";
 const OUT = process.env.ARTIFACT_DIR || "/opt/cursor/artifacts/guest-e2e";
@@ -13,6 +13,12 @@ const GUEST_EMAIL = `guest.${Date.now()}@example.com`;
 const GUEST_PASS = "guest-test-pass-12345";
 const UA =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+const CHROME = [
+  process.env.CHROME_PATH,
+  "/usr/bin/google-chrome-stable",
+  "/usr/local/bin/google-chrome",
+  "/usr/bin/google-chrome",
+].find((p) => p && existsSync(p));
 
 mkdirSync(OUT, { recursive: true });
 
@@ -35,7 +41,7 @@ console.log(`guest: ${GUEST_EMAIL}`);
 
 const browser = await chromium.launch({
   headless: true,
-  executablePath: process.env.CHROME_PATH || "/usr/local/bin/google-chrome",
+  executablePath: CHROME,
   args: ["--no-sandbox", "--disable-setuid-sandbox"],
 });
 

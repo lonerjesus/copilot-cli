@@ -26,6 +26,8 @@ run() {
     echo "FAIL  $name"
     fail=$((fail + 1))
   fi
+  # Brief pause so auth rate buckets can drain between suites
+  sleep 1
 }
 
 run "qa:av" npm run qa:av
