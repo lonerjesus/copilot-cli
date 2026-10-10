@@ -4,6 +4,7 @@ import { getSubcategory, normalizeSubcategoryId } from "@/data/taxonomy";
 import { SITE } from "@/data/identity";
 import { AuthStoreUnavailableError } from "@/lib/auth/store";
 import { normalizeMediaRef } from "@/lib/media-ref";
+import { normalizeTitle } from "@/lib/title-normalize";
 
 /**
  * Durable store for admin-uploaded catalog entries.
@@ -174,9 +175,12 @@ function normalizeUpload(item: UploadedContent): UploadedContent {
   const subcategory = normalizeSubcategoryId(item.subcategory);
   return {
     ...item,
+    title: normalizeTitle(item.title),
     kind,
     subcategory,
     category: item.category === "writing" || kind === "writing" ? "writing" : item.category,
+    // Treat legacy uploads without source as house media when paywalled/open house.
+    source: item.source ?? "uploaded",
   };
 }
 
@@ -210,7 +214,7 @@ export type CreateContentInput = {
 export function validateCreateInput(raw: unknown): CreateContentInput {
   if (!raw || typeof raw !== "object") throw new Error("invalid_body");
   const o = raw as Record<string, unknown>;
-  const title = String(o.title ?? "").trim();
+  const title = normalizeTitle(String(o.title ?? ""));
   const brand = HOUSE_BRAND;
   const kind = normalizeMediaKind(String(o.kind ?? "").trim());
   const category = String(o.category ?? "").trim() as CategoryId;

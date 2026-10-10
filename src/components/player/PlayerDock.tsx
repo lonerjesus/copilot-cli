@@ -70,18 +70,28 @@ function albumIdFromOEmbedHtml(html?: string): string | null {
  * ≤ HOUSE_AV_BLOB_MAX_BYTES → credentialed full-file blob (verified EOF, no progressive cutoff).
  * Larger / remote → progressive URL (Range-capable `/api/media`).
  */
-function useHouseAvSrc(src: string): {
+function useHouseAvSrc(
+  src: string,
+  /** Only fetch / attach media after the listener presses play. */
+  armed: boolean,
+): {
   playSrc: string | null;
-  mode: "blob" | "progressive" | "loading" | "failed";
+  mode: "blob" | "progressive" | "loading" | "failed" | "idle";
 } {
   const [playSrc, setPlaySrc] = useState<string | null>(null);
-  const [mode, setMode] = useState<"blob" | "progressive" | "loading" | "failed">(
-    () => (isHouseMediaUrl(src) ? "loading" : "progressive"),
+  const [mode, setMode] = useState<"blob" | "progressive" | "loading" | "failed" | "idle">(
+    "idle",
   );
 
   useEffect(() => {
     let alive = true;
     let objectUrl: string | null = null;
+
+    if (!armed || !src) {
+      setPlaySrc(null);
+      setMode("idle");
+      return;
+    }
 
     if (!isHouseMediaUrl(src)) {
       setPlaySrc(src);
@@ -151,7 +161,7 @@ function useHouseAvSrc(src: string): {
       alive = false;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [src]);
+  }, [src, armed]);
 
   return { playSrc, mode };
 }
@@ -200,7 +210,15 @@ function NativeMedia({
   const seekingRef = useRef(false);
   const recoveriesRef = useRef(0);
   const lastStallAtRef = useRef(0);
-  const { playSrc, mode } = useHouseAvSrc(src);
+  // Arm on first play for this src — load once, only after play is pressed.
+  const [armed, setArmed] = useState(false);
+  useEffect(() => {
+    setArmed(false);
+  }, [src]);
+  useEffect(() => {
+    if (playing) setArmed(true);
+  }, [playing]);
+  const { playSrc, mode } = useHouseAvSrc(src, armed);
 
   const mediaNode = (): HTMLMediaElement | null =>
     kind === "video" ? videoRef.current : audioRef.current;
@@ -288,9 +306,13 @@ function NativeMedia({
     onEnded?.();
   };
 
-  if (!playSrc || mode === "loading") {
+  if (!armed || !playSrc || mode === "loading" || mode === "idle") {
     return (
-      <div className="deck__visual deck__visual--loading" aria-busy="true" aria-label="Loading media">
+      <div
+        className="deck__visual deck__visual--loading"
+        aria-busy={mode === "loading"}
+        aria-label={mode === "loading" ? "Loading media" : "Press play to load media"}
+      >
         <div className="deck__orb" />
       </div>
     );
@@ -304,7 +326,7 @@ function NativeMedia({
         src={playSrc}
         controls
         playsInline
-        preload="auto"
+        preload="metadata"
         title={title}
         data-kn-av-mode={mode}
         onTimeUpdate={onTimeUpdate}
@@ -322,7 +344,7 @@ function NativeMedia({
         ref={audioRef}
         src={playSrc}
         controls
-        preload="auto"
+        preload="metadata"
         title={title}
         data-kn-av-mode={mode}
         onTimeUpdate={onTimeUpdate}
@@ -718,7 +740,7 @@ export function PlayerDock() {
               if (!expanded) setExpanded(true);
               toggle();
             }}
-            aria-label="Play pause"
+            aria-label={playing ? "Pause" : "Play"}
           >
             {playing ? "❚❚" : "▶"}
           </button>

@@ -2,17 +2,13 @@
 
 import {
   useCallback,
-  useEffect,
   useMemo,
   useRef,
-  useState,
   type KeyboardEvent,
   type ReactNode,
 } from "react";
 import {
-  CATALOG,
   STREAM_ROWS,
-  houseCatalog,
   isPaywalled,
   isPlayableMedia,
   playableCatalog,
@@ -24,6 +20,7 @@ import { usePlayerState } from "@/components/player/PlayerContext";
 import { useReader } from "@/components/ReaderContext";
 import { MediaPoster } from "@/components/MediaPoster";
 import { track } from "@/lib/analytics";
+import { useLiveCatalog } from "@/components/useLiveCatalog";
 
 function Tile({
   item,
@@ -162,26 +159,7 @@ function rowItems(rowId: string, pinnedIds: string[], house: CatalogItem[]): Cat
 export function StreamDeck({ compact = false }: { compact?: boolean }) {
   const { current, playItem, queueNext } = usePlayerState();
   const { openReadable, isReadable } = useReader();
-  const [live, setLive] = useState<CatalogItem[]>(() => houseCatalog(CATALOG));
-
-  useEffect(() => {
-    const controller = new AbortController();
-    const load = async () => {
-      try {
-        const res = await fetch("/api/catalog", { signal: controller.signal });
-        if (!res.ok) return;
-        const data = (await res.json()) as { items?: CatalogItem[] };
-        if (data.items?.length) setLive(houseCatalog(data.items));
-      } catch (err) {
-        if (err instanceof DOMException && err.name === "AbortError") return;
-        /* seed */
-      }
-    };
-    void load();
-    return () => controller.abort();
-  }, []);
-
-  const house = live;
+  const { items: house } = useLiveCatalog();
 
   const shelves = useMemo(
     () =>

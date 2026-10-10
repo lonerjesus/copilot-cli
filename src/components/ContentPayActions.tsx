@@ -11,24 +11,33 @@ type ContentPayActionsProps = {
 };
 
 export function ContentPayActions({ catalogId, title }: ContentPayActionsProps) {
-  const { owns, markOwned, refresh } = useAuth();
+  const { owns, markOwned, refresh, loading: authLoading } = useAuth();
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
   const [liveItem, setLiveItem] = useState<CatalogItem | undefined>(
     () => CATALOG.find((c) => c.id === catalogId),
+  );
+  const [catalogReady, setCatalogReady] = useState(() =>
+    Boolean(CATALOG.find((c) => c.id === catalogId)),
   );
 
   useEffect(() => {
     let alive = true;
     const load = async () => {
       try {
-        const res = await fetch("/api/catalog");
-        if (!res.ok) return;
+        const res = await fetch("/api/catalog", { credentials: "same-origin" });
+        if (!res.ok) {
+          if (alive) setCatalogReady(true);
+          return;
+        }
         const data = (await res.json()) as { items?: CatalogItem[] };
         const hit = data.items?.find((c) => c.id === catalogId);
-        if (alive && hit) setLiveItem(hit);
+        if (alive) {
+          if (hit) setLiveItem(hit);
+          setCatalogReady(true);
+        }
       } catch {
-        /* seed */
+        if (alive) setCatalogReady(true);
       }
     };
     void load();
@@ -41,6 +50,7 @@ export function ContentPayActions({ catalogId, title }: ContentPayActionsProps) 
   const paywalled = item ? isPaywalled(item) : true;
   const owned = owns(catalogId);
   const price = formatUsd(contentPriceCents(catalogId));
+  const ready = catalogReady && !authLoading;
 
   const buy = async () => {
     setBusy(true);
@@ -110,6 +120,18 @@ export function ContentPayActions({ catalogId, title }: ContentPayActionsProps) 
       setBusy(false);
     }
   };
+
+  // Hold a single stable CTA until auth + catalog resolve (stops buy↔save flicker).
+  if (!ready) {
+    return (
+      <div className="pay-actions pay-actions--pending" aria-busy="true">
+        <button type="button" className="btn btn--ghost" disabled>
+          …
+        </button>
+        <span className="pay-actions__title">{title}</span>
+      </div>
+    );
+  }
 
   if (!paywalled) {
     return (

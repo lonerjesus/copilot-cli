@@ -188,6 +188,7 @@ export const PLATFORMS = [
     url: "https://vimeo.com/streetpolitik",
     kind: "video" as const,
   },
+  // ToneDen username is streetpolitk (no i) — verified live profile for Streetpolitik™.
   {
     id: "toneden",
     label: "ToneDen",

@@ -16,10 +16,45 @@ function withSecurity(pathname: string, response: NextResponse) {
   return response;
 }
 
+const CANONICAL_HOST = "www.kamaunegasi.net";
+const APEX_HOST = "kamaunegasi.net";
+
+function hostOf(request: NextRequest): string {
+  return (request.headers.get("host") || request.nextUrl.host || "")
+    .split(":")[0]!
+    .toLowerCase();
+}
+
+/** Apex → www and HTTP → HTTPS (301). Complements CF “Always Use HTTPS”. */
+function canonicalHostRedirect(request: NextRequest): NextResponse | null {
+  const host = hostOf(request);
+  const proto = (
+    request.headers.get("x-forwarded-proto") ||
+    request.nextUrl.protocol.replace(":", "") ||
+    "https"
+  ).toLowerCase();
+  const needsHttps = proto === "http";
+  const needsWww = host === APEX_HOST;
+  if (!needsHttps && !needsWww) return null;
+  if (host !== APEX_HOST && host !== CANONICAL_HOST) return null;
+
+  const url = request.nextUrl.clone();
+  url.protocol = "https:";
+  url.hostname = CANONICAL_HOST;
+  url.port = "";
+  return withSecurity(
+    request.nextUrl.pathname,
+    NextResponse.redirect(url, 301),
+  );
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const ip = clientKey(request);
   const sessionOk = await hasValidSessionCookie(request.cookies.get(SESSION_COOKIE)?.value);
+
+  const hostRedirect = canonicalHostRedirect(request);
+  if (hostRedirect) return hostRedirect;
 
   // Local / memory-auth QA runs many suites back-to-back — raise ceilings.
   const qaAuth = process.env.ALLOW_MEMORY_AUTH === "1";
@@ -131,7 +166,8 @@ export async function middleware(request: NextRequest) {
   }
 
   const response = withSecurity(pathname, NextResponse.next());
-  if (!isPublic) {
+  if (!isPublic || pathname === "/access") {
+    // /access must never be CDN-cached for a year (auth door + Set-Cookie flows).
     response.headers.set("Cache-Control", "private, no-store");
   }
   return response;

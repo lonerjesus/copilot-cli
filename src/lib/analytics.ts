@@ -1,5 +1,8 @@
 "use client";
 
+/** Keep in sync with SESSION_COOKIE in lib/auth/token.ts (avoid importing Edge crypto into client). */
+const SESSION_COOKIE = "kn_session";
+
 type Signal =
   | "boot_complete"
   | "age_accepted"
@@ -49,17 +52,26 @@ function write(events: AnalyticsEvent[]) {
   }
 }
 
+function hasSessionCookie(): boolean {
+  try {
+    return document.cookie.split(";").some((part) => part.trim().startsWith(`${SESSION_COOKIE}=`));
+  } catch {
+    return false;
+  }
+}
+
 /** First-party bounce/engagement signals — no third-party trackers. */
 export function track(signal: Signal, meta?: AnalyticsEvent["meta"]) {
   if (typeof window === "undefined") return;
   const events = read();
   events.push({ signal, at: Date.now(), meta });
   write(events);
-  // Best-effort beacon for the owner analytics tab (ignore network failures).
+  // Owner analytics API requires a session — skip when signed out (avoids 401 noise).
+  if (!hasSessionCookie()) return;
   try {
     void fetch("/api/analytics", {
       method: "POST",
-      credentials: "same-origin",
+      credentials: "include",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ signal, meta }),
       keepalive: true,

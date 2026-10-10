@@ -57,7 +57,8 @@ Before go-live:
 3. Media — house uploads use `AUTH_KV` by default. Optional R2: `npm run cf:ensure-r2` (needs R2 Edit token), then add `[[r2_buckets]]` `MEDIA_R2` → `kamaunegasi-media` in `wrangler.toml`. Local without Workers writes to `.data/media/`.
 4. Optional Stripe: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`
 5. Custom domains — `wrangler.toml` declares `www.kamaunegasi.net` + apex via `routes` (`custom_domain = true`). After deploy, confirm both hostnames under the Worker’s Custom Domains (live must not show Cloudflare’s “There is nothing here yet”).
-6. Var: `ADMIN_EMAIL` (owner account for `/admin` — set in `wrangler.toml` / CF vars)
+6. SSL / host — turn on Cloudflare **Always Use HTTPS**. Middleware also 301s `http://` → `https://` and bare `kamaunegasi.net` → `www.kamaunegasi.net`.
+7. Var: `ADMIN_EMAIL` (owner account for `/admin` — set in `wrangler.toml` / CF vars)
 
 Local Cloudflare preview:
 

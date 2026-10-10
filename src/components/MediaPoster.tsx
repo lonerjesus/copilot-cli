@@ -22,8 +22,15 @@ function youtubeThumb(item: CatalogItem): string | null {
   return id ? `https://i.ytimg.com/vi/${id}/hqdefault.jpg` : null;
 }
 
+function looksLikeAvUrl(url: string): boolean {
+  return /\.(mp3|m4a|aac|wav|flac|ogg|opus|mp4|m4v|mov|webm|mkv)(\?|#|$)/i.test(url);
+}
+
 function seedPoster(item: CatalogItem): string | null {
-  return item.poster || youtubeThumb(item) || null;
+  const poster = (item.poster || "").trim();
+  // Never treat the AV binary itself as artwork — that re-downloaded multi-MB files per tile.
+  if (poster && poster !== item.src && !looksLikeAvUrl(poster)) return poster;
+  return youtubeThumb(item);
 }
 
 function FallbackMark({

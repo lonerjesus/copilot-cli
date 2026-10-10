@@ -90,6 +90,11 @@ export function playableCatalog(items: CatalogItem[]): CatalogItem[] {
 export function isHouseMedia(item: CatalogItem): boolean {
   if (item.source === "uploaded") return true;
   if (item.source === "fetched") return false;
+  // Legacy / id-prefixed uploads without source still belong on the house stream.
+  if (item.id.startsWith("up-")) return true;
+  if (item.src?.includes("/api/media/house/") || item.poster?.includes("/api/media/house/")) {
+    return true;
+  }
   return isPaywalled(item);
 }
 

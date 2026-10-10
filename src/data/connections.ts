@@ -34,7 +34,7 @@ export const HOUSE_OUTLETS: HouseOutlet[] = [
     handle: "tellingshowoflove",
     url: "https://tellingshowoflove.substack.com",
     lane: "writing",
-    blurb: "Telling Show Of Love ™ reboot — notes & episodes",
+    blurb: "Telling Show Of Love™ reboot — notes & episodes",
     primary: true,
   },
   {
@@ -145,6 +145,7 @@ export const HOUSE_OUTLETS: HouseOutlet[] = [
     blurb: "Legacy Streetpolitik Shazam",
   },
   {
+    // ToneDen username is streetpolitk (no i) — verified live profile for Streetpolitik™.
     id: "toneden",
     label: "ToneDen",
     handle: "streetpolitk",
@@ -182,7 +183,8 @@ export const HOUSE_OUTLETS: HouseOutlet[] = [
     handle: "streetpolitik",
     url: "https://www.magcloud.com/browse/issue/665683",
     lane: "archive",
-    blurb: "Chapbook Vol.1 — archive link-out only",
+    blurb:
+      "poems old and new about myself and those around me which were intended for one book but instead were broken down into chapbooks. Published Tuesday, November 26, 2013 by Kendrick Herring. 24 pages.",
   },
   {
     id: "magcloud-qtoss-vol2",

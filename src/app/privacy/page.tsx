@@ -2,11 +2,36 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { SITE } from "@/data/identity";
 
+const TITLE = "Privacy";
+const DESCRIPTION = `Privacy policy for ${SITE.domain} — what we collect, why, and how accounts work.`;
+
 export const metadata: Metadata = {
-  title: "Privacy",
-  description: `Privacy policy for ${SITE.domain} — what we collect, why, and how accounts work.`,
+  title: TITLE,
+  description: DESCRIPTION,
   alternates: { canonical: `${SITE.url}/privacy` },
   robots: { index: true, follow: true },
+  openGraph: {
+    title: `${TITLE} · ${SITE.title}`,
+    description: DESCRIPTION,
+    url: `${SITE.url}/privacy`,
+    siteName: SITE.title,
+    type: "website",
+    locale: "en_US",
+    images: [
+      {
+        url: `${SITE.url}/og.png`,
+        width: 1200,
+        height: 630,
+        alt: `${SITE.title} — Privacy`,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${TITLE} · ${SITE.title}`,
+    description: DESCRIPTION,
+    images: [`${SITE.url}/og.png`],
+  },
 };
 
 export default function PrivacyPage() {
@@ -42,16 +67,11 @@ export default function PrivacyPage() {
         <section className="legal__section">
           <h2>Retention &amp; contact</h2>
           <p>
-            Auth and commerce records live in the site&apos;s Cloudflare KV store for as long as the
-            account remains. To correct or delete account data, contact the house operator through
-            the channels listed on {SITE.domain} after you sign in.
+            Auth and commerce records stay with the house for as long as the account remains. To
+            correct or delete account data, contact Kamau:{" "}
+            <span className="legal__placeholder">[contact pending]</span>.
           </p>
         </section>
-
-        <p className="legal__disclaimer">
-          This page is house policy language for product clarity — not a substitute for counsel
-          review.
-        </p>
 
         <p className="legal__back">
           <Link href="/access">← Back to access</Link>

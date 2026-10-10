@@ -17,7 +17,7 @@ export function Hero({ onStream }: { onStream?: () => void }) {
           type="button"
           className="btn btn--primary hero__play"
           onClick={onStream}
-          aria-label="Play stream"
+          aria-label="Play"
         >
           ▶
         </button>
