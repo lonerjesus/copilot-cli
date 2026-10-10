@@ -443,8 +443,11 @@ export function AdminStation() {
       throw lastErr ?? new Error("upload_failed");
     };
 
-    // Small files — single Worker request (File streams; no full ArrayBuffer).
-    if (file.size <= SINGLE_SHOT_MAX_BYTES) {
+    // Small non-video files — single Worker request. Videos always chunk:
+    // phone clips routinely blow isolate memory on a single FormData POST.
+    const useSingleShot =
+      file.size <= SINGLE_SHOT_MAX_BYTES && !contentType.startsWith("video/");
+    if (useSingleShot) {
       setUploadProgress("uploading…");
       const res = await postWithRetry("upload", () => {
         const body = new FormData();
@@ -1012,7 +1015,9 @@ export function AdminStation() {
                 </p>
                 <p className="admin__drop-hint">
                   or click · up to {Math.floor(MAX_MEDIA_BYTES / (1024 * 1024))} MB
-                  (chunked over 85 MB)
+                  (videos + files over{" "}
+                  {Math.floor(SINGLE_SHOT_MAX_BYTES / (1024 * 1024))} MB upload in
+                  chunks)
                 </p>
               </>
             )}

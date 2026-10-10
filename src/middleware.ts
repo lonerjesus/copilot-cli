@@ -61,8 +61,20 @@ export async function middleware(request: NextRequest) {
   const globalLimit = qaAuth ? 5000 : 120;
   const authLimit = qaAuth ? 500 : 12;
   const forgotLimit = qaAuth ? 120 : 6;
+  // Chunked admin AV uploads (phone video ≈ dozens of parts) must not share the
+  // tight anonymous global bucket — authenticated compose would 429 mid-file.
+  const adminMediaUpload =
+    sessionOk && pathname.startsWith("/api/admin/media");
+  const adminMediaLimit = qaAuth ? 5000 : 600;
 
-  if (!rateLimitAllow(`global:${ip}`, globalLimit, 60_000)) {
+  if (adminMediaUpload) {
+    if (!rateLimitAllow(`admin-media:${ip}`, adminMediaLimit, 60_000)) {
+      return withSecurity(
+        pathname,
+        NextResponse.json({ error: "rate_limited" }, { status: 429 }),
+      );
+    }
+  } else if (!rateLimitAllow(`global:${ip}`, globalLimit, 60_000)) {
     return withSecurity(
       pathname,
       NextResponse.json({ error: "rate_limited" }, { status: 429 }),
