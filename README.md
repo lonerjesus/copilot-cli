@@ -1,6 +1,6 @@
 # kamaunegasi.net
 
-Autonomous portfolio + vlog platform for **Kendrick-Kamau Negasi**.
+Autonomous portfolio + vlog platform for **Kendrick-Kamau Negasi, LLC**.
 
 Futuristic terminal UI · streaming-style browse · chronic social footprint feed · custom audio/video deck that pulls posts from connected platforms.
 
@@ -70,7 +70,7 @@ Node host (no Workers): `npm run build:next && npm run start`.
 
 ## Identity nodes
 
-Streetpolitik · GrownAssKids (GAK) · Black Oh-My · BLKDTY Music LLC · Kendrick-Kamau Negasi LLC · Thelonious1 (TL1) · Telling Show Of Love (TSOL) · Telling Stills Of Love · Imponderabilia: Wall_Carpet 235 · 357Itsumi · Faust Fakeway · LoveDrugVendingMachine · Kamau Salaam Nasser · GRUNGEzhou · GRUNGEzhou Libellus · GRUNGEzhou Supply · Golden Crow · Golden Crow Acquisitions · 30over9 · Good;Sloppy. · STPK's Smoker's Lounge Music · QUARANTINED THOUGHTS OF A STREET STATISTIC
+Streetpolitik · GrownAssKids (GAK) · Black Oh-My · BLKDTY Music LLC · Kendrick-Kamau Negasi, LLC · Thelonious1 (TL1) · Telling Show Of Love (TSOL) · Telling Stills Of Love · Imponderabilia: Wall_Carpet 235 · 357Itsumi · Faust Fakeway · LoveDrugVendingMachine · Kamau Salaam Nasser · GRUNGEzhou · GRUNGEzhou Libellus · GRUNGEzhou Supply · GRUNGEzhou™ Libellus Supply · Grunge Daddy Ichiban · Golden Crow · Golden Crow Acquisitions · 30over9 · Good;Sloppy. · STPK's Smoker's Lounge Music · QUARANTINED THOUGHTS OF A STREET STATISTIC
 
 ## Keyboard
 

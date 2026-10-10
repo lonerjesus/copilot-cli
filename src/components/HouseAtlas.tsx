@@ -200,7 +200,7 @@ export function HouseAtlas({ compact = false }: { compact?: boolean }) {
                 }
               }}
             >
-              Enter Kamau’s Haus
+              Enter Stream
             </a>
             <button
               type="button"

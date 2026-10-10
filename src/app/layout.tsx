@@ -43,9 +43,9 @@ export const metadata: Metadata = {
     ],
     apple: [{ url: "/logo-kn-192.png", type: "image/png", sizes: "192x192" }],
   },
-  authors: [{ name: "Kendrick-Kamau Negasi" }],
+  authors: [{ name: "Kendrick-Kamau Negasi, LLC" }],
   keywords: [
-    "Kendrick-Kamau Negasi",
+    "Kendrick-Kamau Negasi, LLC",
     "Streetpolitik",
     "Telling Show Of Love",
     "GrownAssKids",

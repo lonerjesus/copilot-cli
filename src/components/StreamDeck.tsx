@@ -21,6 +21,7 @@ import { useReader } from "@/components/ReaderContext";
 import { MediaPoster } from "@/components/MediaPoster";
 import { track } from "@/lib/analytics";
 import { useLiveCatalog } from "@/components/useLiveCatalog";
+import { EMPTY_SHELF } from "@/data/empty-copy";
 
 function Tile({
   item,
@@ -295,7 +296,7 @@ export function StreamDeck({ compact = false }: { compact?: boolean }) {
           <span className="stream__empty-mark" aria-hidden>
             ◈
           </span>
-          <span>Empty shelf — publish the next drop from admin.</span>
+          <span>{EMPTY_SHELF}</span>
         </p>
       ) : null}
     </section>

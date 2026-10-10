@@ -28,6 +28,7 @@ import { track } from "@/lib/analytics";
 import { MediaPoster } from "@/components/MediaPoster";
 import { useLiveCatalog } from "@/components/useLiveCatalog";
 import { HOUSE_BRANDS } from "@/data/connections";
+import { EMPTY_FILTERS, EMPTY_SHELF } from "@/data/empty-copy";
 
 type CategoryBrowserProps = {
   initialQuery?: string;
@@ -320,10 +321,10 @@ export function CategoryBrowser({
             {loading
               ? "Loading…"
               : live.length === 0
-                ? "Empty shelf — publish the next drop from admin."
+                ? EMPTY_SHELF
                 : filtersActive
-                  ? "no signal for current filters"
-                  : "Empty shelf — publish the next drop from admin."}
+                  ? EMPTY_FILTERS
+                  : EMPTY_SHELF}
           </p>
         ) : (
           grouped.map((group) => {

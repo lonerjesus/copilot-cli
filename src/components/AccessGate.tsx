@@ -189,7 +189,7 @@ export function AccessGate() {
               setError("");
             }}
           >
-            Enter Kamau’s Haus
+            Enter Stream
           </button>
           <button
             type="button"
@@ -202,7 +202,7 @@ export function AccessGate() {
               setError("");
             }}
           >
-            Enter Kamau’s Haus
+            Enter Stream
           </button>
         </div>
 
@@ -347,7 +347,7 @@ export function AccessGate() {
           ) : null}
 
           <button type="submit" className="btn btn--primary" disabled={busy}>
-            {busy ? "Enter Kamau’s Haus…" : "Enter Kamau’s Haus"}
+            {busy ? "Enter Stream…" : "Enter Stream"}
           </button>
         </form>
 

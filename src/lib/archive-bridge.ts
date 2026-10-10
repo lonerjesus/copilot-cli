@@ -18,6 +18,16 @@ const MAGCLOUD_FEED =
   "https://www.magcloud.com/feed/getrecentuserissues?username=streetpolitik";
 const SUBSTACK_FEED = "https://tellingshowoflove.substack.com/feed";
 
+const OWNER_CREDIT = "Kendrick-Kamau Negasi, LLC";
+
+/** Rewrite MagCloud / legacy bylines to the public owner credit. */
+function creditOwner(text: string): string {
+  return text
+    .replace(/Herring Kendrick/gi, OWNER_CREDIT)
+    .replace(/Kendrick Herring/gi, OWNER_CREDIT)
+    .replace(/Kendrick-Kamau Negasi(?!, LLC)/g, OWNER_CREDIT);
+}
+
 /** Offline MagCloud shelf — used when Workers egress cannot reach MagCloud. */
 const MAGCLOUD_FALLBACK: ArchiveItem[] = [
   {
@@ -28,7 +38,7 @@ const MAGCLOUD_FALLBACK: ArchiveItem[] = [
     publishedAt: "2013-12-05",
     source: "magcloud",
     sourceLabel: "MagCloud · streetpolitik",
-    summary: "Published Thursday, December 5, 2013 by Kendrick Herring. 30 pages.",
+    summary: `Published Thursday, December 5, 2013 by ${OWNER_CREDIT}. 30 pages.`,
     poster:
       "https://s3.amazonaws.com/storage1.magcloud.com/image/1de48f3cbc58d54db65710255af8638b.jpg",
   },
@@ -40,8 +50,9 @@ const MAGCLOUD_FALLBACK: ArchiveItem[] = [
     publishedAt: "2013-11-26",
     source: "magcloud",
     sourceLabel: "MagCloud · streetpolitik",
-    summary:
+    summary: creditOwner(
       "poems old and new about myself and those around me which were intended for one book but instead were broken down into chapbooks. Published Tuesday, November 26, 2013 by Kendrick Herring. 24 pages.",
+    ),
     poster:
       "https://s3.amazonaws.com/storage4.magcloud.com/image/1a5a1700cbd777448ea13b4b5e957d18.jpg",
   },
@@ -66,7 +77,7 @@ function pickImg(html: string): string | undefined {
 }
 
 function tidySummary(title: string, description: string): string | undefined {
-  let text = stripHtml(description);
+  let text = creditOwner(stripHtml(description));
   if (!text) return undefined;
   // MagCloud prefixes the full title — drop it so the blurb is not truncated mid-word.
   if (text.toLowerCase().startsWith(title.toLowerCase())) {

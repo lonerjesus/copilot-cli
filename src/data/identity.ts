@@ -17,13 +17,14 @@ export const SITE = {
    * Keep 18+ first; name Streetpolitik + TSOL for discoverability.
    */
   shareDescription:
-    "18+ house of Kendrick-Kamau Negasi — Streetpolitik, Telling Show Of Love, GrownAssKids. Create an account to enter the portfolio, vlog, and stream.",
+    "18+ house of Kendrick-Kamau Negasi, LLC — Streetpolitik, Telling Show Of Love, GrownAssKids. Create an account to enter the portfolio, vlog, and stream.",
   logo: "/logo-kn-phosphor.png",
   logoLight: "/logo-kn-light.png",
   logoInk: "/logo-kn.png",
 } as const;
 
-export const PRIMARY_NAME = "Kendrick-Kamau Negasi";
+/** Public owner / author credit — use everywhere credits appear. */
+export const PRIMARY_NAME = "Kendrick-Kamau Negasi, LLC";
 
 /** Legal / birth identity — spelled exactly as provided */
 export const BIRTH_NAME = "Kendrick Tirrell Herring";
@@ -31,14 +32,14 @@ export const DOB = "04/05/1987";
 
 export const ALIASES: Alias[] = [
   { name: "Kendrick Tirrell Herring", kind: "legal", note: "DOB 04/05/1987" },
-  { name: "Kendrick-Kamau Negasi", kind: "legal" },
+  { name: "Kendrick-Kamau Negasi, LLC", kind: "legal" },
   { name: "Kamau Salaam Nasser", kind: "legal" },
   { name: "Streetpolitik", kind: "artist", note: "f/k/a core music identity" },
   { name: "Faust Fakeway", kind: "artist" },
   { name: "GrownAssKids", short: "GAK", kind: "brand", note: "Grown Ass Kids" },
   { name: "Black Oh-My", kind: "brand" },
   { name: "BLKDTY Music LLC", kind: "entity" },
-  { name: "Kendrick-Kamau Negasi LLC", kind: "entity" },
+  { name: "Kendrick-Kamau Negasi, LLC", kind: "entity" },
   { name: "Thelonious1", short: "TL1", kind: "handle", note: "TheloniousOne" },
   {
     name: "Telling Show Of Love",
@@ -54,9 +55,11 @@ export const ALIASES: Alias[] = [
   },
   { name: "357Itsumi", kind: "handle", note: "f/k/a Streetpolitik™" },
   { name: "LoveDrugVendingMachine", kind: "project" },
-  { name: "GRUNGEzhou", kind: "brand", note: "GrungeZhou" },
+  { name: "GRUNGEzhou", kind: "brand" },
   { name: "GRUNGEzhou Libellus", kind: "project" },
   { name: "GRUNGEzhou Supply", kind: "brand" },
+  { name: "GRUNGEzhou™ Libellus Supply", kind: "brand" },
+  { name: "Grunge Daddy Ichiban", kind: "project" },
   { name: "Golden Crow", kind: "brand" },
   { name: "Golden Crow Acquisitions", kind: "entity" },
   {
