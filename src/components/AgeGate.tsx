@@ -1,33 +1,15 @@
 "use client";
 
-import { useCallback, useSyncExternalStore } from "react";
+import { useCallback } from "react";
 import { track } from "@/lib/analytics";
-
-const STORAGE_KEY = "kn.age.ok.v1";
-
-function subscribe(onStoreChange: () => void) {
-  window.addEventListener("storage", onStoreChange);
-  return () => window.removeEventListener("storage", onStoreChange);
-}
-
-function getSnapshot() {
-  try {
-    return window.localStorage.getItem(STORAGE_KEY) === "1";
-  } catch {
-    return false;
-  }
-}
-
-function getServerSnapshot() {
-  return true;
-}
+import { AGE_STORAGE_KEY, useAgeConfirmed } from "@/components/useAgeConfirmed";
 
 export function AgeGate() {
-  const confirmed = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const confirmed = useAgeConfirmed();
 
   const accept = useCallback(() => {
     try {
-      window.localStorage.setItem(STORAGE_KEY, "1");
+      window.localStorage.setItem(AGE_STORAGE_KEY, "1");
       window.dispatchEvent(new Event("storage"));
       track("age_accepted");
     } catch {

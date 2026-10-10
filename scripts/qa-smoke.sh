@@ -34,10 +34,10 @@ check "og-image" "$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" "$BASE/og.pn
 
 access_html="$(curl -s -A "$UA" "$BASE/access")"
 echo "$access_html" | grep -q 'portfolio · vlog · stream' && echo "PASS  access-tagline" && pass=$((pass+1)) || { echo "FAIL  access-tagline"; fail=$((fail+1)); }
-echo "$access_html" | grep -qi 'create account\|create & enter\|free account' && echo "PASS  access-signup-cta" && pass=$((pass+1)) || { echo "FAIL  access-signup-cta"; fail=$((fail+1)); }
+echo "$access_html" | grep -qi 'Enter Stream\|free account' && echo "PASS  access-signup-cta" && pass=$((pass+1)) || { echo "FAIL  access-signup-cta"; fail=$((fail+1)); }
 echo "$access_html" | grep -qi 'application/ld+json\|WebSite\|RegisterAction' && echo "PASS  access-jsonld" && pass=$((pass+1)) || { echo "FAIL  access-jsonld"; fail=$((fail+1)); }
-# Forgot lives on the sign-in tab; register-first SSR may omit it — either path is OK.
-echo "$access_html" | grep -qiE 'forgot password|create account|create & enter' && echo "PASS  access-account-paths" && pass=$((pass+1)) || { echo "FAIL  access-account-paths"; fail=$((fail+1)); }
+# Forgot lives on the login tab; register-first SSR may omit it — either path is OK.
+echo "$access_html" | grep -qiE 'forgot password|Enter Stream|free account' && echo "PASS  access-account-paths" && pass=$((pass+1)) || { echo "FAIL  access-account-paths"; fail=$((fail+1)); }
 echo "$access_html" | grep -q '/privacy' && echo "PASS  access-privacy-link" && pass=$((pass+1)) || { echo "FAIL  access-privacy-link"; fail=$((fail+1)); }
 echo "$access_html" | grep -q '/terms' && echo "PASS  access-terms-link" && pass=$((pass+1)) || { echo "FAIL  access-terms-link"; fail=$((fail+1)); }
 

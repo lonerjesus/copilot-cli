@@ -1,25 +1,34 @@
 import type { MetadataRoute } from "next";
 import { SITE } from "@/data/identity";
 
+/**
+ * Stable lastmod dates from real content revisions — never stamp request time
+ * (that made every crawl look like a fresh rewrite).
+ */
+const LASTMOD = {
+  access: new Date("2026-10-08T22:50:45.000Z"),
+  privacy: new Date("2026-10-10T07:40:00.000Z"),
+  terms: new Date("2026-10-10T07:40:00.000Z"),
+} as const;
+
 /** Advertise the account door + legal trust pages — never the gated stream. */
 export default function sitemap(): MetadataRoute.Sitemap {
-  const now = new Date();
   return [
     {
       url: `${SITE.url}/access`,
-      lastModified: now,
+      lastModified: LASTMOD.access,
       changeFrequency: "weekly",
       priority: 1,
     },
     {
       url: `${SITE.url}/privacy`,
-      lastModified: now,
+      lastModified: LASTMOD.privacy,
       changeFrequency: "yearly",
       priority: 0.4,
     },
     {
       url: `${SITE.url}/terms`,
-      lastModified: now,
+      lastModified: LASTMOD.terms,
       changeFrequency: "yearly",
       priority: 0.4,
     },

@@ -10,6 +10,7 @@ import { StreamDeck } from "@/components/StreamDeck";
 import { CategoryBrowser } from "@/components/CategoryBrowser";
 import { WritingReader } from "@/components/WritingReader";
 import { PhotoGallery } from "@/components/PhotoGallery";
+import { useAgeConfirmed } from "@/components/useAgeConfirmed";
 
 const HouseAtlas = dynamic(
   () => import("@/components/HouseAtlas").then((m) => m.HouseAtlas),
@@ -38,6 +39,7 @@ function ShellInner() {
   const [booted, setBooted] = useState(false);
   const [view, setView] = useState<ViewId>("stream");
   const [menuOpen, setMenuOpen] = useState(false);
+  const ageOk = useAgeConfirmed();
   const { setExpanded, toggle } = usePlayerState();
   const {
     writingItem,
@@ -167,7 +169,8 @@ function ShellInner() {
 
           <div className="rail__stage">
             <main id="main" tabIndex={-1} className="stage">
-              {view === "stream" ? (
+              {/* Defer catalog/media until 18+ is confirmed — avoids multi-MB AV fetches under the gate. */}
+              {ageOk && view === "stream" ? (
                 <>
                   <Hero
                     onStream={() => {
@@ -179,11 +182,11 @@ function ShellInner() {
                 </>
               ) : null}
 
-              {view === "house" ? <HouseAtlas compact /> : null}
+              {ageOk && view === "house" ? <HouseAtlas compact /> : null}
 
-              {view === "browse" ? <CategoryBrowser compact /> : null}
+              {ageOk && view === "browse" ? <CategoryBrowser compact /> : null}
 
-              {view === "support" ? <DonatePanel compact /> : null}
+              {ageOk && view === "support" ? <DonatePanel compact /> : null}
             </main>
             <SiteFooter />
           </div>
@@ -191,9 +194,9 @@ function ShellInner() {
       </div>
 
       {/* Viewport-fixed overlays — outside .shell so transform/relative never traps them */}
-      <PlayerDock />
-      <WritingReader item={writingItem} onClose={closeWriting} />
-      {gallery ? (
+      {ageOk ? <PlayerDock /> : null}
+      {ageOk ? <WritingReader item={writingItem} onClose={closeWriting} /> : null}
+      {ageOk && gallery ? (
         <PhotoGallery
           items={gallery.items}
           index={gallery.index}

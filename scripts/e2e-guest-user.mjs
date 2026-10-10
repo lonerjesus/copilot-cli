@@ -74,11 +74,15 @@ await anonPage.screenshot({ path: `${OUT}/01-anon-access.png`, fullPage: false }
 const accessText = await anonPage.locator("body").innerText();
 ok(
   "anon-account-required-copy",
-  /account required|create a free account|create account/i.test(accessText),
+  /account required|create a free account|enter stream|enter kamau/i.test(accessText),
   accessText.slice(0, 120),
 );
-ok("anon-has-sign-in", /sign in/i.test(accessText));
-ok("anon-has-create-account", /create account/i.test(accessText));
+ok("anon-has-enter-stream", /enter stream/i.test(accessText));
+ok(
+  "anon-has-access-tabs",
+  (accessText.match(/enter stream/gi) || []).length >= 2,
+  "expected ≥2 Enter Stream CTAs",
+);
 ok("anon-no-admin-link", !(await anonPage.locator('a[href="/admin"]').count()));
 ok("anon-no-magcloud-on-access", !/magcloud/i.test(accessText));
 

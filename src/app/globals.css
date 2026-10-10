@@ -84,9 +84,10 @@ input {
   top: 0.75rem;
   z-index: 10000;
   padding: 0.55rem 0.9rem;
-  background: var(--phosphor);
-  color: #061006;
-  font-size: 0.78rem;
+  background: #d8ff5a;
+  color: #000;
+  font-size: 0.85rem;
+  font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   transform: translateY(-160%);
@@ -96,7 +97,7 @@ input {
 .skip-link:focus,
 .skip-link:focus-visible {
   transform: translateY(0);
-  outline: 2px solid var(--amber);
+  outline: 3px solid #000;
   outline-offset: 2px;
 }
 
@@ -119,11 +120,12 @@ select:focus:not(:focus-visible) {
   padding-top: calc(0.45rem + var(--safe-t));
   text-align: center;
   letter-spacing: 0.12em;
-  font-size: 0.68rem;
+  font-size: 0.78rem;
+  font-weight: 700;
   text-transform: uppercase;
-  color: #1a1208;
-  background: linear-gradient(90deg, var(--amber), #ffd27a);
-  border-bottom: 1px solid color-mix(in oklab, var(--amber) 50%, #000);
+  color: #000;
+  background: var(--amber);
+  border-bottom: 1px solid #000;
 }
 
 /* When age banner is present, sticky topbar should not double-count safe-area */
@@ -968,10 +970,11 @@ a.drive .drive__face {
   height: 2.6rem;
   display: grid;
   place-items: center;
-  border: 1px solid var(--phosphor);
-  background: color-mix(in oklab, var(--void) 55%, transparent);
-  color: var(--phosphor);
+  border: 1px solid #000;
+  background: var(--phosphor);
+  color: #061006;
   font-size: 0.95rem;
+  font-weight: 700;
 }
 
 .site-ticker {
@@ -4583,6 +4586,11 @@ a.drive .drive__face {
   font-size: 0.72rem;
   line-height: 1.45;
   letter-spacing: 0.02em;
+}
+
+.legal__placeholder {
+  font-style: italic;
+  color: var(--amber);
 }
 
 .legal__back a {

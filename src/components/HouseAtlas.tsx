@@ -200,7 +200,7 @@ export function HouseAtlas({ compact = false }: { compact?: boolean }) {
                 }
               }}
             >
-              enter stream
+              Enter Stream
             </a>
             <button
               type="button"

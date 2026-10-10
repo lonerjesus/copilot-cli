@@ -14,14 +14,13 @@ Use **exact house spellings only**. Never invent, “correct,” expand, or conf
 | Canonical | Allowed short |
 |-----------|---------------|
 | Kendrick Tirrell Herring | — |
-| Kendrick-Kamau Negasi | — |
+| Kendrick-Kamau Negasi, LLC | — |
 | Kamau Salaam Nasser | — |
 | Streetpolitik | — |
 | Faust Fakeway | — |
 | GrownAssKids | GAK |
 | Black Oh-My | — |
 | BLKDTY Music LLC | — |
-| Kendrick-Kamau Negasi LLC | — |
 | Thelonious1 | TL1 |
 | Telling Show Of Love | TSOL |
 | Telling Stills Of Love | — |
@@ -31,6 +30,8 @@ Use **exact house spellings only**. Never invent, “correct,” expand, or conf
 | GRUNGEzhou | — |
 | GRUNGEzhou Libellus | — |
 | GRUNGEzhou Supply | — |
+| GRUNGEzhou™ Libellus Supply | — |
+| Grunge Daddy Ichiban | — |
 | Golden Crow | — |
 | Golden Crow Acquisitions | — |
 | QUARANTINED THOUGHTS OF A STREET STATISTIC | — |

@@ -34,7 +34,7 @@ export const HOUSE_OUTLETS: HouseOutlet[] = [
     handle: "tellingshowoflove",
     url: "https://tellingshowoflove.substack.com",
     lane: "writing",
-    blurb: "Telling Show Of Love ™ reboot — notes & episodes",
+    blurb: "Telling Show Of Love™ reboot — notes & episodes",
     primary: true,
   },
   {
@@ -85,7 +85,7 @@ export const HOUSE_OUTLETS: HouseOutlet[] = [
     handle: "357Itsumi",
     url: "https://rumble.com/user/357Itsumi",
     lane: "video",
-    blurb: "Alternate video uplink",
+    blurb: "More of my videos.",
   },
   {
     id: "twitch",
@@ -126,7 +126,7 @@ export const HOUSE_OUTLETS: HouseOutlet[] = [
     handle: "357Itsumi",
     url: "https://www.slushy.com/357Itsumi",
     lane: "audio",
-    blurb: "Distribution outlet",
+    blurb: "Where my music is distributed.",
   },
   {
     id: "shazam-357",
@@ -134,7 +134,7 @@ export const HOUSE_OUTLETS: HouseOutlet[] = [
     handle: "357Itsumi",
     url: "https://www.shazam.com/artist/-/1776608082",
     lane: "audio",
-    blurb: "Shazam artist node",
+    blurb: "My music on Shazam.",
   },
   {
     id: "shazam-streetpolitik",
@@ -145,6 +145,7 @@ export const HOUSE_OUTLETS: HouseOutlet[] = [
     blurb: "Legacy Streetpolitik Shazam",
   },
   {
+    // ToneDen username is streetpolitk (no i) — verified live profile for Streetpolitik™.
     id: "toneden",
     label: "ToneDen",
     handle: "streetpolitk",
@@ -166,7 +167,23 @@ export const HOUSE_OUTLETS: HouseOutlet[] = [
     handle: "faustspirit",
     url: "https://faustspiritsocialsocietyincorp.godaddysites.com/",
     lane: "web",
-    blurb: "Society hub (rebuilding)",
+    blurb: "Society page, being rebuilt.",
+  },
+  {
+    id: "gdi-web",
+    label: "Grunge Daddy Ichiban",
+    handle: "grungedaddyichiban",
+    url: "https://grungedaddyichiban.us",
+    lane: "web",
+    blurb: "Grunge Daddy Ichiban",
+  },
+  {
+    id: "gdi-amazon",
+    label: "Grunge Daddy Ichiban",
+    handle: "grungedaddyichiban",
+    url: "https://www.amazon.com/dp/B0GX39ZGN6",
+    lane: "web",
+    blurb: "Grunge Daddy Ichiban",
   },
   {
     id: "magcloud-archive",
@@ -182,7 +199,8 @@ export const HOUSE_OUTLETS: HouseOutlet[] = [
     handle: "streetpolitik",
     url: "https://www.magcloud.com/browse/issue/665683",
     lane: "archive",
-    blurb: "Chapbook Vol.1 — archive link-out only",
+    blurb:
+      "poems old and new about myself and those around me which were intended for one book but instead were broken down into chapbooks. Published Tuesday, November 26, 2013 by Kendrick-Kamau Negasi, LLC. 24 pages.",
   },
   {
     id: "magcloud-qtoss-vol2",
@@ -215,14 +233,14 @@ export const HOUSE_PROJECTS: HouseProject[] = [
     id: "telling-stills",
     name: "Telling Stills Of Love",
     kind: "project",
-    blurb: "Still photography lane under the house.",
+    blurb: "My photography.",
     outletIds: [],
   },
   {
     id: "imponderabilia",
     name: "Imponderabilia: Wall_Carpet 235",
     kind: "project",
-    blurb: "Podcast dungeon — Apple uplink live.",
+    blurb: "My podcast, live on Apple Podcasts.",
     outletIds: ["apple-imponderabilia"],
   },
   {
@@ -250,7 +268,7 @@ export const HOUSE_PROJECTS: HouseProject[] = [
     id: "ldvm",
     name: "LoveDrugVendingMachine",
     kind: "project",
-    blurb: "Experiments lane.",
+    blurb: "Experimental work.",
     outletIds: ["soundcloud"],
   },
   {
@@ -258,7 +276,7 @@ export const HOUSE_PROJECTS: HouseProject[] = [
     name: "GRUNGEzhou Libellus",
     kind: "project",
     blurb: "Libellus under the GRUNGEzhou mark.",
-    outletIds: [],
+    outletIds: ["gdi-web", "gdi-amazon"],
   },
   {
     id: "qtoss",
@@ -271,7 +289,7 @@ export const HOUSE_PROJECTS: HouseProject[] = [
     id: "faust-society",
     name: "Faust Spirit Social Society Inc.",
     kind: "entity",
-    blurb: "Society production node — Twitch FaustSociety.",
+    blurb: "FaustSociety streams on Twitch.",
     outletIds: ["faust-spirit", "twitch-faust", "youtube"],
   },
 ];

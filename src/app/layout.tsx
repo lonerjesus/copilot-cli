@@ -43,9 +43,9 @@ export const metadata: Metadata = {
     ],
     apple: [{ url: "/logo-kn-192.png", type: "image/png", sizes: "192x192" }],
   },
-  authors: [{ name: "Kendrick-Kamau Negasi" }],
+  authors: [{ name: "Kendrick-Kamau Negasi, LLC" }],
   keywords: [
-    "Kendrick-Kamau Negasi",
+    "Kendrick-Kamau Negasi, LLC",
     "Streetpolitik",
     "Telling Show Of Love",
     "GrownAssKids",
@@ -86,10 +86,8 @@ export const metadata: Metadata = {
     description: SITE.shareDescription,
     images: [`${SITE.url}/og.png`],
   },
-  // Root canonical points at the signup door — stream is session-gated.
-  alternates: {
-    canonical: `${SITE.url}/access`,
-  },
+  // No root canonical — /access, /privacy, /terms set their own.
+  // Home is session-gated and must not claim the signup door URL.
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

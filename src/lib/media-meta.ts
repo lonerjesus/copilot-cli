@@ -168,8 +168,8 @@ export async function extractUploadMeta(file: File): Promise<UploadMeta> {
       if (tags.title) meta.title = tags.title.slice(0, 160);
       if (tags.artist && !meta.title) meta.title = tags.artist.slice(0, 160);
       else if (tags.artist && meta.title && !meta.title.includes(tags.artist)) {
-        // Prefer "Artist — Title" when both present and title is bare.
-        meta.title = `${tags.artist} — ${meta.title}`.slice(0, 160);
+        // Prefer "Artist · Title" when both present and title is bare (house separator).
+        meta.title = `${tags.artist} · ${meta.title}`.slice(0, 160);
       }
     } catch {
       /* ignore */

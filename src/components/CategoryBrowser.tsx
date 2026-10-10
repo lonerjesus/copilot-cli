@@ -1,7 +1,13 @@
 "use client";
 
-import { startTransition, useDeferredValue, useEffect, useMemo, useState } from "react";
-import { CATALOG, houseCatalog, isPaywalled, isPlayableMedia, playableCatalog, type CatalogItem, type MediaKind } from "@/data/catalog";
+import { startTransition, useDeferredValue, useMemo, useState } from "react";
+import {
+  isPaywalled,
+  isPlayableMedia,
+  playableCatalog,
+  type CatalogItem,
+  type MediaKind,
+} from "@/data/catalog";
 import {
   CATEGORIES,
   getCategory,
@@ -11,7 +17,6 @@ import {
 } from "@/data/taxonomy";
 import {
   filterCatalog,
-  uniqueBrands,
   uniqueKinds,
   uniquePlatforms,
   type SortMode,
@@ -21,12 +26,19 @@ import { usePlayerState } from "@/components/player/PlayerContext";
 import { useReader } from "@/components/ReaderContext";
 import { track } from "@/lib/analytics";
 import { MediaPoster } from "@/components/MediaPoster";
+import { useLiveCatalog } from "@/components/useLiveCatalog";
+import { HOUSE_BRANDS } from "@/data/connections";
+import { EMPTY_FILTERS, EMPTY_SHELF } from "@/data/empty-copy";
 
 type CategoryBrowserProps = {
   initialQuery?: string;
   initialCategory?: CategoryId | "all";
   initialSubcategory?: SubcategoryId | "all";
 };
+
+const MARK_BRANDS = HOUSE_BRANDS.filter((b) => b.kind !== "legal")
+  .map((b) => b.name)
+  .sort((a, b) => a.localeCompare(b));
 
 export function CategoryBrowser({
   initialQuery = "",
@@ -36,6 +48,7 @@ export function CategoryBrowser({
 }: CategoryBrowserProps & { compact?: boolean }) {
   const { current, playItem } = usePlayerState();
   const { openReadable, isReadable } = useReader();
+  const { items: live, loading } = useLiveCatalog();
   const [query, setQuery] = useState(initialQuery);
   const [category, setCategory] = useState<CategoryId | "all">(initialCategory);
   const [subcategory, setSubcategory] = useState<SubcategoryId | "all">(initialSubcategory);
@@ -43,27 +56,15 @@ export function CategoryBrowser({
   const [platform, setPlatform] = useState<string | "all">("all");
   const [brand, setBrand] = useState<string | "all">("all");
   const [sort, setSort] = useState<SortMode>("newest");
-  const [live, setLive] = useState<CatalogItem[]>(() => houseCatalog(CATALOG));
-
-  useEffect(() => {
-    const controller = new AbortController();
-    const load = async () => {
-      try {
-        const res = await fetch("/api/catalog", { signal: controller.signal });
-        if (!res.ok) return;
-        const data = (await res.json()) as { items?: CatalogItem[] };
-        if (data.items?.length) setLive(houseCatalog(data.items));
-      } catch (err) {
-        if (err instanceof DOMException && err.name === "AbortError") return;
-        /* seed */
-      }
-    };
-    void load();
-    return () => controller.abort();
-  }, []);
 
   const deferredQuery = useDeferredValue(query);
-  const brands = useMemo(() => uniqueBrands(live), [live]);
+  const brands = useMemo(() => {
+    const fromMarks = MARK_BRANDS;
+    const fromLive = live.map((item) => item.brand).filter(Boolean);
+    return Array.from(new Set([...fromMarks, ...fromLive])).sort((a, b) =>
+      a.localeCompare(b),
+    );
+  }, [live]);
   const platforms = useMemo(() => uniquePlatforms(live), [live]);
   const kinds = useMemo(() => uniqueKinds(live), [live]);
 
@@ -132,6 +133,14 @@ export function CategoryBrowser({
     track("category_filter", { cleared: true });
   };
 
+  const filtersActive =
+    Boolean(query.trim()) ||
+    category !== "all" ||
+    subcategory !== "all" ||
+    kind !== "all" ||
+    platform !== "all" ||
+    brand !== "all";
+
   return (
     <section
       className={`section categories ${compact ? "section--compact" : ""}`}
@@ -159,7 +168,7 @@ export function CategoryBrowser({
           spellCheck={false}
         />
         <span className="cat-search__count">
-          {results.length}/{live.length}
+          {loading ? "…" : `${results.length}/${live.length}`}
         </span>
       </div>
 
@@ -308,7 +317,15 @@ export function CategoryBrowser({
 
       <div className="cat-results">
         {grouped.length === 0 ? (
-          <p className="cat-empty">no signal for current filters</p>
+          <p className="cat-empty">
+            {loading
+              ? "Loading…"
+              : live.length === 0
+                ? EMPTY_SHELF
+                : filtersActive
+                  ? EMPTY_FILTERS
+                  : EMPTY_SHELF}
+          </p>
         ) : (
           grouped.map((group) => {
             const cat = getCategory(group.categoryId);

@@ -52,6 +52,18 @@ export function uniqueBrands(items: CatalogItem[] = houseCatalog(CATALOG)): stri
   );
 }
 
+/** Soft brand match — catalog brand field, tags, title, or blurb. */
+export function itemMatchesBrand(item: CatalogItem, brand: string): boolean {
+  if (!brand || brand === "all") return true;
+  if (item.brand === brand) return true;
+  const needle = brand.toLowerCase();
+  const blob = [item.brand, item.title, item.subtitle, item.blurb, ...item.tags]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+  return blob.includes(needle);
+}
+
 export function uniquePlatforms(items: CatalogItem[] = houseCatalog(CATALOG)): string[] {
   return Array.from(new Set(items.map((item) => item.platform))).sort((a, b) =>
     a.localeCompare(b),
@@ -173,7 +185,7 @@ export function filterCatalog(options: CatalogFilters): CatalogItem[] {
     if (subcategory !== "all" && item.subcategory !== subcategory) return false;
     if (kind !== "all" && item.kind !== kind) return false;
     if (platform !== "all" && item.platform !== platform) return false;
-    if (brand !== "all" && item.brand !== brand) return false;
+    if (brand !== "all" && !itemMatchesBrand(item, brand)) return false;
     if (!q) return true;
     const blob = [
       item.title,
