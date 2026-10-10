@@ -7,8 +7,8 @@ import { SITE } from "@/data/identity";
  */
 const LASTMOD = {
   access: new Date("2026-10-08T22:50:45.000Z"),
-  privacy: new Date("2026-10-08T22:50:45.000Z"),
-  terms: new Date("2026-10-08T22:50:45.000Z"),
+  privacy: new Date("2026-10-10T07:40:00.000Z"),
+  terms: new Date("2026-10-10T07:40:00.000Z"),
 } as const;
 
 /** Advertise the account door + legal trust pages — never the gated stream. */
