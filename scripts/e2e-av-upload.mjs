@@ -186,6 +186,91 @@ for (const c of cases) {
   );
 }
 
+// Chunked video path (multi-part assemble without buffering the whole object).
+{
+  const CHUNK = 8 * 1024 * 1024;
+  const size = CHUNK + 256 * 1024; // 2 parts
+  const large = new Uint8Array(size);
+  large[3] = 0x20;
+  large.set([0x66, 0x74, 0x79, 0x70], 4); // ftyp
+  large.set([0x69, 0x73, 0x6f, 0x6d], 8); // isom → video/mp4
+  for (let i = 32; i < size; i++) large[i] = i & 0xff;
+
+  const init = await api("/api/admin/media/init", {
+    method: "POST",
+    jar,
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      filename: "phone-clip.mp4",
+      contentType: "video/mp4",
+      size,
+      role: "media",
+    }),
+  });
+  const uploadId = init.json?.uploadId;
+  const chunkBytes = init.json?.chunkBytes || CHUNK;
+  const totalChunks = init.json?.totalChunks || Math.ceil(size / chunkBytes);
+  ok(
+    "chunk-init",
+    init.res.status === 201 && Boolean(uploadId) && totalChunks === 2,
+    `status=${init.res.status} chunks=${totalChunks} body=${(init.text || "").slice(0, 160)}`,
+  );
+
+  let chunkOk = Boolean(uploadId);
+  let chunkDetail = "";
+  for (let i = 0; i < totalChunks && uploadId; i++) {
+    const start = i * chunkBytes;
+    const end = Math.min(size, start + chunkBytes);
+    const part = new FormData();
+    part.append("uploadId", uploadId);
+    part.append("index", String(i));
+    part.append(
+      "chunk",
+      new Blob([large.subarray(start, end)], { type: "application/octet-stream" }),
+      `part-${i}.bin`,
+    );
+    const put = await api("/api/admin/media/chunk", {
+      method: "POST",
+      jar,
+      body: part,
+    });
+    if (put.res.status !== 200) {
+      chunkOk = false;
+      chunkDetail = `part ${i} status=${put.res.status} body=${(put.text || "").slice(0, 160)}`;
+      break;
+    }
+  }
+  ok("chunk-parts", chunkOk, chunkDetail);
+
+  const done = await api("/api/admin/media/complete", {
+    method: "POST",
+    jar,
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ uploadId }),
+  });
+  const doneUrl = done.json?.url;
+  ok(
+    "chunk-complete",
+    done.res.status === 201 &&
+      Boolean(doneUrl) &&
+      done.json?.contentType === "video/mp4" &&
+      done.json?.bytes === size,
+    `status=${done.res.status} ct=${done.json?.contentType} bytes=${done.json?.bytes} body=${(done.text || "").slice(0, 160)}`,
+  );
+  if (doneUrl) {
+    const get = await api(doneUrl, { jar });
+    const served = get.res.headers.get("content-type") || "";
+    const len = Number(get.res.headers.get("content-length") || 0);
+    ok(
+      "chunk-serve",
+      get.res.status === 200 && served.startsWith("video/mp4") && (len === 0 || len === size),
+      `status=${get.res.status} ct=${served} len=${len}`,
+    );
+  } else {
+    ok("chunk-serve", false, "no url");
+  }
+}
+
 // reject pdf
 {
   const form = new FormData();
