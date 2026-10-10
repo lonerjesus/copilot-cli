@@ -52,12 +52,12 @@ Dashboard settings (matches `package.json` / `wrangler.toml`):
 
 Before go-live:
 
-1. Secret: `npx wrangler secret put AUTH_SECRET` (≥16 chars)
+1. Secret: `npx wrangler secret put AUTH_SECRET` (≥16 chars). **Required for production and Preview Deployments** — without it, `/api/auth/register` and login return `AUTH_SECRET must be set`. In the CF dashboard, also add `AUTH_SECRET` under Workers → Settings → Variables and Secrets for **Preview** (Preview builds do not always inherit production secrets).
 2. Durable auth KV — production + Preview `preview_id` are set in `wrangler.toml` (`AUTH_KV`). Optional: create an isolated preview namespace with `npx wrangler kv namespace create AUTH_KV --preview` and replace `preview_id`.
 3. Media — house uploads use `AUTH_KV` by default. Optional R2: `npm run cf:ensure-r2` (needs R2 Edit token), then add `[[r2_buckets]]` `MEDIA_R2` → `kamaunegasi-media` in `wrangler.toml`. Local without Workers writes to `.data/media/`.
 4. Optional Stripe: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`
 5. Custom domains — `wrangler.toml` declares `www.kamaunegasi.net` + apex via `routes` (`custom_domain = true`). After deploy, confirm both hostnames under the Worker’s Custom Domains (live must not show Cloudflare’s “There is nothing here yet”).
-6. SSL / host — turn on Cloudflare **Always Use HTTPS**. Middleware also 301s `http://` → `https://` and bare `kamaunegasi.net` → `www.kamaunegasi.net`.
+6. SSL / host — turn on Cloudflare **Always Use HTTPS**. Middleware also 301s `http://` → `https://` and bare `kamaunegasi.net` → `www.kamaunegasi.net`. If HTTPS shows only a Bot Fight / “Just a moment…” challenge for real users, ease Bot Fight Mode for the zone or allowlist the signup path.
 7. Var: `ADMIN_EMAIL` (owner account for `/admin` — set in `wrangler.toml` / CF vars)
 
 Local Cloudflare preview:

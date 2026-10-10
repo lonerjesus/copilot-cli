@@ -150,10 +150,11 @@ await page.goto(`${BASE}/`, { waitUntil: "domcontentloaded", timeout: 60000 });
 await page.waitForTimeout(600);
 // If session cookie did not attach, sign in through the access form.
 if (page.url().includes("/access") || (await page.locator(".access__form").count()) > 0) {
-  await page.getByRole("tab", { name: /sign in/i }).click().catch(() => {});
+  // Login mode is the first Enter Stream tab for returning visitors; force login tab.
+  await page.getByRole("tab", { name: /enter stream/i }).first().click().catch(() => {});
   await page.locator('input[type="email"]').fill(ADMIN);
   await page.locator('input[type="password"]').fill(PASS);
-  await page.getByRole("button", { name: /enter stream|sign in|enter/i }).first().click();
+  await page.getByRole("button", { name: /^enter stream/i }).click();
   await page.waitForURL((url) => !url.pathname.includes("/access"), { timeout: 20000 }).catch(() => {});
 }
 const ageEnter = page.getByRole("button", { name: /^enter$/i });
