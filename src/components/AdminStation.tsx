@@ -498,11 +498,16 @@ export function AdminStation() {
 
     const chunkBytes = initData.chunkBytes ?? UPLOAD_CHUNK_BYTES;
     const totalChunks = initData.totalChunks ?? Math.ceil(file.size / chunkBytes);
-    for (let i = 0; i < totalChunks; i++) {
+    const mb = (n: number) => `${(n / (1024 * 1024)).toFixed(n >= 100 * 1024 * 1024 ? 0 : 1)}`;
+    let uploadedBytes = 0;
+
+    // Parallel parts (mobile-safe concurrency) — 124 MB+ phone HEVC needs throughput.
+    const CONCURRENCY = file.size > 64 * 1024 * 1024 ? 3 : 2;
+    let nextIndex = 0;
+    const uploadOne = async (i: number) => {
       const start = i * chunkBytes;
       const end = Math.min(file.size, start + chunkBytes);
       const slice = file.slice(start, end);
-      setUploadProgress(`uploading ${i + 1}/${totalChunks}`);
       const partRes = await postWithRetry(`part ${i + 1}`, () => {
         const part = new FormData();
         part.append("uploadId", initData.uploadId!);
@@ -516,31 +521,71 @@ export function AdminStation() {
           credentials: "same-origin",
           body: part,
         });
-      });
+      }, 5);
       const partData = (await partRes.json().catch(() => ({}))) as { error?: string };
       if (!partRes.ok) {
         throw new Error(uploadErrorMessage(partData.error ?? "upload_failed", role));
       }
-    }
-
-    setUploadProgress("finishing…");
-    const doneRes = await postWithRetry("finish", () =>
-      fetch("/api/admin/media/complete", {
-        method: "POST",
-        credentials: "same-origin",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ uploadId: initData.uploadId }),
-      }),
-    );
-    const doneData = (await doneRes.json().catch(() => ({}))) as {
-      error?: string;
-      url?: string;
+      uploadedBytes += end - start;
+      setUploadProgress(
+        `uploading ${Math.min(i + 1, totalChunks)}/${totalChunks} · ${mb(uploadedBytes)} / ${mb(file.size)} MB`,
+      );
     };
-    if (!doneRes.ok || !doneData.url) {
+    const workers = Array.from({ length: Math.min(CONCURRENCY, totalChunks) }, async () => {
+      while (nextIndex < totalChunks) {
+        const i = nextIndex;
+        nextIndex += 1;
+        await uploadOne(i);
+      }
+    });
+    await Promise.all(workers);
+
+    // Resumable finish — KV promote runs in batches for 100 MB–1.5 GB objects.
+    let url = "";
+    for (let round = 0; round < 256; round++) {
+      setUploadProgress(
+        round === 0
+          ? "finishing…"
+          : `finishing… ${round + 1} (large file)`,
+      );
+      const doneRes = await postWithRetry(
+        "finish",
+        () =>
+          fetch("/api/admin/media/complete", {
+            method: "POST",
+            credentials: "same-origin",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ uploadId: initData.uploadId }),
+          }),
+        5,
+      );
+      const doneData = (await doneRes.json().catch(() => ({}))) as {
+        error?: string;
+        url?: string;
+        pending?: boolean;
+        promoted?: number;
+        totalChunks?: number;
+      };
+      if (!doneRes.ok && doneRes.status !== 202) {
+        throw new Error(uploadErrorMessage(doneData.error ?? "upload_failed", role));
+      }
+      if (doneData.url) {
+        url = doneData.url;
+        break;
+      }
+      if (doneData.pending || doneRes.status === 202) {
+        if (doneData.promoted != null && doneData.totalChunks) {
+          setUploadProgress(
+            `finishing… ${doneData.promoted}/${doneData.totalChunks} parts`,
+          );
+        }
+        continue;
+      }
       throw new Error(uploadErrorMessage(doneData.error ?? "upload_failed", role));
     }
+    if (!url) throw new Error("upload did not finish — retry");
     setUploadProgress("");
-    return doneData.url;
+    return url;
   };
 
   const buildPayload = useCallback(
@@ -1010,14 +1055,12 @@ export function AdminStation() {
                       : preset === "music"
                         ? "Drop MP3, M4A, WAV, FLAC, OGG…"
                         : preset === "video"
-                          ? "Drop MP4, MOV, WebM…"
+                          ? "Drop MP4, MOV, WebM (HEVC / Dolby Vision OK)…"
                           : "Drop video, photo, or audio"}
                 </p>
                 <p className="admin__drop-hint">
                   or click · up to {Math.floor(MAX_MEDIA_BYTES / (1024 * 1024))} MB
-                  (videos + files over{" "}
-                  {Math.floor(SINGLE_SHOT_MAX_BYTES / (1024 * 1024))} MB upload in
-                  chunks)
+                  (~15 min phone video) · chunked parallel upload
                 </p>
               </>
             )}
