@@ -1,6 +1,10 @@
-# a11y
+# a11y-report — elite player/site upgrade
 
-- Sticky actions remain reachable above keyboard/safe-area.
-- Tab min-height 2.75rem on small phones; focus styles unchanged (phosphor outline).
-- Status/alert roles preserved on compose messages.
-PASS
+**Agent:** `a11y`  
+**Verdict:** PASS
+
+- Mute control has `aria-label` / `aria-pressed`.
+- Volume + scrub inputs keep `sr-only` labels.
+- Space / Shift+arrows ignored while typing or when reader/gallery open.
+- CONTINUE shelf uses existing ShelfTrack keyboard scroll.
+- Writing related list is button-activated with clear labels.

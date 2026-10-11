@@ -1,8 +1,13 @@
-# bounce-risk.md
+# bounce-risk — elite player/site upgrade
 
 **Agent:** `analytics-bounce`  
-**Verdict:** `PASS` (follow-up)
+**Verdict:** PASS
 
-- Essay play path opens magazine (qtoss vols) instead of dead AV queue
-- Empty VIDEOS/MUSIC/PHOTOS shelves explain wait state
-- Session kick no longer silent replace
+| Friction | Fix |
+|----------|-----|
+| Lost place mid-video/audio | CONTINUE rail + seek restore |
+| Can’t control from headset / lock screen | Media Session |
+| Keyboard power users stuck on mouse | Space / Shift+arrows |
+| Reader dead-end after finish | Related + TSOL outlet + share |
+
+Ranked residual: cross-device resume still missing for multi-device members.

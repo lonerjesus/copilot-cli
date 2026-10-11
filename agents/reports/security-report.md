@@ -1,6 +1,12 @@
-# security
+# security-report — elite player/site upgrade
 
-- Media refs still reject `..` / `\` before house-path accept.
-- Server `validateCreateInput` normalizes then asserts `/api/media/house/` or `https:`.
-- No new deps, no XSS sinks, credentials unchanged.
-PASS
+**Agent:** `security`  
+**Verdict:** PASS
+
+- No new npm dependencies.
+- Resume memory is **localStorage only** (same-device); no new API surface.
+- Writing share uses `navigator.share` / clipboard; outbound links remain `https` + `noopener`.
+- Media Session metadata uses existing poster URLs / house logo — no remote fetch expansion.
+- Volume prefs local-only (`kn.player.volume` / `kn.player.muted`).
+
+Residual: cross-device resume (future AUTH_KV) needs auth + size caps when added.

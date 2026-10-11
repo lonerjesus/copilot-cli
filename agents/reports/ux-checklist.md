@@ -1,7 +1,15 @@
-# ux
+# ux-checklist — elite player/site upgrade
 
-- Sticky Save lifts with software keyboard (visualViewport inset).
-- Tabs scroll horizontally on narrow widths; library actions full-width ≤480px.
-- Landscape short-height: shorter drop zones + action bar.
-- Dirty leave warning only when fields changed.
-PASS
+**Agent:** `ux`  
+**Verdict:** PASS
+
+| Check | Result |
+|-------|--------|
+| Brand-first hero unchanged | PASS |
+| No cards in hero | PASS |
+| CONTINUE is one-job shelf under stream | PASS |
+| Dock volume/mute fits terminal chrome (text vol/off, not emoji) | PASS |
+| Writing share/related secondary to title | PASS |
+| No purple/cream AI-default restyle | PASS |
+
+Motion: existing dock/reader animations retained; resume bar is subtle phosphor fill.

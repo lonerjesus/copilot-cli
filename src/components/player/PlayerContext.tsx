@@ -13,6 +13,8 @@ import {
 import { getQueue, isPlayableMedia, playableCatalog, type CatalogItem } from "@/data/catalog";
 
 const AUTOPLAY_KEY = "kn.player.autoplay";
+const VOLUME_KEY = "kn.player.volume";
+const MUTED_KEY = "kn.player.muted";
 
 function readAutoplayPref(): boolean {
   if (typeof window === "undefined") return true;
@@ -33,6 +35,44 @@ function writeAutoplayPref(value: boolean) {
   }
 }
 
+function readVolumePref(): number {
+  if (typeof window === "undefined") return 1;
+  try {
+    const raw = window.localStorage.getItem(VOLUME_KEY);
+    if (raw === null) return 1;
+    const n = Number(raw);
+    if (!Number.isFinite(n)) return 1;
+    return Math.max(0, Math.min(1, n));
+  } catch {
+    return 1;
+  }
+}
+
+function writeVolumePref(value: number) {
+  try {
+    window.localStorage.setItem(VOLUME_KEY, String(Math.max(0, Math.min(1, value))));
+  } catch {
+    /* private mode */
+  }
+}
+
+function readMutedPref(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.localStorage.getItem(MUTED_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function writeMutedPref(value: boolean) {
+  try {
+    window.localStorage.setItem(MUTED_KEY, value ? "1" : "0");
+  } catch {
+    /* private mode */
+  }
+}
+
 type PlayerStateValue = {
   queue: CatalogItem[];
   current: CatalogItem | null;
@@ -41,6 +81,8 @@ type PlayerStateValue = {
   expanded: boolean;
   /** When on, selecting media starts playback. When off, loads paused. */
   autoplay: boolean;
+  volume: number;
+  muted: boolean;
   /** Items after the current index — Spotify-style Up Next. */
   upNext: CatalogItem[];
   playItem: (item: CatalogItem, queue?: CatalogItem[]) => void;
@@ -52,6 +94,9 @@ type PlayerStateValue = {
   prev: () => void;
   setExpanded: (value: boolean) => void;
   setAutoplay: (value: boolean) => void;
+  setVolume: (value: number) => void;
+  setMuted: (value: boolean) => void;
+  toggleMute: () => void;
 };
 
 type PlayerProgressValue = {
@@ -79,6 +124,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [playing, setPlaying] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [autoplay, setAutoplayState] = useState(() => readAutoplayPref());
+  const [volume, setVolumeState] = useState(() => readVolumePref());
+  const [muted, setMutedState] = useState(() => readMutedPref());
   const [progress, setProgress] = useState(0);
   const timer = useRef<number | null>(null);
   const playingRef = useRef(playing);
@@ -95,6 +142,29 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const setAutoplay = useCallback((value: boolean) => {
     setAutoplayState(value);
     writeAutoplayPref(value);
+  }, []);
+
+  const setVolume = useCallback((value: number) => {
+    const next = Math.max(0, Math.min(1, value));
+    setVolumeState(next);
+    writeVolumePref(next);
+    if (next > 0) {
+      setMutedState(false);
+      writeMutedPref(false);
+    }
+  }, []);
+
+  const setMuted = useCallback((value: boolean) => {
+    setMutedState(value);
+    writeMutedPref(value);
+  }, []);
+
+  const toggleMute = useCallback(() => {
+    setMutedState((m) => {
+      const next = !m;
+      writeMutedPref(next);
+      return next;
+    });
   }, []);
 
   const current = queue[index] && isPlayableMedia(queue[index]!) ? queue[index]! : null;
@@ -189,6 +259,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       playing,
       expanded,
       autoplay,
+      volume,
+      muted,
       upNext,
       playItem,
       queueNext,
@@ -198,6 +270,9 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       prev,
       setExpanded,
       setAutoplay,
+      setVolume,
+      setMuted,
+      toggleMute,
     }),
     [
       queue,
@@ -206,6 +281,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       playing,
       expanded,
       autoplay,
+      volume,
+      muted,
       upNext,
       playItem,
       queueNext,
@@ -214,6 +291,9 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       next,
       prev,
       setAutoplay,
+      setVolume,
+      setMuted,
+      toggleMute,
     ],
   );
 

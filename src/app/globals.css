@@ -1132,6 +1132,28 @@ a.drive .drive__face {
   border-color: var(--phosphor-dim);
 }
 
+.row--continue .row__hint {
+  color: var(--phosphor-dim);
+}
+
+.tile-wrap--continue {
+  position: relative;
+}
+
+.tile__resume {
+  height: 3px;
+  margin-top: -0.15rem;
+  background: color-mix(in oklab, var(--line) 80%, transparent);
+  overflow: hidden;
+}
+
+.tile__resume span {
+  display: block;
+  height: 100%;
+  background: var(--phosphor);
+  box-shadow: 0 0 8px var(--glow);
+}
+
 .tile__mag,
 .deck__mag {
   border: 1px solid var(--line);
@@ -2997,10 +3019,25 @@ a.drive .drive__face {
 .deck__bar {
   min-height: var(--deck-h);
   display: grid;
-  grid-template-columns: auto 1fr auto minmax(120px, 220px);
-  gap: 0.75rem;
+  grid-template-columns: auto 1fr auto minmax(72px, 110px) minmax(100px, 200px);
+  gap: 0.55rem;
   align-items: center;
   padding: 0.65rem 1rem;
+}
+
+@media (max-width: 720px) {
+  .deck__bar {
+    grid-template-columns: auto 1fr auto;
+    grid-template-rows: auto auto;
+  }
+
+  .deck__volume {
+    display: none;
+  }
+
+  .deck__scrub {
+    grid-column: 1 / -1;
+  }
 }
 
 .deck__expand,
@@ -3142,6 +3179,18 @@ a.drive .drive__face {
   border-color: var(--phosphor-dim);
 }
 
+.deck__mute {
+  min-width: 2.4rem;
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.deck__mute.is-on {
+  color: var(--warn, #ffb347);
+  border-color: color-mix(in oklab, var(--warn, #ffb347) 55%, var(--line));
+}
+
 .deck__play {
   min-width: 2.6rem;
   color: var(--void) !important;
@@ -3149,9 +3198,16 @@ a.drive .drive__face {
   border-color: var(--phosphor) !important;
 }
 
+.deck__volume input,
 .deck__scrub input {
   width: 100%;
   accent-color: var(--phosphor);
+}
+
+.deck__volume {
+  display: flex;
+  align-items: center;
+  min-width: 0;
 }
 
 .deck__stage {
@@ -3910,6 +3966,13 @@ a.drive .drive__face {
   color: var(--muted);
 }
 
+.writing-reader__chrome-actions {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.writing-reader__share,
 .writing-reader__close {
   appearance: none;
   border: 1px solid var(--line);
@@ -4008,6 +4071,68 @@ a.drive .drive__face {
   color: var(--muted);
   border: 1px solid var(--line);
   padding: 0.25rem 0.45rem;
+}
+
+.writing-reader__related {
+  margin-top: 1.75rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.writing-reader__related-label {
+  margin: 0 0 0.55rem;
+  color: var(--phosphor-dim);
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+}
+
+.writing-reader__related-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.writing-reader__related-item {
+  width: 100%;
+  display: grid;
+  gap: 0.15rem;
+  text-align: left;
+  border: 1px solid transparent;
+  background: transparent;
+  color: inherit;
+  padding: 0.45rem 0.5rem;
+  cursor: pointer;
+}
+
+.writing-reader__related-item:hover,
+.writing-reader__related-item:focus-visible {
+  border-color: var(--line-hot);
+  background: color-mix(in oklab, var(--panel-2) 80%, transparent);
+}
+
+.writing-reader__related-brand {
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--steel);
+}
+
+.writing-reader__related-title {
+  font-size: 0.88rem;
+}
+
+.writing-reader__outlet {
+  margin: 1.5rem 0 0;
+  font-size: 0.78rem;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.writing-reader__outlet a {
+  color: var(--phosphor);
+  text-underline-offset: 0.15em;
 }
 
 @media (max-width: 720px) {

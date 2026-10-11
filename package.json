@@ -23,6 +23,7 @@
     "qa:media-range": "node scripts/e2e-media-range.mjs",
     "qa:writing-open": "node --experimental-strip-types scripts/e2e-writing-open.mjs",
     "qa:platform-compare": "node --experimental-strip-types scripts/e2e-platform-compare.mjs",
+    "qa:playback-memory": "node --experimental-strip-types scripts/check-playback-memory.mjs",
     "qa:guest": "node scripts/e2e-guest-user.mjs",
     "qa:player-blob": "node scripts/e2e-player-blob.mjs",
     "qa:gate": "bash scripts/qa-gate.sh"

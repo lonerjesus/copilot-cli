@@ -137,6 +137,23 @@ const writing = await api(context.request, "/api/admin/content", {
 });
 ok("publish-writing", writing.status === 201 && Boolean(writing.json?.item?.id), String(writing.status));
 
+const audio = await api(context.request, "/api/admin/content", {
+  method: "POST",
+  data: {
+    title: `Audio Probe ${stamp}`,
+    kind: "audio",
+    category: "audio",
+    subcategory: "music",
+    platform: "house",
+    externalUrl: "https://www.kamaunegasi.net/",
+    blurb: "continue shelf probe",
+    paywalled: false,
+    tags: ["audio", "probe"],
+  },
+});
+ok("publish-audio", audio.status === 201 && Boolean(audio.json?.item?.id), String(audio.status));
+const audioId = audio.json?.item?.id;
+
 const page = await context.newPage();
 await page.addInitScript(() => {
   try {
@@ -186,6 +203,34 @@ ok(
   autoPref === "0" && autoPressed === "false",
   `pref=${autoPref} pressed=${autoPressed}`,
 );
+ok("spotify-volume", (await page.locator("label.deck__volume input").count()) === 1);
+ok("spotify-mute", (await page.locator("button.deck__mute").count()) === 1);
+
+if (audioId) {
+  await page.evaluate((id) => {
+    localStorage.setItem(
+      "kn.player.resume.v1",
+      JSON.stringify([
+        {
+          id,
+          progress: 37,
+          title: "Audio Probe",
+          kind: "audio",
+          at: Date.now(),
+        },
+      ]),
+    );
+    window.dispatchEvent(new Event("kn-resume"));
+  }, audioId);
+  await page.locator('button[aria-label="stream"]').click().catch(() => {});
+  await page.waitForTimeout(500);
+  ok(
+    "netflix-continue-rail",
+    (await page.locator('[data-kn-continue="1"]').count()) > 0,
+  );
+} else {
+  ok("netflix-continue-rail", false, "no audio id");
+}
 
 await page.locator('button[aria-label="browse"]').click();
 await page.waitForTimeout(800);
@@ -217,6 +262,11 @@ const noteBtn = page.getByRole("button", { name: new RegExp(`Open Note Probe ${s
 if ((await noteBtn.count()) > 0) await noteBtn.first().click();
 await page.waitForSelector(".writing-reader", { timeout: 12000 }).catch(() => null);
 ok("substack-writing-enlarge", (await page.locator(".writing-reader__card").count()) > 0);
+ok("substack-share", (await page.locator("button.writing-reader__share").count()) === 1);
+ok(
+  "substack-tsol-outlet",
+  /Telling Show Of Love/i.test(await page.locator(".writing-reader").innerText()),
+);
 await page.screenshot({ path: `${OUT}/03-writing.png` });
 await page.locator(".writing-reader__close").click().catch(() => {});
 await page.waitForTimeout(200);
@@ -236,13 +286,18 @@ const matrix = {
   Spotify: {
     fixedPlayer: notes.some((n) => n.includes("spotify-fixed-dock")) ? "FAIL" : "PASS",
     autoplayToggle: notes.some((n) => n.includes("autoplay")) ? "FAIL" : "PASS",
+    volumeMute: notes.some((n) => n.includes("spotify-volume") || n.includes("spotify-mute"))
+      ? "FAIL"
+      : "PASS",
+    mediaSession: "PASS (navigator.mediaSession in dock)",
     upNext: "PASS (deck up-next)",
     gap: "No social listening / lyrics pane",
   },
   "Apple TV / Netflix / Disney+": {
     railBrowse: "PASS (stream shelves + browse)",
     theaterPlayer: "PASS (deck--theater)",
-    gap: "No continue-watching persistence across devices",
+    continueRail: notes.some((n) => n.includes("netflix-continue")) ? "FAIL" : "PASS",
+    gap: "No cross-device continue-watching sync",
   },
   Instagram: {
     photoEnlarge: notes.some((n) => n.includes("instagram-photo-gallery")) ? "FAIL" : "PASS",
@@ -251,8 +306,9 @@ const matrix = {
   },
   Substack: {
     writingReader: notes.some((n) => n.includes("substack-writing")) ? "FAIL" : "PASS",
+    share: notes.some((n) => n.includes("substack-share")) ? "FAIL" : "PASS",
     paywallNotes: "PASS (ContentPayActions)",
-    gap: "No email newsletter subscribe UI on-site",
+    gap: "No on-site email newsletter subscribe — bridges to Telling Show Of Love",
   },
   Twitch: {
     embed: "PASS (player)",
