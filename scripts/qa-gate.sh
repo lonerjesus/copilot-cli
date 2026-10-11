@@ -31,6 +31,7 @@ run() {
 }
 
 run "qa:player-queue" npm run qa:player-queue
+run "qa:large-av" npm run qa:large-av
 run "qa:av" npm run qa:av
 run "qa:media-ref" npm run qa:media-ref
 run "qa:media-meta" npm run qa:media-meta
