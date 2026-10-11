@@ -31,6 +31,7 @@ run() {
 }
 
 run "qa:av" npm run qa:av
+run "qa:player-av" npm run qa:player-av
 run "qa:media-ref" npm run qa:media-ref
 run "qa:media-meta" npm run qa:media-meta
 run "qa:smoke" bash scripts/qa-smoke.sh "$BASE"

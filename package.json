@@ -16,6 +16,7 @@
     "cf:ensure-r2": "bash scripts/ensure-r2-bucket.sh",
     "qa:smoke": "bash scripts/qa-smoke.sh \"${BASE:-http://127.0.0.1:3000}\"",
     "qa:av": "node --experimental-strip-types scripts/check-av-upload-types.mjs",
+    "qa:player-av": "node --experimental-strip-types scripts/check-player-av.mjs",
     "qa:av-e2e": "node scripts/e2e-av-upload.mjs",
     "qa:edit-save": "node scripts/e2e-admin-edit-save.mjs",
     "qa:media-ref": "node --experimental-strip-types scripts/check-media-ref.mjs",

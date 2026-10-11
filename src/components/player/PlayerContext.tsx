@@ -149,7 +149,15 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     setExpanded(true);
   }, [index]);
 
-  const toggle = useCallback(() => setPlaying((p) => !p), []);
+  const toggle = useCallback(() => {
+    // Never "play" an empty / non-AV slot — writings/stills stay out of the dock.
+    const item = queue[index];
+    if (!item || !isPlayableMedia(item)) {
+      setPlaying(false);
+      return;
+    }
+    setPlaying((p) => !p);
+  }, [queue, index]);
   const pause = useCallback(() => setPlaying(false), []);
 
   useEffect(() => {
