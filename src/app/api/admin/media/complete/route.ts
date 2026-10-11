@@ -25,9 +25,11 @@ export async function POST(request: Request) {
 
   try {
     const result = await completeChunkedUpload(uploadId);
+    // 202 while durable promote batches remaining (large AV on KV).
+    const status = result.pending ? 202 : 201;
     return NextResponse.json(
       { ok: true, ...result },
-      { status: 201, headers: { "Cache-Control": "no-store" } },
+      { status, headers: { "Cache-Control": "no-store" } },
     );
   } catch (err) {
     if (err instanceof MediaStoreUnavailableError) {
