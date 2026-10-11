@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { SITE } from "@/data/identity";
 import { BrandMark } from "@/components/BrandMark";
 import { track } from "@/lib/analytics";
@@ -13,15 +13,20 @@ const LINES = [
 export function BootSequence({ onDone }: { onDone: () => void }) {
   const [visible, setVisible] = useState(0);
   const [fade, setFade] = useState(false);
+  const doneRef = useRef(onDone);
+  const finishedRef = useRef(false);
+  useEffect(() => {
+    doneRef.current = onDone;
+  }, [onDone]);
 
-  const finish = useCallback(
-    (via: "auto" | "skip") => {
-      track("boot_complete", { via });
-      onDone();
-    },
-    [onDone],
-  );
+  const finish = useCallback((via: "auto" | "skip") => {
+    if (finishedRef.current) return;
+    finishedRef.current = true;
+    track("boot_complete", { via });
+    doneRef.current();
+  }, []);
 
+  // Timers run once — do not restart when parent re-renders a new onDone.
   useEffect(() => {
     const timers: number[] = [];
     LINES.forEach((_, i) => {
