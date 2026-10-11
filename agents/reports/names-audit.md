@@ -1,4 +1,5 @@
-# catalog-names
+# names-audit — stack
 
-Touched: admin UI copy only (`Editing`, save status strings). No new house/alias names.
-Exact-name policy: PASS (no MagCloud, no invented brands).
+**Verdict:** PASS
+
+Exact house names only. Telling Show Of Love / Telling Songs As Content placeholders. Brand = SITE.title. Domain www.kamaunegasi.net.

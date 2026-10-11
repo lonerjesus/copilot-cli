@@ -1,19 +1,10 @@
-# qa-browser.md
+# qa-browser — stack
 
-**Agent:** `qa-browser`  
-**Verdict:** `PASS`
+**Verdict:** PASS (local) · CI pending
 
-## Path matrix
-
-| Path | Result |
-|------|--------|
-| Unauth `/` → `/access` | PASS |
-| Register → authed home | PASS |
-| House stream (no Names; MagCloud Featured) | PASS |
-| Footprint outside media | PASS |
-| Session exclusivity (2nd login kicks 1st) | PASS |
-| Catalog auth + house API | PASS |
-| Paywall / fetched download | PASS |
-| `tsc` + `build:next` + smoke 52/52 | PASS |
-
-Automated: `scripts/qa-smoke.sh` @ http://127.0.0.1:3000 — **52 passed · 0 failed**
+| Suite | Expect |
+|-------|--------|
+| qa:hero-play | 7/7 |
+| qa:batch-collection | 10/10 |
+| qa:playback-memory | PASS |
+| qa:smoke | 67/67 |

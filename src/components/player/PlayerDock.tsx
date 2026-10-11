@@ -2,14 +2,22 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { usePlayer } from "@/components/player/PlayerContext";
+import { BrandMark } from "@/components/BrandMark";
+import { useHouseMediaSrc } from "@/components/HouseMediaImage";
+import { playerAvKind } from "@/data/catalog";
 import { kindGlyph } from "@/lib/format";
 import { track } from "@/lib/analytics";
-import { fetchPlayableHouse } from "@/lib/playable-house";
 import { ContentPayActions } from "@/components/ContentPayActions";
 import {
   HOUSE_AV_BLOB_MAX_BYTES,
   isHouseMediaUrl,
 } from "@/lib/media-store";
+import { fetchPlayableHouse } from "@/lib/playable-house";
+import {
+  clearResume,
+  rememberProgress,
+  resumeSeekPercent,
+} from "@/lib/playback-memory";
 
 function youtubeId(raw?: string): string | null {
   if (!raw) return null;
@@ -188,33 +196,109 @@ function isTrulyEnded(node: HTMLMediaElement): boolean {
   return false;
 }
 
+/**
+ * Album art when present (credentialed house poster or remote URL);
+ * otherwise the Kamau Negasi logo — never the empty orb while music plays.
+ */
+function DeckArt({
+  poster,
+  title,
+  playing,
+  mini = false,
+  bars = 12,
+}: {
+  poster?: string;
+  title?: string;
+  playing?: boolean;
+  mini?: boolean;
+  bars?: number;
+}) {
+  const { displaySrc, failed, loading } = useHouseMediaSrc(poster);
+  const [imgBroken, setImgBroken] = useState(false);
+  const showArt = Boolean(displaySrc) && !failed && !imgBroken;
+
+  useEffect(() => {
+    setImgBroken(false);
+  }, [poster, displaySrc]);
+
+  return (
+    <div
+      className={`deck__visual ${mini ? "deck__visual--mini" : ""} ${playing ? "is-playing" : ""}`}
+      aria-hidden
+    >
+      <div className={`deck__art ${showArt ? "deck__art--photo" : "deck__art--logo"}`}>
+        {showArt ? (
+          // eslint-disable-next-line @next/next/no-img-element -- house blob / remote poster
+          <img
+            className="deck__art-img"
+            src={displaySrc!}
+            alt=""
+            decoding="async"
+            onError={() => setImgBroken(true)}
+          />
+        ) : (
+          <BrandMark
+            tone="phosphor"
+            size={mini ? 72 : 112}
+            decorative
+            priority={!loading}
+            className="deck__art-logo"
+          />
+        )}
+      </div>
+      {bars > 0 ? (
+        <div className="deck__bars">
+          {Array.from({ length: bars }).map((_, i) => (
+            <span key={i} style={{ animationDelay: `${i * 0.08}s` }} />
+          ))}
+        </div>
+      ) : null}
+      {title ? <span className="sr-only">{title}</span> : null}
+    </div>
+  );
+}
+
 function NativeMedia({
   kind,
   src,
   title,
+  poster,
   playing,
   seekTo,
+  resumePercent,
+  volume,
+  muted,
   onProgress,
   onEnded,
+  onPlayBlocked,
 }: {
   kind: "audio" | "video";
   src: string;
   title: string;
+  poster?: string;
   playing: boolean;
   /** User scrub only — null while timeupdate drives the bar. */
   seekTo: number | null;
+  /** Same-device CONTINUE restore (percent 0–100). */
+  resumePercent: number | null;
+  volume: number;
+  muted: boolean;
   onProgress: (value: number) => void;
   onEnded?: () => void;
+  /** Autoplay / gesture policy rejected play() — reset dock to honest ▶. */
+  onPlayBlocked?: () => void;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const seekingRef = useRef(false);
   const recoveriesRef = useRef(0);
   const lastStallAtRef = useRef(0);
+  const resumeAppliedRef = useRef(false);
   // Arm on first play for this src — load once, only after play is pressed.
   const [armed, setArmed] = useState(false);
   useEffect(() => {
     setArmed(false);
+    resumeAppliedRef.current = false;
   }, [src]);
   useEffect(() => {
     if (playing) setArmed(true);
@@ -231,15 +315,28 @@ function NativeMedia({
 
   useEffect(() => {
     const node = mediaNode();
+    if (!node) return;
+    node.volume = Math.max(0, Math.min(1, volume));
+    node.muted = muted;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mediaNode reads refs
+  }, [volume, muted, kind, playSrc]);
+
+  useEffect(() => {
+    const node = mediaNode();
     if (!node || !playSrc) return;
     if (playing) {
       const p = node.play();
-      if (p && typeof p.catch === "function") p.catch(() => undefined);
+      if (p && typeof p.catch === "function") {
+        p.catch(() => {
+          // Don't leave ❚❚ + silence after NotAllowedError / load races.
+          onPlayBlocked?.();
+        });
+      }
     } else {
       node.pause();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mediaNode reads refs
-  }, [playing, kind, playSrc]);
+  }, [playing, kind, playSrc, onPlayBlocked]);
 
   // Seek only when the scrubber fires (not on every timeupdate → progress tick).
   useEffect(() => {
@@ -256,6 +353,34 @@ function NativeMedia({
     seekingRef.current = false;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seekTo, kind, playSrc]);
+
+  // Restore CONTINUE position once metadata is ready for this src.
+  useEffect(() => {
+    if (resumePercent == null || resumeAppliedRef.current) return;
+    const node = mediaNode();
+    if (!node || !playSrc) return;
+    const apply = () => {
+      if (resumeAppliedRef.current) return;
+      if (!Number.isFinite(node.duration) || node.duration <= 0) return;
+      const target = (resumePercent / 100) * node.duration;
+      seekingRef.current = true;
+      try {
+        node.currentTime = Math.min(Math.max(0, target), Math.max(0, node.duration - 0.25));
+        resumeAppliedRef.current = true;
+        onProgress(resumePercent);
+      } catch {
+        /* metadata race */
+      }
+      seekingRef.current = false;
+    };
+    if (Number.isFinite(node.duration) && node.duration > 0) {
+      apply();
+      return;
+    }
+    node.addEventListener("loadedmetadata", apply, { once: true });
+    return () => node.removeEventListener("loadedmetadata", apply);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resumePercent, kind, playSrc]);
 
   const recoverStall = () => {
     const node = mediaNode();
@@ -310,11 +435,10 @@ function NativeMedia({
   if (!armed || !playSrc || mode === "loading" || mode === "idle") {
     return (
       <div
-        className="deck__visual deck__visual--loading"
         aria-busy={mode === "loading"}
         aria-label={mode === "loading" ? "Loading media" : "Press play to load media"}
       >
-        <div className="deck__orb" />
+        <DeckArt poster={poster} title={title} playing={false} mini bars={0} />
       </div>
     );
   }
@@ -325,11 +449,13 @@ function NativeMedia({
         ref={videoRef}
         className="deck__frame deck__frame--native"
         src={playSrc}
+        poster={poster}
         controls
         playsInline
         preload="metadata"
         title={title}
         data-kn-av-mode={mode}
+        data-kn-resume={resumePercent ?? undefined}
         onTimeUpdate={onTimeUpdate}
         onWaiting={recoverStall}
         onStalled={recoverStall}
@@ -348,20 +474,14 @@ function NativeMedia({
         preload="metadata"
         title={title}
         data-kn-av-mode={mode}
+        data-kn-resume={resumePercent ?? undefined}
         onTimeUpdate={onTimeUpdate}
         onWaiting={recoverStall}
         onStalled={recoverStall}
         onError={recoverStall}
         onEnded={handleEnded}
       />
-      <div className={`deck__visual deck__visual--mini ${playing ? "is-playing" : ""}`} aria-hidden>
-        <div className="deck__orb" />
-        <div className="deck__bars">
-          {Array.from({ length: 12 }).map((_, i) => (
-            <span key={i} style={{ animationDelay: `${i * 0.08}s` }} />
-          ))}
-        </div>
-      </div>
+      <DeckArt poster={poster} title={title} playing={playing} mini />
     </div>
   );
 }
@@ -376,8 +496,12 @@ function EmbedStage({
   poster,
   playing,
   seekTo,
+  resumePercent,
+  volume,
+  muted,
   onProgress,
   onEnded,
+  onPlayBlocked,
 }: {
   provider?: string;
   id?: string;
@@ -388,8 +512,12 @@ function EmbedStage({
   poster?: string;
   playing: boolean;
   seekTo: number | null;
+  resumePercent: number | null;
+  volume: number;
+  muted: boolean;
   onProgress: (value: number) => void;
   onEnded?: () => void;
+  onPlayBlocked?: () => void;
 }) {
   const [resolvedBandcampId, setResolvedBandcampId] = useState<string | null>(null);
   const isBandcamp = provider === "bandcamp" || Boolean(url && /bandcamp\.com/i.test(url));
@@ -422,25 +550,33 @@ function EmbedStage({
     };
   }, [isBandcamp, bandcampId, url]);
 
-  if (src && (kind === "audio" || kind === "video")) {
+  const avKind = playerAvKind(kind);
+
+  // House binaries — audio + video (+ vlog/live as video).
+  if (src && avKind) {
     return (
       <NativeMedia
-        kind={kind}
+        kind={avKind}
         src={src}
         title={title}
+        poster={poster}
         playing={playing}
         seekTo={seekTo}
+        resumePercent={resumePercent}
+        volume={volume}
+        muted={muted}
         onProgress={onProgress}
         onEnded={onEnded}
+        onPlayBlocked={onPlayBlocked}
       />
     );
   }
 
-  // Player is AV-only — writings/stills never render a stage.
-  if (kind === "writing" || kind === "essay" || kind === "still") {
+  // Player is AV-only — writings/stills/unknown never render a stage.
+  if (!avKind) {
     return (
       <div className="deck__visual deck__visual--blocked" aria-hidden>
-        <div className="deck__orb" />
+        <BrandMark tone="phosphor" size={72} decorative className="deck__art-logo" />
         <p className="deck__blocked">audio / video only</p>
       </div>
     );
@@ -555,16 +691,7 @@ function EmbedStage({
     );
   }
 
-  return (
-    <div className={`deck__visual ${playing ? "is-playing" : ""}`} aria-hidden>
-      <div className="deck__orb" />
-      <div className="deck__bars">
-        {Array.from({ length: 16 }).map((_, i) => (
-          <span key={i} style={{ animationDelay: `${i * 0.08}s` }} />
-        ))}
-      </div>
-    </div>
-  );
+  return <DeckArt poster={poster} title={title} playing={playing} bars={16} />;
 }
 
 function RemoteMeta({ url, localTitle }: { url: string; localTitle: string }) {
@@ -598,6 +725,8 @@ export function PlayerDock() {
     playing,
     expanded,
     autoplay,
+    volume,
+    muted,
     progress,
     upNext,
     toggle,
@@ -608,9 +737,16 @@ export function PlayerDock() {
     enterStream,
     setExpanded,
     setAutoplay,
+    setVolume,
+    toggleMute,
     setProgress,
   } = usePlayer();
   const [seekTo, setSeekTo] = useState<number | null>(null);
+  const enterAbortRef = useRef<AbortController | null>(null);
+  const resumePercent = useMemo(
+    () => (current?.id ? resumeSeekPercent(current.id) : null),
+    [current?.id],
+  );
 
   const label = useMemo(() => {
     if (!current) return "NO SIGNAL";
@@ -621,10 +757,76 @@ export function PlayerDock() {
     setSeekTo(null);
   }, [current?.id]);
 
+  // Spotify-class OS transport — lock screen / headset / Control Center.
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !("mediaSession" in navigator)) return;
+    const session = navigator.mediaSession;
+    if (!current) {
+      session.metadata = null;
+      try {
+        session.playbackState = "none";
+      } catch {
+        /* unsupported */
+      }
+      return;
+    }
+    try {
+      session.metadata = new MediaMetadata({
+        title: current.title,
+        artist: current.brand || current.platform || "KAMAU NEGASI",
+        album: current.kind,
+        artwork: current.poster
+          ? [{ src: current.poster, sizes: "512x512", type: "image/png" }]
+          : [{ src: "/logo-kn-phosphor.png", sizes: "512x512", type: "image/png" }],
+      });
+      session.playbackState = playing ? "playing" : "paused";
+    } catch {
+      /* MediaMetadata unavailable */
+    }
+    const bind = (action: MediaSessionAction, handler: () => void) => {
+      try {
+        session.setActionHandler(action, handler);
+      } catch {
+        /* action unsupported */
+      }
+    };
+    bind("play", () => {
+      track("play", { id: current.id, via: "mediasession" });
+      if (!playing) toggle();
+    });
+    bind("pause", () => {
+      if (playing) toggle();
+    });
+    bind("previoustrack", () => prev());
+    bind("nexttrack", () => {
+      track("next", { id: current.id, via: "mediasession" });
+      next();
+    });
+    bind("seekto", () => undefined);
+    return () => {
+      for (const action of ["play", "pause", "previoustrack", "nexttrack", "seekto"] as const) {
+        try {
+          session.setActionHandler(action, null);
+        } catch {
+          /* */
+        }
+      }
+    };
+  }, [current, playing, toggle, next, prev]);
+
+  const onProgress = (value: number) => {
+    setProgress(value);
+    if (!current) return;
+    rememberProgress({
+      id: current.id,
+      progress: value,
+      title: current.title,
+      kind: current.kind,
+    });
+  };
+
   const isTheater =
-    current?.kind === "video" ||
-    current?.kind === "live" ||
-    current?.kind === "vlog" ||
+    playerAvKind(current?.kind) === "video" ||
     current?.embed?.provider === "twitch" ||
     current?.embed?.provider === "youtube" ||
     current?.embed?.provider === "vimeo";
@@ -647,8 +849,12 @@ export function PlayerDock() {
             poster={current.poster}
             playing={playing}
             seekTo={seekTo}
-            onProgress={setProgress}
+            resumePercent={resumePercent}
+            volume={volume}
+            muted={muted}
+            onProgress={onProgress}
             onEnded={() => {
+              clearResume(current.id);
               if (!autoplay) {
                 pause();
                 return;
@@ -656,11 +862,10 @@ export function PlayerDock() {
               track("next", { id: current.id, via: "ended" });
               next();
             }}
+            onPlayBlocked={() => pause()}
           />
         ) : (
-          <div className="deck__visual" aria-hidden>
-            <div className="deck__orb" />
-          </div>
+          <DeckArt playing={false} bars={0} />
         )}
         <div className="deck__copy">
           {current ? (
@@ -740,6 +945,8 @@ export function PlayerDock() {
             onClick={() => {
               if (!expanded) setExpanded(true);
               if (current) {
+                // Force play when paused — never toggle-pause from the main dock CTA
+                // when the user is recovering from an idle/NO SIGNAL state.
                 if (!playing) {
                   track("play", { id: current.id, via: "dock" });
                   playItem(current, undefined, { forcePlay: true });
@@ -748,16 +955,22 @@ export function PlayerDock() {
                 toggle();
                 return;
               }
-              // Idle DECK — load latest house AV (never toggle empty → NO SIGNAL).
+              // Idle DECK — load latest house AV (newest-first) instead of toggling nothing.
               track("enter_stream", { via: "dock" });
-              void fetchPlayableHouse()
+              enterAbortRef.current?.abort();
+              const ac = new AbortController();
+              enterAbortRef.current = ac;
+              void fetchPlayableHouse(ac.signal)
                 .then((items) => {
+                  if (ac.signal.aborted) return;
                   const started = enterStream(items, { forcePlay: true });
                   if (started && items[0]) {
                     track("play", { id: items[0].id, via: "dock" });
                   }
                 })
-                .catch(() => undefined);
+                .catch((err) => {
+                  if (err instanceof DOMException && err.name === "AbortError") return;
+                });
             }}
             aria-label={playing ? "Pause" : "Play"}
           >
@@ -773,7 +986,30 @@ export function PlayerDock() {
           >
             ⏭
           </button>
+          <button
+            type="button"
+            className={`deck__mute ${muted || volume === 0 ? "is-on" : ""}`}
+            aria-pressed={muted || volume === 0}
+            aria-label={muted || volume === 0 ? "Unmute" : "Mute"}
+            title={muted || volume === 0 ? "Unmute" : "Mute"}
+            onClick={toggleMute}
+          >
+            {muted || volume === 0 ? "off" : "vol"}
+          </button>
         </div>
+        <label className="deck__volume" title="Volume">
+          <span className="sr-only">Volume</span>
+          <input
+            type="range"
+            min={0}
+            max={100}
+            value={Math.round((muted ? 0 : volume) * 100)}
+            onChange={(e) => {
+              const nextVal = Number(e.target.value) / 100;
+              setVolume(nextVal);
+            }}
+          />
+        </label>
         <label className="deck__scrub">
           <span className="sr-only">Progress</span>
           <input
@@ -785,6 +1021,15 @@ export function PlayerDock() {
               const nextVal = Number(e.target.value);
               setProgress(nextVal);
               setSeekTo(nextVal);
+              if (current) {
+                rememberProgress({
+                  id: current.id,
+                  progress: nextVal,
+                  title: current.title,
+                  kind: current.kind,
+                  force: true,
+                });
+              }
             }}
           />
         </label>

@@ -1,10 +1,15 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { CatalogItem } from "@/data/catalog";
+import { isReadableText } from "@/data/catalog";
 import { kindLabel } from "@/lib/format";
 import { ContentPayActions } from "@/components/ContentPayActions";
 import { MediaPoster } from "@/components/MediaPoster";
+import { useLiveCatalog } from "@/components/useLiveCatalog";
+import { useReader } from "@/components/ReaderContext";
+import { PLATFORMS, SITE } from "@/data/identity";
+import { track } from "@/lib/analytics";
 
 function paragraphs(body?: string, blurb?: string): string[] {
   const raw = (body || blurb || "").trim();
@@ -15,16 +20,42 @@ function paragraphs(body?: string, blurb?: string): string[] {
     .filter(Boolean);
 }
 
+function relatedFor(item: CatalogItem, house: CatalogItem[], limit = 4): CatalogItem[] {
+  const tagSet = new Set((item.tags ?? []).map((t) => t.toLowerCase()));
+  const scored = house
+    .filter((peer) => peer.id !== item.id && isReadableText(peer))
+    .map((peer) => {
+      let score = 0;
+      if (peer.brand && item.brand && peer.brand === item.brand) score += 3;
+      for (const t of peer.tags ?? []) {
+        if (tagSet.has(t.toLowerCase())) score += 1;
+      }
+      if (peer.kind === item.kind) score += 0.5;
+      return { peer, score };
+    })
+    .filter((row) => row.score > 0)
+    .sort((a, b) => b.score - a.score || b.peer.publishedAt.localeCompare(a.peer.publishedAt));
+  return scored.slice(0, limit).map((row) => row.peer);
+}
+
 type WritingReaderProps = {
   item: CatalogItem | null;
   onClose: () => void;
 };
 
 export function WritingReader({ item, onClose }: WritingReaderProps) {
+  const { items: house } = useLiveCatalog();
+  const { openReadable } = useReader();
+  const [shareFlash, setShareFlash] = useState("");
   const paras = useMemo(
     () => (item ? paragraphs(item.body, item.blurb) : []),
     [item],
   );
+  const related = useMemo(
+    () => (item ? relatedFor(item, house) : []),
+    [item, house],
+  );
+  const tsol = PLATFORMS.find((p) => p.id === "substack");
 
   useEffect(() => {
     if (!item) return;
@@ -41,6 +72,29 @@ export function WritingReader({ item, onClose }: WritingReaderProps) {
   }, [item, onClose]);
 
   if (!item) return null;
+
+  const share = async () => {
+    setShareFlash("");
+    const url = item.externalUrl?.startsWith("https://")
+      ? item.externalUrl
+      : `${SITE.url}/#browse`;
+    const text = `${item.title} — ${item.brand || SITE.title}`;
+    track("command", { cmd: "share_writing", id: item.id });
+    try {
+      if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+        await navigator.share({ title: item.title, text, url });
+        setShareFlash("shared");
+      } else if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(`${text}\n${url}`);
+        setShareFlash("copied");
+      } else {
+        setShareFlash("—");
+      }
+    } catch {
+      setShareFlash("—");
+    }
+    window.setTimeout(() => setShareFlash(""), 1400);
+  };
 
   return (
     <div
@@ -63,9 +117,14 @@ export function WritingReader({ item, onClose }: WritingReaderProps) {
             <span>{item.publishedAt}</span>
             {item.platform ? <span>{item.platform}</span> : null}
           </div>
-          <button type="button" className="writing-reader__close" onClick={onClose}>
-            close ✕
-          </button>
+          <div className="writing-reader__chrome-actions">
+            <button type="button" className="writing-reader__share" onClick={() => void share()}>
+              {shareFlash || "share"}
+            </button>
+            <button type="button" className="writing-reader__close" onClick={onClose}>
+              close
+            </button>
+          </div>
         </div>
 
         <article className="writing-reader__sheet">
@@ -105,6 +164,36 @@ export function WritingReader({ item, onClose }: WritingReaderProps) {
                 <span key={t}>{t}</span>
               ))}
             </footer>
+          ) : null}
+
+          {related.length ? (
+            <aside className="writing-reader__related" aria-label="Related writings">
+              <p className="writing-reader__related-label">RELATED</p>
+              <ul className="writing-reader__related-list">
+                {related.map((peer) => (
+                  <li key={peer.id}>
+                    <button
+                      type="button"
+                      className="writing-reader__related-item"
+                      onClick={() => openReadable(peer, house)}
+                    >
+                      <span className="writing-reader__related-brand">{peer.brand}</span>
+                      <span className="writing-reader__related-title">{peer.title}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </aside>
+          ) : null}
+
+          {tsol ? (
+            <p className="writing-reader__outlet">
+              Essays also live on{" "}
+              <a href={tsol.url} target="_blank" rel="noopener noreferrer">
+                Telling Show Of Love
+              </a>
+              .
+            </p>
           ) : null}
         </article>
       </div>

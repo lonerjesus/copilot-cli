@@ -5,6 +5,9 @@
 
 export type UploadMeta = {
   title?: string;
+  artist?: string;
+  album?: string;
+  track?: number;
   duration?: string;
   width?: number;
   height?: number;
@@ -46,8 +49,13 @@ function decodeId3Text(bytes: Uint8Array): string {
   return "";
 }
 
-/** Best-effort ID3v2 TIT2 / TPE1 from the start of an MP3. */
-export function readId3Tags(buf: ArrayBuffer): { title?: string; artist?: string } {
+/** Best-effort ID3v2 TIT2 / TPE1 / TALB / TRCK from the start of an MP3. */
+export function readId3Tags(buf: ArrayBuffer): {
+  title?: string;
+  artist?: string;
+  album?: string;
+  track?: number;
+} {
   const u = new Uint8Array(buf);
   if (u.length < 10 || u[0] !== 0x49 || u[1] !== 0x44 || u[2] !== 0x33) return {};
   const major = u[3] ?? 0;
@@ -61,6 +69,8 @@ export function readId3Tags(buf: ArrayBuffer): { title?: string; artist?: string
   let i = 10;
   let title: string | undefined;
   let artist: string | undefined;
+  let album: string | undefined;
+  let track: number | undefined;
   while (i + 10 <= end) {
     const id = String.fromCharCode(u[i]!, u[i + 1]!, u[i + 2]!, u[i + 3]!);
     if (id === "\0\0\0\0") break;
@@ -75,10 +85,16 @@ export function readId3Tags(buf: ArrayBuffer): { title?: string; artist?: string
     const body = u.subarray(i + 10, i + 10 + frameSize);
     if (id === "TIT2" && !title) title = decodeId3Text(body) || undefined;
     if (id === "TPE1" && !artist) artist = decodeId3Text(body) || undefined;
+    if (id === "TALB" && !album) album = decodeId3Text(body) || undefined;
+    if (id === "TRCK" && track == null) {
+      const raw = decodeId3Text(body);
+      const n = Number.parseInt(raw.split("/")[0] ?? "", 10);
+      if (Number.isFinite(n) && n >= 1) track = n;
+    }
     i += 10 + frameSize;
-    if (title && artist) break;
+    if (title && artist && album && track != null) break;
   }
-  return { title, artist };
+  return { title, artist, album, track };
 }
 
 function probeMediaElement(
@@ -166,6 +182,9 @@ export async function extractUploadMeta(file: File): Promise<UploadMeta> {
       const head = await file.slice(0, Math.min(file.size, 256 * 1024)).arrayBuffer();
       const tags = readId3Tags(head);
       if (tags.title) meta.title = tags.title.slice(0, 160);
+      if (tags.artist) meta.artist = tags.artist.slice(0, 120);
+      if (tags.album) meta.album = tags.album.slice(0, 120);
+      if (tags.track) meta.track = tags.track;
       if (tags.artist && !meta.title) meta.title = tags.artist.slice(0, 160);
       else if (tags.artist && meta.title && !meta.title.includes(tags.artist)) {
         // Prefer "Artist · Title" when both present and title is bare (house separator).

@@ -1,31 +1,24 @@
-# verify-verdict.md
+# verify-verdict — production-ready harden
 
-**Agent:** `verifier` (Wave D — last)  
-**Branch:** `cursor/netflix-house-stream-560e`  
-**PR:** #15 (includes #13 responsive + #14 stream UX)
+**Branch:** `cursor/prod-ready-harden-05af`  
+**Includes:** #45 landing · #46 large AV · elite player · DeckArt · AV-only · batch ZIP · CONTINUE · redteam harden  
 
-## Verdict: `MERGE_OK`
+**Verdict:** MERGE_OK pending tip CI
 
-### Wave reports
-| Agent | Verdict |
-|-------|---------|
-| security | PASS (RMW + embed fixed) |
-| catalog-names | PASS (blurbs fixed) |
-| code-checker | PASS |
-| content-ingest | PASS |
-| compliance-18plus | PASS |
-| ux | PASS |
-| a11y | PASS |
-| analytics-bounce | PASS |
-| performance | PASS |
-| qa-browser | PASS |
-| cloudflare-deploy | PASS |
+### Product
+- Landing ▶ latest AV (forcePlay), no Pause+NO SIGNAL
+- Large AV ≤ 1.5 GiB, 3 MiB aligned chunks, resumable complete (part-key probe)
+- Elite: resume, Media Session, volume, CONTINUE
+- DeckArt poster → brand logo; `playerAvKind` dock
+- Batch album/series browser ZIP (512 MiB inflated budget)
 
-### Merge plan
-1. Merge #15 → `main`
-2. Close #13 / #14 as superseded
-3. Deploy production via Workers Builds on `main`
+### Harden
+- Boot analytics cannot trap dismiss
+- CSP `unsafe-eval` only in development
+- Parallel chunk meta race fixed at complete
+- Autoplay `play()` failure → honest ▶
+- Age gate SSR fail-closed
+- Full unit gate pack (+ ZIP bomb + single-shot asserts)
 
-### Residual (non-blocking)
-- Middleware cannot KV-check `activeSessionId` (mitigated)
-- House seed catalog thin until admin uploads
+### Supersedes
+#36, #39, #40, #41, #42, #44, #47 (after merge)

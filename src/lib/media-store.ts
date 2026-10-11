@@ -1038,13 +1038,33 @@ export async function putChunkedUploadPart(
     ? session.size - session.chunkBytes * (session.totalChunks - 1)
     : session.chunkBytes;
   if (data.byteLength !== expected) throw new Error("chunk_size_mismatch");
+  // Durable part write first — complete() probes these keys, not meta.received
+  // (parallel clients race on read-modify-write of the received[] array).
   await putUploadChunk(uploadId, index, data);
-  if (!session.received.includes(index)) {
-    session.received.push(index);
-    session.received.sort((a, b) => a - b);
-    await putUploadMeta(session);
+  // Best-effort progress bookkeeping; never authoritative for finish.
+  const fresh = (await getUploadMeta(uploadId)) ?? session;
+  if (!fresh.received.includes(index)) {
+    fresh.received.push(index);
+    fresh.received.sort((a, b) => a - b);
+    try {
+      await putUploadMeta(fresh);
+    } catch {
+      /* parallel meta writes may collide — parts remain durable */
+    }
   }
-  return { received: session.received.length, totalChunks: session.totalChunks };
+  return { received: fresh.received.length, totalChunks: fresh.totalChunks };
+}
+
+/** True when every upload part blob exists (ignores raced meta.received). */
+export async function allUploadPartsPresent(
+  uploadId: string,
+  totalChunks: number,
+): Promise<boolean> {
+  for (let i = 0; i < totalChunks; i++) {
+    const part = await getUploadChunk(uploadId, i);
+    if (!part) return false;
+  }
+  return true;
 }
 
 /**
@@ -1169,6 +1189,12 @@ async function materializeR2FromChunks(
   });
 
   await r2.put(session.key, stream, { httpMetadata: { contentType } });
+  if (typeof r2.head === "function") {
+    const head = await r2.head(session.key);
+    if (head?.size != null && head.size !== session.size) {
+      throw new Error("upload_corrupt");
+    }
+  }
 }
 
 async function materializeFsFromChunks(
@@ -1204,7 +1230,8 @@ export async function completeChunkedUpload(uploadId: string): Promise<{
 }> {
   const session = await getUploadMeta(uploadId);
   if (!session) throw new Error("upload_not_found");
-  if (session.received.length !== session.totalChunks) {
+  // Probe durable part keys — meta.received can drop indices under parallel puts.
+  if (!(await allUploadPartsPresent(uploadId, session.totalChunks))) {
     throw new Error("upload_incomplete");
   }
 
