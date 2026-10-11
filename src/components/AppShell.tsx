@@ -32,6 +32,8 @@ import {
   IconSupport,
 } from "@/components/NavIcons";
 import { SITE } from "@/data/identity";
+import { track } from "@/lib/analytics";
+import { fetchPlayableHouse } from "@/lib/playable-house";
 
 type ViewId = "stream" | "house" | "browse" | "support";
 
@@ -40,7 +42,14 @@ function ShellInner() {
   const [view, setView] = useState<ViewId>("stream");
   const [menuOpen, setMenuOpen] = useState(false);
   const ageOk = useAgeConfirmed();
-  const { setExpanded, toggle } = usePlayerState();
+  const {
+    current,
+    queue,
+    playing,
+    setExpanded,
+    playItem,
+    enterStream,
+  } = usePlayerState();
   const {
     writingItem,
     gallery,
@@ -49,6 +58,26 @@ function ShellInner() {
     setGalleryIndex,
   } = useReader();
   const { user, logout, refresh } = useAuth();
+
+  /** Landing ▶ — load latest house AV; never toggle an empty queue. */
+  const onHeroPlay = useCallback(async () => {
+    setExpanded(true);
+    if (current) {
+      if (!playing) track("play", { id: current.id, via: "hero" });
+      playItem(current, queue, { forcePlay: true });
+      return;
+    }
+    track("enter_stream", { via: "hero" });
+    try {
+      const items = await fetchPlayableHouse();
+      const started = enterStream(items, { forcePlay: true });
+      if (started && items[0]) {
+        track("play", { id: items[0].id, via: "hero" });
+      }
+    } catch {
+      /* leave expanded idle DECK when catalog unavailable */
+    }
+  }, [current, queue, playing, setExpanded, playItem, enterStream]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -172,12 +201,7 @@ function ShellInner() {
               {/* Defer catalog/media until 18+ is confirmed — avoids multi-MB AV fetches under the gate. */}
               {ageOk && view === "stream" ? (
                 <>
-                  <Hero
-                    onStream={() => {
-                      setExpanded(true);
-                      toggle();
-                    }}
-                  />
+                  <Hero onStream={() => void onHeroPlay()} />
                   <StreamDeck compact />
                 </>
               ) : null}
