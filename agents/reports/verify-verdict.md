@@ -1,9 +1,13 @@
 # verify-verdict — best build stack (#44)
 
 **Branch:** `cursor/stack-play-batch-elite-05af`  
+**Tip:** `b8b5c5f`  
 **Stacks:** #42 hero · #41 batch · #40 elite · #36 DeckArt · #39 AV-only · #43 queue (main) · boot harden · hero forcePlay  
 
-**Verdict:** MERGE_OK pending Workers Builds on tip
+**Verdict:** MERGE_OK
+
+### CI
+Workers Builds: kamaunegasi-net — **SUCCESS** on `b8b5c5f`
 
 ### Resolved
 - StreamDeck: CONTINUE + collections + `seedQueue`
