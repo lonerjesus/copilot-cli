@@ -30,6 +30,7 @@ run() {
   sleep 1
 }
 
+run "qa:player-queue" npm run qa:player-queue
 run "qa:av" npm run qa:av
 run "qa:media-ref" npm run qa:media-ref
 run "qa:media-meta" npm run qa:media-meta
