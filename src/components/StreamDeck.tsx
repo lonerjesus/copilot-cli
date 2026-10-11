@@ -5,6 +5,7 @@ import {
   useEffect,
   useMemo,
   useRef,
+  useState,
   type KeyboardEvent,
   type ReactNode,
 } from "react";
@@ -24,6 +25,11 @@ import { track } from "@/lib/analytics";
 import { useLiveCatalog } from "@/components/useLiveCatalog";
 import { EMPTY_SHELF } from "@/data/empty-copy";
 import { groupByCollection } from "@/lib/collection";
+import {
+  listContinues,
+  RESUME_EVENT,
+  type PlaybackMemoryEntry,
+} from "@/lib/playback-memory";
 
 function Tile({
   item,
@@ -163,6 +169,18 @@ export function StreamDeck({ compact = false }: { compact?: boolean }) {
   const { current, playItem, queueNext, seedQueue } = usePlayerState();
   const { openReadable, isReadable } = useReader();
   const { items: house } = useLiveCatalog();
+  const [continues, setContinues] = useState<PlaybackMemoryEntry[]>([]);
+
+  useEffect(() => {
+    const refresh = () => setContinues(listContinues(12));
+    refresh();
+    window.addEventListener("focus", refresh);
+    window.addEventListener(RESUME_EVENT, refresh);
+    return () => {
+      window.removeEventListener("focus", refresh);
+      window.removeEventListener(RESUME_EVENT, refresh);
+    };
+  }, [house, current?.id]);
 
   // Soft-fill empty player queue once live catalog arrives (landing idle had no seed AV).
   useEffect(() => {
@@ -179,6 +197,17 @@ export function StreamDeck({ compact = false }: { compact?: boolean }) {
   );
 
   const collections = useMemo(() => groupByCollection(house).slice(0, 8), [house]);
+
+  const continueItems = useMemo(() => {
+    const byId = new Map(house.map((item) => [item.id, item]));
+    return continues
+      .map((entry) => {
+        const item = byId.get(entry.id);
+        if (!item || !isPlayableMedia(item)) return null;
+        return { item, progress: entry.progress };
+      })
+      .filter((row): row is { item: CatalogItem; progress: number } => Boolean(row));
+  }, [continues, house]);
 
   const activate = useCallback(
     (item: CatalogItem, queue: CatalogItem[], via: string) => {
@@ -203,6 +232,46 @@ export function StreamDeck({ compact = false }: { compact?: boolean }) {
             <h2 id="stream-title">STREAM</h2>
           </div>
         </header>
+      ) : null}
+
+      {continueItems.length ? (
+        <div className="row row--continue" data-kn-continue="1">
+          <div className="row__head">
+            <div>
+              <h3>CONTINUE</h3>
+              <span className="row__hint">resume · same device</span>
+            </div>
+          </div>
+          <ShelfTrack label="Continue">
+            {continueItems.map(({ item, progress: pct }) => (
+              <div key={`continue-${item.id}`} role="listitem">
+                <div className="tile-wrap tile-wrap--continue">
+                  <Tile
+                    item={item}
+                    active={current?.id === item.id}
+                    onActivate={() =>
+                      activate(
+                        item,
+                        continueItems.map((c) => c.item),
+                        "continue",
+                      )
+                    }
+                    onQueueNext={() => {
+                      track("queue_next", { id: item.id, via: "continue" });
+                      queueNext(item);
+                    }}
+                  />
+                  <div
+                    className="tile__resume"
+                    aria-label={`${Math.round(pct)} percent watched`}
+                  >
+                    <span style={{ width: `${Math.round(pct)}%` }} />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </ShelfTrack>
+        </div>
       ) : null}
 
       {collections.map((group) => (

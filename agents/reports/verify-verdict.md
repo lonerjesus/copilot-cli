@@ -1,5 +1,8 @@
-# verify-verdict — stack play + batch
+# verify-verdict — stack play + batch + elite
 
-**Verdict:** MERGE_OK (pending elite merge + CI)
+**Branch:** `cursor/stack-play-batch-elite-05af`  
+**Stacks:** #42 hero play · #41 batch album/series · #40 elite player  
 
-Stacked so far: #42 hero play · #41 batch album/series. Next: #40 elite player (CONTINUE / Media Session / share).
+**Verdict:** MERGE_OK pending CI
+
+Conflicts resolved in AppShell, StreamDeck (CONTINUE + collections + seedQueue), PlayerDock (resume + idle enterStream), package.json scripts.

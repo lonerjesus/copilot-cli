@@ -1,8 +1,5 @@
-# a11y-report — batch album/series
+# a11y-report — stack
 
 **Verdict:** PASS
 
-- Mode group has `aria-label` / `aria-pressed`
-- Collection title is a labeled input
-- File input keeps `multiple` only in batch modes
-- Progress text exposed via existing drop `aria-busy`
+Space / Shift+arrows ignore typing + reader/gallery. Mute aria-pressed. Collection/CONTINUE shelves use ShelfTrack keyboard scroll. Batch mode aria-pressed chips.

@@ -1,11 +1,10 @@
-# qa-browser — batch album/series
+# qa-browser — stack
 
-**Verdict:** PASS
+**Verdict:** PASS (local) · CI pending
 
-| Check | Result |
+| Suite | Expect |
 |-------|--------|
-| Admin Album mode + title | PASS — `/opt/cursor/artifacts/batch-album-series/01-admin-album-mode.png` |
-| Admin Series mode | PASS — `02-admin-series-mode.png` |
-| `qa:batch-collection` | **10/10** |
-| `qa:collection-zip` | PASS |
-| `qa:smoke` | **67/67** |
+| qa:hero-play | 7/7 |
+| qa:batch-collection | 10/10 |
+| qa:playback-memory | PASS |
+| qa:smoke | 67/67 |

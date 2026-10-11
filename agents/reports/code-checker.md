@@ -1,9 +1,5 @@
-# code-checker — batch album/series
+# code-checker — stack
 
 **Verdict:** PASS
 
-- `tsc --noEmit` green
-- `qa:collection-zip` green
-- `qa:batch-collection` covers collection API + admin Album/Series UI
-- Existing media chunk protocol untouched
-- StreamDeck groups by `collection` without breaking kind shelves
+PlayerContext carries volume prefs + enterStream/seedQueue. StreamDeck: CONTINUE then collections then kind shelves. qa:hero-play · qa:collection-zip · qa:playback-memory · qa:batch-collection.

@@ -42,7 +42,15 @@ function ShellInner() {
   const [view, setView] = useState<ViewId>("stream");
   const [menuOpen, setMenuOpen] = useState(false);
   const ageOk = useAgeConfirmed();
-  const { current, playing, setExpanded, toggle, enterStream } = usePlayerState();
+  const {
+    current,
+    playing,
+    setExpanded,
+    toggle,
+    enterStream,
+    next,
+    prev,
+  } = usePlayerState();
   const {
     writingItem,
     gallery,
@@ -78,6 +86,43 @@ function ShellInner() {
       void refresh();
     }
   }, [refresh]);
+
+  // Spotify-class transport keys — Space play/pause; Shift+←/→ prev/next.
+  useEffect(() => {
+    if (!ageOk) return;
+    const typing = (el: EventTarget | null) => {
+      if (!(el instanceof HTMLElement)) return false;
+      const tag = el.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return true;
+      if (el.isContentEditable) return true;
+      return Boolean(el.closest('input, textarea, select, [contenteditable="true"]'));
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if (typing(event.target)) return;
+      if (writingItem || gallery) return;
+      if (event.key === " " || event.code === "Space") {
+        event.preventDefault();
+        if (!current) {
+          void onHeroPlay();
+          return;
+        }
+        if (!playing) setExpanded(true);
+        toggle();
+        return;
+      }
+      if (event.shiftKey && event.key === "ArrowRight") {
+        event.preventDefault();
+        next();
+        return;
+      }
+      if (event.shiftKey && event.key === "ArrowLeft") {
+        event.preventDefault();
+        prev();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [ageOk, writingItem, gallery, playing, current, toggle, next, prev, setExpanded, onHeroPlay]);
 
   useEffect(() => {
     const applyHash = () => {

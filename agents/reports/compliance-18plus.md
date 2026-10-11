@@ -1,5 +1,5 @@
-# compliance-18plus — batch album/series
+# compliance-18plus — stack
 
 **Verdict:** PASS
 
-Age gate / access wall / 18+ banner untouched. Batch publish is admin-only behind existing session.
+Age gate / 18+ / access wall untouched. Player and batch admin remain behind existing gates.

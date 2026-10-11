@@ -1,7 +1,5 @@
-# perf-notes — batch album/series
+# perf-notes — stack
 
 **Verdict:** PASS
 
-- Sequential batch uploads (no parallel Worker storm)
-- ZIP inflate only in browser; Worker still streams chunks
-- Collection grouping is O(n) on already-fetched catalog
+Resume writes throttled. CONTINUE via kn-resume event. Batch uploads sequential. Collection group O(n). No new client deps.

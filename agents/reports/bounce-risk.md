@@ -1,7 +1,5 @@
-# bounce-risk — stack (#42 + #41)
+# bounce-risk — stack
 
 **Verdict:** PASS
 
-- Landing ▶ starts first house AV (no idle DECK dead-end)
-- Stream collection shelves give album/series entry points
-- Admin batch progress reduces failed multi-file publishes
+Landing ▶ starts AV · CONTINUE rail · collection shelves · writing share/related · batch album publish path.

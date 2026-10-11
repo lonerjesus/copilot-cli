@@ -10,6 +10,11 @@ import {
   isHouseMediaUrl,
 } from "@/lib/media-store";
 import { fetchPlayableHouse } from "@/lib/playable-house";
+import {
+  clearResume,
+  rememberProgress,
+  resumeSeekPercent,
+} from "@/lib/playback-memory";
 
 function youtubeId(raw?: string): string | null {
   if (!raw) return null;
@@ -194,6 +199,9 @@ function NativeMedia({
   title,
   playing,
   seekTo,
+  resumePercent,
+  volume,
+  muted,
   onProgress,
   onEnded,
 }: {
@@ -203,6 +211,10 @@ function NativeMedia({
   playing: boolean;
   /** User scrub only — null while timeupdate drives the bar. */
   seekTo: number | null;
+  /** Same-device CONTINUE restore (percent 0–100). */
+  resumePercent: number | null;
+  volume: number;
+  muted: boolean;
   onProgress: (value: number) => void;
   onEnded?: () => void;
 }) {
@@ -211,10 +223,12 @@ function NativeMedia({
   const seekingRef = useRef(false);
   const recoveriesRef = useRef(0);
   const lastStallAtRef = useRef(0);
+  const resumeAppliedRef = useRef(false);
   // Arm on first play for this src — load once, only after play is pressed.
   const [armed, setArmed] = useState(false);
   useEffect(() => {
     setArmed(false);
+    resumeAppliedRef.current = false;
   }, [src]);
   useEffect(() => {
     if (playing) setArmed(true);
@@ -228,6 +242,14 @@ function NativeMedia({
     recoveriesRef.current = 0;
     lastStallAtRef.current = 0;
   }, [src, playSrc]);
+
+  useEffect(() => {
+    const node = mediaNode();
+    if (!node) return;
+    node.volume = Math.max(0, Math.min(1, volume));
+    node.muted = muted;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mediaNode reads refs
+  }, [volume, muted, kind, playSrc]);
 
   useEffect(() => {
     const node = mediaNode();
@@ -256,6 +278,34 @@ function NativeMedia({
     seekingRef.current = false;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seekTo, kind, playSrc]);
+
+  // Restore CONTINUE position once metadata is ready for this src.
+  useEffect(() => {
+    if (resumePercent == null || resumeAppliedRef.current) return;
+    const node = mediaNode();
+    if (!node || !playSrc) return;
+    const apply = () => {
+      if (resumeAppliedRef.current) return;
+      if (!Number.isFinite(node.duration) || node.duration <= 0) return;
+      const target = (resumePercent / 100) * node.duration;
+      seekingRef.current = true;
+      try {
+        node.currentTime = Math.min(Math.max(0, target), Math.max(0, node.duration - 0.25));
+        resumeAppliedRef.current = true;
+        onProgress(resumePercent);
+      } catch {
+        /* metadata race */
+      }
+      seekingRef.current = false;
+    };
+    if (Number.isFinite(node.duration) && node.duration > 0) {
+      apply();
+      return;
+    }
+    node.addEventListener("loadedmetadata", apply, { once: true });
+    return () => node.removeEventListener("loadedmetadata", apply);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resumePercent, kind, playSrc]);
 
   const recoverStall = () => {
     const node = mediaNode();
@@ -330,6 +380,7 @@ function NativeMedia({
         preload="metadata"
         title={title}
         data-kn-av-mode={mode}
+        data-kn-resume={resumePercent ?? undefined}
         onTimeUpdate={onTimeUpdate}
         onWaiting={recoverStall}
         onStalled={recoverStall}
@@ -348,6 +399,7 @@ function NativeMedia({
         preload="metadata"
         title={title}
         data-kn-av-mode={mode}
+        data-kn-resume={resumePercent ?? undefined}
         onTimeUpdate={onTimeUpdate}
         onWaiting={recoverStall}
         onStalled={recoverStall}
@@ -376,6 +428,9 @@ function EmbedStage({
   poster,
   playing,
   seekTo,
+  resumePercent,
+  volume,
+  muted,
   onProgress,
   onEnded,
 }: {
@@ -388,6 +443,9 @@ function EmbedStage({
   poster?: string;
   playing: boolean;
   seekTo: number | null;
+  resumePercent: number | null;
+  volume: number;
+  muted: boolean;
   onProgress: (value: number) => void;
   onEnded?: () => void;
 }) {
@@ -430,6 +488,9 @@ function EmbedStage({
         title={title}
         playing={playing}
         seekTo={seekTo}
+        resumePercent={resumePercent}
+        volume={volume}
+        muted={muted}
         onProgress={onProgress}
         onEnded={onEnded}
       />
@@ -598,6 +659,8 @@ export function PlayerDock() {
     playing,
     expanded,
     autoplay,
+    volume,
+    muted,
     progress,
     upNext,
     toggle,
@@ -608,9 +671,15 @@ export function PlayerDock() {
     enterStream,
     setExpanded,
     setAutoplay,
+    setVolume,
+    toggleMute,
     setProgress,
   } = usePlayer();
   const [seekTo, setSeekTo] = useState<number | null>(null);
+  const resumePercent = useMemo(
+    () => (current?.id ? resumeSeekPercent(current.id) : null),
+    [current?.id],
+  );
 
   const label = useMemo(() => {
     if (!current) return "NO SIGNAL";
@@ -620,6 +689,74 @@ export function PlayerDock() {
   useEffect(() => {
     setSeekTo(null);
   }, [current?.id]);
+
+  // Spotify-class OS transport — lock screen / headset / Control Center.
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !("mediaSession" in navigator)) return;
+    const session = navigator.mediaSession;
+    if (!current) {
+      session.metadata = null;
+      try {
+        session.playbackState = "none";
+      } catch {
+        /* unsupported */
+      }
+      return;
+    }
+    try {
+      session.metadata = new MediaMetadata({
+        title: current.title,
+        artist: current.brand || current.platform || "KAMAU NEGASI",
+        album: current.kind,
+        artwork: current.poster
+          ? [{ src: current.poster, sizes: "512x512", type: "image/png" }]
+          : [{ src: "/logo-kn-phosphor.png", sizes: "512x512", type: "image/png" }],
+      });
+      session.playbackState = playing ? "playing" : "paused";
+    } catch {
+      /* MediaMetadata unavailable */
+    }
+    const bind = (action: MediaSessionAction, handler: () => void) => {
+      try {
+        session.setActionHandler(action, handler);
+      } catch {
+        /* action unsupported */
+      }
+    };
+    bind("play", () => {
+      track("play", { id: current.id, via: "mediasession" });
+      if (!playing) toggle();
+    });
+    bind("pause", () => {
+      if (playing) toggle();
+    });
+    bind("previoustrack", () => prev());
+    bind("nexttrack", () => {
+      track("next", { id: current.id, via: "mediasession" });
+      next();
+    });
+    bind("seekto", () => undefined);
+    return () => {
+      for (const action of ["play", "pause", "previoustrack", "nexttrack", "seekto"] as const) {
+        try {
+          session.setActionHandler(action, null);
+        } catch {
+          /* */
+        }
+      }
+    };
+  }, [current, playing, toggle, next, prev]);
+
+  const onProgress = (value: number) => {
+    setProgress(value);
+    if (!current) return;
+    rememberProgress({
+      id: current.id,
+      progress: value,
+      title: current.title,
+      kind: current.kind,
+    });
+  };
 
   const isTheater =
     current?.kind === "video" ||
@@ -647,8 +784,12 @@ export function PlayerDock() {
             poster={current.poster}
             playing={playing}
             seekTo={seekTo}
-            onProgress={setProgress}
+            resumePercent={resumePercent}
+            volume={volume}
+            muted={muted}
+            onProgress={onProgress}
             onEnded={() => {
+              clearResume(current.id);
               if (!autoplay) {
                 pause();
                 return;
@@ -769,7 +910,30 @@ export function PlayerDock() {
           >
             ⏭
           </button>
+          <button
+            type="button"
+            className={`deck__mute ${muted || volume === 0 ? "is-on" : ""}`}
+            aria-pressed={muted || volume === 0}
+            aria-label={muted || volume === 0 ? "Unmute" : "Mute"}
+            title={muted || volume === 0 ? "Unmute" : "Mute"}
+            onClick={toggleMute}
+          >
+            {muted || volume === 0 ? "off" : "vol"}
+          </button>
         </div>
+        <label className="deck__volume" title="Volume">
+          <span className="sr-only">Volume</span>
+          <input
+            type="range"
+            min={0}
+            max={100}
+            value={Math.round((muted ? 0 : volume) * 100)}
+            onChange={(e) => {
+              const nextVal = Number(e.target.value) / 100;
+              setVolume(nextVal);
+            }}
+          />
+        </label>
         <label className="deck__scrub">
           <span className="sr-only">Progress</span>
           <input
@@ -781,6 +945,15 @@ export function PlayerDock() {
               const nextVal = Number(e.target.value);
               setProgress(nextVal);
               setSeekTo(nextVal);
+              if (current) {
+                rememberProgress({
+                  id: current.id,
+                  progress: nextVal,
+                  title: current.title,
+                  kind: current.kind,
+                  force: true,
+                });
+              }
             }}
           />
         </label>

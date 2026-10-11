@@ -82,7 +82,10 @@ Streetpolitik · GrownAssKids (GAK) · Black Oh-My · BLKDTY Music LLC · Kendri
 
 ## Keyboard
 
-- `/` focus command bar
+- `Space` — play / pause (when not typing)
+- `Shift` + `←` / `→` — previous / next track
+- `/` focus command bar (when mounted)
 - `j` / `k` move footprint cursor
 - Tab then Enter on **Skip to content** for a11y jump
-- commands: `stream` · `categories` · `magazine` · `cosmogram` · `footprint` · `support` · `play` · `help`
+- OS media keys / lock screen via Media Session API
+- commands: `stream` · `categories` · `cosmogram` · `footprint` · `support` · `play` · `next` · `queue`
