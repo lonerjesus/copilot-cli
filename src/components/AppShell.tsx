@@ -39,6 +39,7 @@ type ViewId = "stream" | "house" | "browse" | "support";
 
 function ShellInner() {
   const [booted, setBooted] = useState(false);
+  const onBootDone = useCallback(() => setBooted(true), []);
   const [view, setView] = useState<ViewId>("stream");
   const [menuOpen, setMenuOpen] = useState(false);
   const ageOk = useAgeConfirmed();
@@ -161,7 +162,7 @@ function ShellInner() {
         Skip
       </a>
       <AgeGate />
-      {!booted ? <BootSequence onDone={() => setBooted(true)} /> : null}
+      {!booted ? <BootSequence onDone={onBootDone} /> : null}
       <div className={`shell shell--ready shell--rail ${menuOpen ? "shell--menu" : ""}`}>
         <BrandWatermark />
         <p className="agebanner" role="note">
