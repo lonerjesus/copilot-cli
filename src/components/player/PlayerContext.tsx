@@ -44,7 +44,19 @@ type PlayerStateValue = {
   autoplay: boolean;
   /** Items after the current index — Spotify-style Up Next. */
   upNext: CatalogItem[];
-  playItem: (item: CatalogItem, queue?: CatalogItem[]) => void;
+  playItem: (
+    item: CatalogItem,
+    queue?: CatalogItem[],
+    opts?: { forcePlay?: boolean },
+  ) => void;
+  /**
+   * Start the first playable item (landing ▶ / idle dock).
+   * Returns false when the catalog has no AV yet.
+   */
+  enterStream: (
+    items: CatalogItem[],
+    opts?: { forcePlay?: boolean },
+  ) => boolean;
   /** Insert after current without interrupting playback (Play Next). */
   queueNext: (item: CatalogItem) => void;
   toggle: () => void;
@@ -104,6 +116,11 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     [queue, index],
   );
 
+  // Never show Pause + "NO SIGNAL" — empty slots cannot be "playing".
+  useEffect(() => {
+    if (!current && playing) setPlaying(false);
+  }, [current, playing]);
+
   const clearTimer = () => {
     if (timer.current) {
       window.clearInterval(timer.current);
@@ -126,18 +143,36 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     setPlaying(keepPlaying);
   }, [queue]);
 
-  const playItem = useCallback((item: CatalogItem, nextQueue?: CatalogItem[]) => {
-    if (!isPlayableMedia(item)) return;
-    const raw = nextQueue ?? queue;
-    const q = playableCatalog(raw);
-    const withItem = q.some((entry) => entry.id === item.id) ? q : [item, ...q];
-    const found = withItem.findIndex((entry) => entry.id === item.id);
-    setQueue(withItem);
-    setIndex(found >= 0 ? found : 0);
-    setProgress(0);
-    setPlaying(autoplayRef.current);
-    setExpanded(true);
-  }, [queue]);
+  const playItem = useCallback(
+    (item: CatalogItem, nextQueue?: CatalogItem[], opts?: { forcePlay?: boolean }) => {
+      if (!isPlayableMedia(item)) return;
+      const raw = nextQueue ?? queue;
+      const q = playableCatalog(raw);
+      const withItem = q.some((entry) => entry.id === item.id) ? q : [item, ...q];
+      const found = withItem.findIndex((entry) => entry.id === item.id);
+      setQueue(withItem);
+      setIndex(found >= 0 ? found : 0);
+      setProgress(0);
+      setPlaying(opts?.forcePlay ? true : autoplayRef.current);
+      setExpanded(true);
+    },
+    [queue],
+  );
+
+  const enterStream = useCallback(
+    (items: CatalogItem[], opts?: { forcePlay?: boolean }) => {
+      const q = playableCatalog(items);
+      const first = q[0];
+      if (!first) return false;
+      setQueue(q);
+      setIndex(0);
+      setProgress(0);
+      setPlaying(opts?.forcePlay ? true : autoplayRef.current);
+      setExpanded(true);
+      return true;
+    },
+    [],
+  );
 
   const queueNext = useCallback((item: CatalogItem) => {
     if (!isPlayableMedia(item)) return;
@@ -147,7 +182,14 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     setExpanded(true);
   }, [queue, index]);
 
-  const toggle = useCallback(() => setPlaying((p) => !p), []);
+  const toggle = useCallback(() => {
+    const item = queue[index];
+    if (!item || !isPlayableMedia(item)) {
+      setPlaying(false);
+      return;
+    }
+    setPlaying((p) => !p);
+  }, [queue, index]);
   const pause = useCallback(() => setPlaying(false), []);
 
   useEffect(() => {
@@ -189,6 +231,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       autoplay,
       upNext,
       playItem,
+      enterStream,
       queueNext,
       toggle,
       pause,
@@ -206,6 +249,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       autoplay,
       upNext,
       playItem,
+      enterStream,
       queueNext,
       toggle,
       pause,

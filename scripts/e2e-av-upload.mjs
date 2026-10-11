@@ -210,10 +210,11 @@ for (const c of cases) {
   const uploadId = init.json?.uploadId;
   const chunkBytes = init.json?.chunkBytes || CHUNK;
   const totalChunks = init.json?.totalChunks || Math.ceil(size / chunkBytes);
+  const expectedChunks = Math.ceil(size / chunkBytes);
   ok(
     "chunk-init",
-    init.res.status === 201 && Boolean(uploadId) && totalChunks === 2,
-    `status=${init.res.status} chunks=${totalChunks} body=${(init.text || "").slice(0, 160)}`,
+    init.res.status === 201 && Boolean(uploadId) && totalChunks === expectedChunks,
+    `status=${init.res.status} chunks=${totalChunks} expected=${expectedChunks} body=${(init.text || "").slice(0, 160)}`,
   );
 
   let chunkOk = Boolean(uploadId);

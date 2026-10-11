@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { usePlayer } from "@/components/player/PlayerContext";
 import { kindGlyph } from "@/lib/format";
 import { track } from "@/lib/analytics";
+import { fetchPlayableHouse } from "@/lib/playable-house";
 import { ContentPayActions } from "@/components/ContentPayActions";
 import {
   HOUSE_AV_BLOB_MAX_BYTES,
@@ -604,6 +605,7 @@ export function PlayerDock() {
     next,
     prev,
     playItem,
+    enterStream,
     setExpanded,
     setAutoplay,
     setProgress,
@@ -736,9 +738,26 @@ export function PlayerDock() {
             type="button"
             className="deck__play"
             onClick={() => {
-              if (!playing) track("play", { id: current?.id ?? "idle" });
               if (!expanded) setExpanded(true);
-              toggle();
+              if (current) {
+                if (!playing) {
+                  track("play", { id: current.id, via: "dock" });
+                  playItem(current, undefined, { forcePlay: true });
+                  return;
+                }
+                toggle();
+                return;
+              }
+              // Idle DECK — load latest house AV (never toggle empty → NO SIGNAL).
+              track("enter_stream", { via: "dock" });
+              void fetchPlayableHouse()
+                .then((items) => {
+                  const started = enterStream(items, { forcePlay: true });
+                  if (started && items[0]) {
+                    track("play", { id: items[0].id, via: "dock" });
+                  }
+                })
+                .catch(() => undefined);
             }}
             aria-label={playing ? "Pause" : "Play"}
           >
