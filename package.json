@@ -20,6 +20,8 @@
     "qa:edit-save": "node scripts/e2e-admin-edit-save.mjs",
     "qa:media-ref": "node --experimental-strip-types scripts/check-media-ref.mjs",
     "qa:media-meta": "node --experimental-strip-types scripts/check-media-meta.mjs",
+    "qa:collection-zip": "node --experimental-strip-types scripts/check-collection-zip.mjs",
+    "qa:batch-collection": "node scripts/e2e-batch-collection.mjs",
     "qa:media-range": "node scripts/e2e-media-range.mjs",
     "qa:writing-open": "node --experimental-strip-types scripts/e2e-writing-open.mjs",
     "qa:platform-compare": "node --experimental-strip-types scripts/e2e-platform-compare.mjs",

@@ -1,31 +1,7 @@
-# verify-verdict.md
+# verify-verdict — batch album/series
 
-**Agent:** `verifier` (Wave D — last)  
-**Branch:** `cursor/netflix-house-stream-560e`  
-**PR:** #15 (includes #13 responsive + #14 stream UX)
+**Verdict:** MERGE_OK
 
-## Verdict: `MERGE_OK`
+Reconciled: names-audit · security · ux · a11y · code-checker · qa-browser · batch-album-series.md
 
-### Wave reports
-| Agent | Verdict |
-|-------|---------|
-| security | PASS (RMW + embed fixed) |
-| catalog-names | PASS (blurbs fixed) |
-| code-checker | PASS |
-| content-ingest | PASS |
-| compliance-18plus | PASS |
-| ux | PASS |
-| a11y | PASS |
-| analytics-bounce | PASS |
-| performance | PASS |
-| qa-browser | PASS |
-| cloudflare-deploy | PASS |
-
-### Merge plan
-1. Merge #15 → `main`
-2. Close #13 / #14 as superseded
-3. Deploy production via Workers Builds on `main`
-
-### Residual (non-blocking)
-- Middleware cannot KV-check `activeSessionId` (mitigated)
-- House seed catalog thin until admin uploads
+Zero-error: no Worker ZIP, no new deps, exact-name policy clean, E2E + smoke green.

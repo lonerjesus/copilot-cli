@@ -1,19 +1,11 @@
-# qa-browser.md
+# qa-browser — batch album/series
 
-**Agent:** `qa-browser`  
-**Verdict:** `PASS`
+**Verdict:** PASS
 
-## Path matrix
-
-| Path | Result |
-|------|--------|
-| Unauth `/` → `/access` | PASS |
-| Register → authed home | PASS |
-| House stream (no Names; MagCloud Featured) | PASS |
-| Footprint outside media | PASS |
-| Session exclusivity (2nd login kicks 1st) | PASS |
-| Catalog auth + house API | PASS |
-| Paywall / fetched download | PASS |
-| `tsc` + `build:next` + smoke 52/52 | PASS |
-
-Automated: `scripts/qa-smoke.sh` @ http://127.0.0.1:3000 — **52 passed · 0 failed**
+| Check | Result |
+|-------|--------|
+| Admin Album mode + title | PASS — `/opt/cursor/artifacts/batch-album-series/01-admin-album-mode.png` |
+| Admin Series mode | PASS — `02-admin-series-mode.png` |
+| `qa:batch-collection` | **10/10** |
+| `qa:collection-zip` | PASS |
+| `qa:smoke` | **67/67** |

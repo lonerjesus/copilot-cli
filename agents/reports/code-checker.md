@@ -1,6 +1,9 @@
-# code-checker
+# code-checker — batch album/series
 
-- Stale-closure save bug fixed via refs.
-- `normalizeMediaRef` extracted to `src/lib/media-ref.ts` (client + store share one path).
-- No `setForm({ ...form })` left on controlled inputs.
-PASS
+**Verdict:** PASS
+
+- `tsc --noEmit` green
+- `qa:collection-zip` green
+- `qa:batch-collection` covers collection API + admin Album/Series UI
+- Existing media chunk protocol untouched
+- StreamDeck groups by `collection` without breaking kind shelves

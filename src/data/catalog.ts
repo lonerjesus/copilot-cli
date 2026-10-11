@@ -2,6 +2,14 @@ import type { CategoryId, SubcategoryId } from "@/data/taxonomy";
 
 export type MediaKind = "video" | "audio" | "vlog" | "writing" | "still" | "live";
 
+/** Album or series membership — one catalog row per track / episode. */
+export type CatalogCollection = {
+  type: "album" | "series";
+  id: string;
+  title: string;
+  index?: number;
+};
+
 /** Accept legacy `essay` from stored uploads. */
 export function normalizeMediaKind(kind: string): MediaKind {
   if (kind === "essay") return "writing";
@@ -33,6 +41,8 @@ export type CatalogItem = {
   blurb: string;
   /** Long-form house writing / notes (admin compose). */
   body?: string;
+  /** Album or series membership (one item per track/episode). */
+  collection?: CatalogCollection;
 };
 
 /** House stills — open in the Photos-style gallery, not the AV player. */

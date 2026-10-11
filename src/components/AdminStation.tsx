@@ -28,6 +28,13 @@ import {
 } from "@/lib/media-store";
 import { normalizeMediaRef } from "@/lib/media-ref";
 import { extractUploadMeta } from "@/lib/media-meta";
+import {
+  slugifyCollection,
+  sortMediaFiles,
+  trackIndexFromName,
+  type CollectionType,
+} from "@/lib/collection";
+import { isZipFile, unpackZip, zipErrorMessage } from "@/lib/zip-unpack";
 import { MAX_TICKER_CHARS } from "@/lib/ticker-store";
 import {
   IconAnalytics,
@@ -43,6 +50,10 @@ import { AdminThumbPreview } from "@/components/MediaPoster";
 import type { ComponentType } from "react";
 
 type Tab = "compose" | "library" | "analytics" | "data";
+type ComposeMode = "single" | "album" | "series";
+
+const BATCH_ACCEPT =
+  "audio/*,video/*,image/*,.mp3,.m4a,.wav,.flac,.ogg,.mp4,.mov,.webm,.jpg,.jpeg,.png,.webp,.zip,application/zip";
 
 type UploadPreset = {
   id: "video" | "photo" | "music" | "writing";
@@ -243,6 +254,8 @@ export function AdminStation() {
   const [items, setItems] = useState<UploadedContent[]>([]);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [preset, setPreset] = useState<UploadPreset["id"]>("video");
+  const [composeMode, setComposeMode] = useState<ComposeMode>("single");
+  const [collectionTitle, setCollectionTitle] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [ok, setOk] = useState("");
@@ -682,9 +695,176 @@ export function AdminStation() {
     }
   };
 
+  const expandIncomingFiles = async (list: FileList | File[]): Promise<File[]> => {
+    const incoming = [...list];
+    const media: File[] = [];
+    for (const file of incoming) {
+      if (isZipFile(file)) {
+        setUploadProgress(`unpacking ${file.name}…`);
+        const extracted = await unpackZip(file);
+        media.push(...extracted);
+      } else {
+        media.push(file);
+      }
+    }
+    // Keep only types the house media pipeline accepts (skip README/txt/etc).
+    const allowed = media.filter((f) => {
+      try {
+        // Head sniff deferred — extension/MIME gate via validate later.
+        const name = (f.name || "").toLowerCase();
+        if (/\.(txt|md|nfo|cue|log|pdf|json|xml)$/i.test(name)) return false;
+        return true;
+      } catch {
+        return false;
+      }
+    });
+    return sortMediaFiles(allowed);
+  };
+
+  const ingestBatch = async (fileList: FileList | File[]) => {
+    if (busy || editingId) return;
+    const mode = composeMode;
+    if (mode === "single") return;
+    const title = collectionTitle.trim();
+    if (!title) {
+      setError(mode === "album" ? "album title required" : "series title required");
+      return;
+    }
+    setError("");
+    setOk("");
+    setBusy(true);
+    try {
+      const files = await expandIncomingFiles(fileList);
+      if (!files.length) throw new Error("zip_empty");
+
+      const collectionType: CollectionType = mode === "album" ? "album" : "series";
+      const collectionId = slugifyCollection(title);
+      if (!collectionId) throw new Error("invalid_collection");
+
+      // Album → music preset; series → video/vlog.
+      const batchPreset =
+        mode === "album"
+          ? PRESETS.find((p) => p.id === "music")!
+          : PRESETS.find((p) => p.id === "video")!;
+      applyPreset(batchPreset);
+
+      let published = 0;
+      const ids: string[] = [];
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i]!;
+        setUploadProgress(`batch ${i + 1}/${files.length} · ${file.name}`);
+        const headBytes = await file
+          .slice(0, Math.min(file.size, 256 * 1024))
+          .arrayBuffer();
+        // Skip non-media quietly when MIME fails (cover art in ZIP is OK as still).
+        let role: "media" | "poster" = "media";
+        try {
+          validateUploadFile(file, "media", headBytes);
+        } catch {
+          try {
+            validateUploadFile(file, "poster", headBytes);
+            role = "poster";
+          } catch {
+            continue;
+          }
+        }
+        // Cover art alone does not create a catalog row in batch — skip posters.
+        if (role === "poster") continue;
+
+        const metaPromise = extractUploadMeta(file);
+        const url = await uploadFile(file, "media");
+        const meta = await metaPromise.catch(
+          () => ({} as Awaited<ReturnType<typeof extractUploadMeta>>),
+        );
+        const filePreset = presetFromFile(file);
+        const kind =
+          mode === "album"
+            ? filePreset.kind === "still"
+              ? "still"
+              : "audio"
+            : filePreset.kind === "still"
+              ? "still"
+              : filePreset.kind === "audio"
+                ? "audio"
+                : "vlog";
+        // Stills in a batch ZIP are cover art — skip (episodes/tracks are AV).
+        if (kind === "still") continue;
+
+        const index =
+          meta.track && meta.track >= 1
+            ? meta.track
+            : trackIndexFromName(file.name, i + 1);
+        const trackTitle =
+          meta.title?.trim() || titleFromFilename(file.name) || `${title} · ${index}`;
+        const payload = {
+          title: trackTitle.slice(0, 160),
+          subtitle: title,
+          brand: SITE.title,
+          kind,
+          category: (kind === "audio" ? "audio" : "vlog") as CategoryId,
+          subcategory: (kind === "audio" ? "music" : "season") as SubcategoryId,
+          platform: "house",
+          externalUrl: url,
+          src: url,
+          duration: meta.duration || undefined,
+          blurb: `${title} · ${index}`,
+          paywalled: true,
+          tags: [collectionType, collectionId],
+          collection: {
+            type: collectionType,
+            id: collectionId,
+            title,
+            index,
+          },
+        };
+        setUploadProgress(`publish ${i + 1}/${files.length} · ${trackTitle}`);
+        const res = await fetch("/api/admin/content", {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = (await res.json().catch(() => ({}))) as {
+          error?: string;
+          item?: UploadedContent;
+        };
+        if (!res.ok || !data.item) {
+          throw new Error(data.error ?? "publish_failed");
+        }
+        ids.push(data.item.id);
+        published += 1;
+      }
+      if (!published) throw new Error("zip_empty");
+      setOk(
+        `${collectionType} “${title}” · ${published} piece${published === 1 ? "" : "s"} published`,
+      );
+      setCollectionTitle("");
+      setForm(emptyForm());
+      formRef.current = emptyForm();
+      setDirty(false);
+      await refresh();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "batch_failed";
+      setError(
+        msg.startsWith("zip_")
+          ? zipErrorMessage(msg)
+          : uploadErrorMessage(msg, "media"),
+      );
+    } finally {
+      setUploadProgress("");
+      setBusy(false);
+    }
+  };
+
   const onPickFile = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+    const files = event.target.files;
     event.target.value = "";
+    if (!files?.length) return;
+    if (composeMode !== "single") {
+      void ingestBatch(files);
+      return;
+    }
+    const file = files[0];
     if (file) void ingestFile(file);
   };
 
@@ -692,7 +872,13 @@ export function AdminStation() {
     event.preventDefault();
     setDragOver(false);
     if (busy) return;
-    const file = event.dataTransfer.files?.[0];
+    const files = event.dataTransfer.files;
+    if (!files?.length) return;
+    if (composeMode !== "single") {
+      void ingestBatch(files);
+      return;
+    }
+    const file = files[0];
     if (file) void ingestFile(file);
   };
 
@@ -963,13 +1149,63 @@ export function AdminStation() {
                 aria-pressed={preset === p.id}
                 aria-label={p.label}
                 title={p.label}
-                disabled={busy}
-                onClick={() => applyPreset(p)}
+                disabled={busy || composeMode !== "single"}
+                onClick={() => {
+                  setComposeMode("single");
+                  applyPreset(p);
+                }}
               >
                 <p.Icon className="admin__preset-icon" />
               </button>
             ))}
           </div>
+
+          {!editingId ? (
+            <div className="admin__batch-modes" role="group" aria-label="Compose mode">
+              {(
+                [
+                  ["single", "Single"],
+                  ["album", "Album"],
+                  ["series", "Series"],
+                ] as const
+              ).map(([id, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  className={`admin__batch-mode ${composeMode === id ? "is-active" : ""}`}
+                  aria-pressed={composeMode === id}
+                  disabled={busy}
+                  onClick={() => {
+                    setComposeMode(id);
+                    setError("");
+                    setOk("");
+                    if (id === "album") applyPreset(PRESETS.find((p) => p.id === "music")!);
+                    if (id === "series") applyPreset(PRESETS.find((p) => p.id === "video")!);
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          ) : null}
+
+          {composeMode !== "single" && !editingId ? (
+            <label className="admin__collection-title">
+              <span>{composeMode === "album" ? "album title" : "series title"}</span>
+              <input
+                maxLength={120}
+                value={collectionTitle}
+                disabled={busy}
+                onChange={(e) => setCollectionTitle(e.target.value)}
+                placeholder={
+                  composeMode === "album"
+                    ? "e.g. Telling Songs As Content"
+                    : "e.g. season title"
+                }
+                autoComplete="off"
+              />
+            </label>
+          ) : null}
 
           <label
             htmlFor={fileInputId}
@@ -987,11 +1223,31 @@ export function AdminStation() {
               ref={fileRef}
               type="file"
               className="admin__file-hidden"
-              accept={activePreset.accept || mediaAcceptAttribute()}
+              accept={
+                composeMode === "single"
+                  ? activePreset.accept || mediaAcceptAttribute()
+                  : BATCH_ACCEPT
+              }
+              multiple={composeMode !== "single"}
               disabled={busy}
               onChange={onPickFile}
             />
-            {form.src ? (
+            {composeMode !== "single" ? (
+              <>
+                <p className="admin__drop-title">
+                  {busy
+                    ? uploadProgress || "Batch uploading…"
+                    : composeMode === "album"
+                      ? "Drop album tracks or a ZIP"
+                      : "Drop series episodes or a ZIP"}
+                </p>
+                <p className="admin__drop-hint">
+                  multi-select · folder drop · ZIP unpacks in-browser (never on the
+                  Worker) · up to {Math.floor(MAX_MEDIA_BYTES / (1024 * 1024))} MB per
+                  file · publishes each piece in order
+                </p>
+              </>
+            ) : form.src ? (
               <>
                 <p className="admin__drop-title">Ready</p>
                 <p className="admin__drop-sub">{form.src.replace(/^https?:\/\/[^/]+/, "")}</p>
@@ -1023,22 +1279,31 @@ export function AdminStation() {
             )}
           </label>
 
+          {composeMode !== "single" && !editingId ? (
+            <p className="admin__batch-note" role="note">
+              Name the {composeMode}, then drop files or a ZIP. Each track/episode
+              uploads through the existing chunked pipeline and publishes in filename
+              order — no Worker-side unzip.
+            </p>
+          ) : null}
+
           <form
             className="admin__form admin__form--compose"
             onSubmit={submit}
             // House media uses /api/media/… paths — native type=url blocks Save on iOS.
             noValidate
+            hidden={composeMode !== "single" && !editingId}
           >
             <label>
               <span>title</span>
               <input
                 id="admin-title-input"
-                required
+                required={composeMode === "single" || Boolean(editingId)}
                 maxLength={160}
                 value={form.title}
                 onChange={(e) => patchForm({ title: e.target.value })}
                 placeholder="Title"
-                autoFocus={!editingId}
+                autoFocus={!editingId && composeMode === "single"}
                 autoComplete="off"
               />
             </label>

@@ -1,8 +1,5 @@
-# bounce-risk.md
+# bounce-risk — batch album/series
 
-**Agent:** `analytics-bounce`  
-**Verdict:** `PASS` (follow-up)
+**Verdict:** PASS
 
-- Essay play path opens magazine (qtoss vols) instead of dead AV queue
-- Empty VIDEOS/MUSIC/PHOTOS shelves explain wait state
-- Session kick no longer silent replace
+Stream collection shelves give members an album/series entry point (reduces “flat dump” bounce). Admin batch progress text reduces failed multi-file publishes.
