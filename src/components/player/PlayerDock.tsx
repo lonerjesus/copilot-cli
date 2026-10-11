@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { usePlayer } from "@/components/player/PlayerContext";
+import { BrandMark } from "@/components/BrandMark";
+import { useHouseMediaSrc } from "@/components/HouseMediaImage";
 import { kindGlyph } from "@/lib/format";
 import { track } from "@/lib/analytics";
 import { ContentPayActions } from "@/components/ContentPayActions";
@@ -193,10 +195,73 @@ function isTrulyEnded(node: HTMLMediaElement): boolean {
   return false;
 }
 
+/**
+ * Album art when present (credentialed house poster or remote URL);
+ * otherwise the Kamau Negasi logo — never the empty orb while music plays.
+ */
+function DeckArt({
+  poster,
+  title,
+  playing,
+  mini = false,
+  bars = 12,
+}: {
+  poster?: string;
+  title?: string;
+  playing?: boolean;
+  mini?: boolean;
+  bars?: number;
+}) {
+  const { displaySrc, failed, loading } = useHouseMediaSrc(poster);
+  const [imgBroken, setImgBroken] = useState(false);
+  const showArt = Boolean(displaySrc) && !failed && !imgBroken;
+
+  useEffect(() => {
+    setImgBroken(false);
+  }, [poster, displaySrc]);
+
+  return (
+    <div
+      className={`deck__visual ${mini ? "deck__visual--mini" : ""} ${playing ? "is-playing" : ""}`}
+      aria-hidden
+    >
+      <div className={`deck__art ${showArt ? "deck__art--photo" : "deck__art--logo"}`}>
+        {showArt ? (
+          // eslint-disable-next-line @next/next/no-img-element -- house blob / remote poster
+          <img
+            className="deck__art-img"
+            src={displaySrc!}
+            alt=""
+            decoding="async"
+            onError={() => setImgBroken(true)}
+          />
+        ) : (
+          <BrandMark
+            tone="phosphor"
+            size={mini ? 72 : 112}
+            decorative
+            priority={!loading}
+            className="deck__art-logo"
+          />
+        )}
+      </div>
+      {bars > 0 ? (
+        <div className="deck__bars">
+          {Array.from({ length: bars }).map((_, i) => (
+            <span key={i} style={{ animationDelay: `${i * 0.08}s` }} />
+          ))}
+        </div>
+      ) : null}
+      {title ? <span className="sr-only">{title}</span> : null}
+    </div>
+  );
+}
+
 function NativeMedia({
   kind,
   src,
   title,
+  poster,
   playing,
   seekTo,
   resumePercent,
@@ -208,6 +273,7 @@ function NativeMedia({
   kind: "audio" | "video";
   src: string;
   title: string;
+  poster?: string;
   playing: boolean;
   /** User scrub only — null while timeupdate drives the bar. */
   seekTo: number | null;
@@ -360,11 +426,10 @@ function NativeMedia({
   if (!armed || !playSrc || mode === "loading" || mode === "idle") {
     return (
       <div
-        className="deck__visual deck__visual--loading"
         aria-busy={mode === "loading"}
         aria-label={mode === "loading" ? "Loading media" : "Press play to load media"}
       >
-        <div className="deck__orb" />
+        <DeckArt poster={poster} title={title} playing={false} mini bars={0} />
       </div>
     );
   }
@@ -375,6 +440,7 @@ function NativeMedia({
         ref={videoRef}
         className="deck__frame deck__frame--native"
         src={playSrc}
+        poster={poster}
         controls
         playsInline
         preload="metadata"
@@ -406,14 +472,7 @@ function NativeMedia({
         onError={recoverStall}
         onEnded={handleEnded}
       />
-      <div className={`deck__visual deck__visual--mini ${playing ? "is-playing" : ""}`} aria-hidden>
-        <div className="deck__orb" />
-        <div className="deck__bars">
-          {Array.from({ length: 12 }).map((_, i) => (
-            <span key={i} style={{ animationDelay: `${i * 0.08}s` }} />
-          ))}
-        </div>
-      </div>
+      <DeckArt poster={poster} title={title} playing={playing} mini />
     </div>
   );
 }
@@ -486,6 +545,7 @@ function EmbedStage({
         kind={kind}
         src={src}
         title={title}
+        poster={poster}
         playing={playing}
         seekTo={seekTo}
         resumePercent={resumePercent}
@@ -501,7 +561,7 @@ function EmbedStage({
   if (kind === "writing" || kind === "essay" || kind === "still") {
     return (
       <div className="deck__visual deck__visual--blocked" aria-hidden>
-        <div className="deck__orb" />
+        <BrandMark tone="phosphor" size={72} decorative className="deck__art-logo" />
         <p className="deck__blocked">audio / video only</p>
       </div>
     );
@@ -616,16 +676,7 @@ function EmbedStage({
     );
   }
 
-  return (
-    <div className={`deck__visual ${playing ? "is-playing" : ""}`} aria-hidden>
-      <div className="deck__orb" />
-      <div className="deck__bars">
-        {Array.from({ length: 16 }).map((_, i) => (
-          <span key={i} style={{ animationDelay: `${i * 0.08}s` }} />
-        ))}
-      </div>
-    </div>
-  );
+  return <DeckArt poster={poster} title={title} playing={playing} bars={16} />;
 }
 
 function RemoteMeta({ url, localTitle }: { url: string; localTitle: string }) {
@@ -799,9 +850,7 @@ export function PlayerDock() {
             }}
           />
         ) : (
-          <div className="deck__visual" aria-hidden>
-            <div className="deck__orb" />
-          </div>
+          <DeckArt playing={false} bars={0} />
         )}
         <div className="deck__copy">
           {current ? (

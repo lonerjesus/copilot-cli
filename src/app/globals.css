@@ -3321,7 +3321,70 @@ a.drive .drive__face {
 
 .deck__visual--mini {
   aspect-ratio: 16 / 6;
-  min-height: 72px;
+  min-height: 88px;
+}
+
+.deck__art {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: min(42%, 148px);
+  aspect-ratio: 1;
+  border-radius: 4px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 30% 25%, color-mix(in oklab, var(--phosphor) 28%, transparent), transparent 62%),
+    color-mix(in oklab, var(--void) 72%, #0c100c);
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--phosphor-dim) 55%, transparent);
+}
+
+.deck__visual--mini .deck__art {
+  width: min(28%, 96px);
+}
+
+.deck__art--photo {
+  width: min(52%, 180px);
+}
+
+.deck__visual--mini .deck__art--photo {
+  width: min(34%, 112px);
+}
+
+.deck__art-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.deck__art-logo {
+  opacity: 0.92;
+  filter: drop-shadow(0 0 12px color-mix(in oklab, var(--phosphor) 35%, transparent));
+}
+
+.deck__visual.is-playing .deck__art--logo .deck__art-logo,
+.deck__visual.is-playing .deck__art--photo {
+  animation: deck-art-pulse 2.8s ease-in-out infinite;
+}
+
+@keyframes deck-art-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 10px color-mix(in oklab, var(--phosphor) 28%, transparent));
+  }
+  50% {
+    transform: scale(1.03);
+    filter: drop-shadow(0 0 18px color-mix(in oklab, var(--phosphor) 48%, transparent));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .deck__visual.is-playing .deck__art--logo .deck__art-logo,
+  .deck__visual.is-playing .deck__art--photo {
+    animation: none;
+  }
 }
 
 .deck--theater.deck--open .deck__stage {
