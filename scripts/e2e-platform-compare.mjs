@@ -176,13 +176,22 @@ if (page.url().includes("/access") || (await page.locator(".access__form").count
 }
 const ageEnter = page.getByRole("button", { name: /^enter$/i });
 if (await ageEnter.count()) await ageEnter.first().click().catch(() => {});
-await page.evaluate(() => {
-  document.querySelector("button.boot__skip")?.click();
-});
-await page.waitForFunction(() => !document.querySelector(".boot"), null, { timeout: 20000 }).catch(() => {
-  document.querySelectorAll?.(".boot");
-});
+// Skip boot via React (do not yank DOM — that remounts BootSequence).
+await page.locator("button.boot__skip").click({ timeout: 8000 }).catch(() => {});
+await page
+  .waitForFunction(() => !document.querySelector(".boot"), null, { timeout: 12000 })
+  .catch(() => undefined);
 await page.waitForSelector(".deck", { timeout: 30000 });
+await page
+  .waitForFunction(
+    () => {
+      const btn = document.querySelector("button.deck__autoplay");
+      return btn && btn.getAttribute("aria-pressed") === "false";
+    },
+    null,
+    { timeout: 8000 },
+  )
+  .catch(() => undefined);
 
 const y0 = (await page.locator(".deck").boundingBox())?.y;
 await page.evaluate(() => window.scrollBy(0, 1200));
@@ -207,6 +216,24 @@ ok("spotify-volume", (await page.locator("label.deck__volume input").count()) ==
 ok("spotify-mute", (await page.locator("button.deck__mute").count()) === 1);
 
 if (audioId) {
+  await page.locator('button[aria-label="stream"]').click({ force: true }).catch(() => {});
+  // Wait until live catalog has the published audio (CONTINUE matches house ids).
+  await page
+    .waitForFunction(
+      async (id) => {
+        try {
+          const res = await fetch("/api/catalog", { credentials: "same-origin" });
+          if (!res.ok) return false;
+          const data = await res.json();
+          return Array.isArray(data.items) && data.items.some((it) => it.id === id);
+        } catch {
+          return false;
+        }
+      },
+      audioId,
+      { timeout: 15000 },
+    )
+    .catch(() => undefined);
   await page.evaluate((id) => {
     localStorage.setItem(
       "kn.player.resume.v1",
@@ -222,8 +249,10 @@ if (audioId) {
     );
     window.dispatchEvent(new Event("kn-resume"));
   }, audioId);
-  await page.locator('button[aria-label="stream"]').click().catch(() => {});
-  await page.waitForTimeout(500);
+  await page.waitForTimeout(600);
+  // Nudge StreamDeck remount of continues via hash/stream focus.
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await page.waitForSelector('[data-kn-continue="1"]', { timeout: 8000 }).catch(() => null);
   ok(
     "netflix-continue-rail",
     (await page.locator('[data-kn-continue="1"]').count()) > 0,

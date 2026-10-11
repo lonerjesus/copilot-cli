@@ -8,6 +8,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
   type ReactNode,
 } from "react";
 import { getQueue, isPlayableMedia, playableCatalog, type CatalogItem } from "@/data/catalog";
@@ -16,8 +17,23 @@ const AUTOPLAY_KEY = "kn.player.autoplay";
 const VOLUME_KEY = "kn.player.volume";
 const MUTED_KEY = "kn.player.muted";
 
+type PrefListener = () => void;
+const prefListeners = new Set<PrefListener>();
+
+function subscribePrefs(onStoreChange: PrefListener) {
+  prefListeners.add(onStoreChange);
+  window.addEventListener("storage", onStoreChange);
+  return () => {
+    prefListeners.delete(onStoreChange);
+    window.removeEventListener("storage", onStoreChange);
+  };
+}
+
+function emitPrefs() {
+  for (const listener of prefListeners) listener();
+}
+
 function readAutoplayPref(): boolean {
-  if (typeof window === "undefined") return true;
   try {
     const raw = window.localStorage.getItem(AUTOPLAY_KEY);
     if (raw === null) return true;
@@ -30,13 +46,13 @@ function readAutoplayPref(): boolean {
 function writeAutoplayPref(value: boolean) {
   try {
     window.localStorage.setItem(AUTOPLAY_KEY, value ? "1" : "0");
+    emitPrefs();
   } catch {
     /* private mode */
   }
 }
 
 function readVolumePref(): number {
-  if (typeof window === "undefined") return 1;
   try {
     const raw = window.localStorage.getItem(VOLUME_KEY);
     if (raw === null) return 1;
@@ -51,13 +67,13 @@ function readVolumePref(): number {
 function writeVolumePref(value: number) {
   try {
     window.localStorage.setItem(VOLUME_KEY, String(Math.max(0, Math.min(1, value))));
+    emitPrefs();
   } catch {
     /* private mode */
   }
 }
 
 function readMutedPref(): boolean {
-  if (typeof window === "undefined") return false;
   try {
     return window.localStorage.getItem(MUTED_KEY) === "1";
   } catch {
@@ -68,6 +84,7 @@ function readMutedPref(): boolean {
 function writeMutedPref(value: boolean) {
   try {
     window.localStorage.setItem(MUTED_KEY, value ? "1" : "0");
+    emitPrefs();
   } catch {
     /* private mode */
   }
@@ -123,9 +140,9 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [index, setIndex] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [expanded, setExpanded] = useState(false);
-  const [autoplay, setAutoplayState] = useState(() => readAutoplayPref());
-  const [volume, setVolumeState] = useState(() => readVolumePref());
-  const [muted, setMutedState] = useState(() => readMutedPref());
+  const autoplay = useSyncExternalStore(subscribePrefs, readAutoplayPref, () => true);
+  const volume = useSyncExternalStore(subscribePrefs, readVolumePref, () => 1);
+  const muted = useSyncExternalStore(subscribePrefs, readMutedPref, () => false);
   const [progress, setProgress] = useState(0);
   const timer = useRef<number | null>(null);
   const playingRef = useRef(playing);
@@ -140,31 +157,21 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   }, [autoplay]);
 
   const setAutoplay = useCallback((value: boolean) => {
-    setAutoplayState(value);
     writeAutoplayPref(value);
   }, []);
 
   const setVolume = useCallback((value: number) => {
     const next = Math.max(0, Math.min(1, value));
-    setVolumeState(next);
     writeVolumePref(next);
-    if (next > 0) {
-      setMutedState(false);
-      writeMutedPref(false);
-    }
+    if (next > 0) writeMutedPref(false);
   }, []);
 
   const setMuted = useCallback((value: boolean) => {
-    setMutedState(value);
     writeMutedPref(value);
   }, []);
 
   const toggleMute = useCallback(() => {
-    setMutedState((m) => {
-      const next = !m;
-      writeMutedPref(next);
-      return next;
-    });
+    writeMutedPref(!readMutedPref());
   }, []);
 
   const current = queue[index] && isPlayableMedia(queue[index]!) ? queue[index]! : null;
