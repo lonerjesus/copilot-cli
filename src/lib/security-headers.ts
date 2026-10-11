@@ -7,6 +7,12 @@
  * remain platform-owned and are separate from this list.
  */
 
+/** Dev-only: React Refresh needs eval. Production CSP stays tight (no unsafe-eval). */
+const SCRIPT_SRC =
+  process.env.NODE_ENV === "development"
+    ? "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://static.cloudflareinsights.com"
+    : "script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com";
+
 const BASE_HEADERS: Record<string, string> = {
   "X-Content-Type-Options": "nosniff",
   "X-Frame-Options": "DENY",
@@ -26,7 +32,7 @@ const BASE_HEADERS: Record<string, string> = {
     "img-src 'self' data: blob: https:",
     "font-src 'self' data: https://fonts.gstatic.com",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-    "script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com",
+    SCRIPT_SRC,
     "connect-src 'self' https://tellingshowoflove.substack.com https://vimeo.com https://www.youtube.com https://bandcamp.com https://soundcloud.com https://api.stripe.com https://checkout.stripe.com https://cloudflareinsights.com https://fonts.googleapis.com https://fonts.gstatic.com",
     "frame-src 'self' https://player.twitch.tv https://www.twitch.tv https://player.vimeo.com https://www.youtube.com https://bandcamp.com https://w.soundcloud.com https://checkout.stripe.com https://js.stripe.com",
     "media-src 'self' blob: https:",

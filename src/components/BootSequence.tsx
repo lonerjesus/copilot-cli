@@ -22,7 +22,11 @@ export function BootSequence({ onDone }: { onDone: () => void }) {
   const finish = useCallback((via: "auto" | "skip") => {
     if (finishedRef.current) return;
     finishedRef.current = true;
-    track("boot_complete", { via });
+    try {
+      track("boot_complete", { via });
+    } catch {
+      /* analytics must never block boot dismiss */
+    }
     doneRef.current();
   }, []);
 

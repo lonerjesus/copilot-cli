@@ -3,6 +3,11 @@ import type { CategoryId, SubcategoryId } from "@/data/taxonomy";
 import { getSubcategory, normalizeSubcategoryId } from "@/data/taxonomy";
 import { SITE } from "@/data/identity";
 import { AuthStoreUnavailableError } from "@/lib/auth/store";
+import {
+  mergeCollectionTags,
+  validateCollection,
+  type CatalogCollection,
+} from "@/lib/collection";
 import { normalizeMediaRef } from "@/lib/media-ref";
 import { normalizeTitle } from "@/lib/title-normalize";
 
@@ -209,6 +214,7 @@ export type CreateContentInput = {
   body?: string;
   paywalled?: boolean;
   embed?: CatalogItem["embed"];
+  collection?: CatalogCollection;
 };
 
 export function validateCreateInput(raw: unknown): CreateContentInput {
@@ -268,9 +274,12 @@ export function validateCreateInput(raw: unknown): CreateContentInput {
   const body = o.body ? String(o.body).slice(0, 50_000) : undefined;
   const src = srcRaw ? assertMediaRef(srcRaw, "invalid_src") : undefined;
 
-  const tags = Array.isArray(o.tags)
-    ? o.tags.map((t) => String(t).trim()).filter(Boolean).slice(0, 12)
+  const tagsRaw = Array.isArray(o.tags)
+    ? o.tags.map((t) => String(t).trim()).filter(Boolean)
     : [];
+  const collection =
+    o.collection !== undefined ? validateCollection(o.collection) : undefined;
+  const tags = mergeCollectionTags(tagsRaw, collection);
 
   const EMBED_PROVIDERS = [
     "youtube",
@@ -319,6 +328,7 @@ export function validateCreateInput(raw: unknown): CreateContentInput {
     body,
     paywalled: o.paywalled !== false,
     embed,
+    collection,
   };
 }
 
@@ -369,6 +379,7 @@ export async function createUpload(
       tags: input.tags?.length ? input.tags : [input.kind, input.brand],
       blurb: input.blurb,
       body: input.body,
+      collection: input.collection,
       uploadedAt: new Date().toISOString(),
       uploadedBy,
     };
@@ -419,6 +430,8 @@ export async function updateUpload(
       body: patch.body !== undefined ? patch.body : current.body,
       paywalled: patch.paywalled !== undefined ? patch.paywalled : current.paywalled,
       embed: patch.embed !== undefined ? patch.embed : current.embed,
+      collection:
+        patch.collection !== undefined ? patch.collection : current.collection,
     };
 
     const validated = validateCreateInput(mergedRaw);
@@ -440,6 +453,7 @@ export async function updateUpload(
       body: validated.body,
       paywalled: validated.paywalled !== false,
       embed: validated.embed,
+      collection: validated.collection,
     };
 
     items[idx] = next;

@@ -1,7 +1,5 @@
-# ux
+# ux-checklist — stack
 
-- Sticky Save lifts with software keyboard (visualViewport inset).
-- Tabs scroll horizontally on narrow widths; library actions full-width ≤480px.
-- Landscape short-height: shorter drop zones + action bar.
-- Dirty leave warning only when fields changed.
-PASS
+**Verdict:** PASS
+
+Brand-first hero preserved. CONTINUE + collection rails one-job shelves. Dock volume/mute terminal chrome. Album/Series compose modes.

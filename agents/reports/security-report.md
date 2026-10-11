@@ -1,6 +1,5 @@
-# security
+# security-report — stack
 
-- Media refs still reject `..` / `\` before house-path accept.
-- Server `validateCreateInput` normalizes then asserts `/api/media/house/` or `https:`.
-- No new deps, no XSS sinks, credentials unchanged.
-PASS
+**Verdict:** PASS
+
+No new deps. ZIP browser-only. Resume/volume prefs localStorage. Media Session metadata from existing posters. Collection type enum fail-closed.

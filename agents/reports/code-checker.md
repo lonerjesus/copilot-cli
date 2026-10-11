@@ -1,6 +1,5 @@
-# code-checker
+# code-checker — stack
 
-- Stale-closure save bug fixed via refs.
-- `normalizeMediaRef` extracted to `src/lib/media-ref.ts` (client + store share one path).
-- No `setForm({ ...form })` left on controlled inputs.
-PASS
+**Verdict:** PASS
+
+PlayerContext carries volume prefs + enterStream/seedQueue. StreamDeck: CONTINUE then collections then kind shelves. qa:hero-play · qa:collection-zip · qa:playback-memory · qa:batch-collection.

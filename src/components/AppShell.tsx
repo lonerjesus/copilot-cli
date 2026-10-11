@@ -48,8 +48,11 @@ function ShellInner() {
     queue,
     playing,
     setExpanded,
+    toggle,
     playItem,
     enterStream,
+    next,
+    prev,
   } = usePlayerState();
   const {
     writingItem,
@@ -60,7 +63,7 @@ function ShellInner() {
   } = useReader();
   const { user, logout, refresh } = useAuth();
 
-  /** Landing ▶ — load latest house AV; never toggle an empty queue. */
+  /** Landing ▶ — latest house AV, force play; never empty-queue toggle. */
   const onHeroPlay = useCallback(async () => {
     setExpanded(true);
     if (current) {
@@ -86,6 +89,43 @@ function ShellInner() {
       void refresh();
     }
   }, [refresh]);
+
+  // Spotify-class transport keys — Space play/pause; Shift+←/→ prev/next.
+  useEffect(() => {
+    if (!ageOk) return;
+    const typing = (el: EventTarget | null) => {
+      if (!(el instanceof HTMLElement)) return false;
+      const tag = el.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return true;
+      if (el.isContentEditable) return true;
+      return Boolean(el.closest('input, textarea, select, [contenteditable="true"]'));
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if (typing(event.target)) return;
+      if (writingItem || gallery) return;
+      if (event.key === " " || event.code === "Space") {
+        event.preventDefault();
+        if (!current) {
+          void onHeroPlay();
+          return;
+        }
+        if (!playing) setExpanded(true);
+        toggle();
+        return;
+      }
+      if (event.shiftKey && event.key === "ArrowRight") {
+        event.preventDefault();
+        next();
+        return;
+      }
+      if (event.shiftKey && event.key === "ArrowLeft") {
+        event.preventDefault();
+        prev();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [ageOk, writingItem, gallery, playing, current, toggle, next, prev, setExpanded, onHeroPlay]);
 
   useEffect(() => {
     const applyHash = () => {

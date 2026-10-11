@@ -2,6 +2,14 @@ import type { CategoryId, SubcategoryId } from "@/data/taxonomy";
 
 export type MediaKind = "video" | "audio" | "vlog" | "writing" | "still" | "live";
 
+/** Album or series membership — one catalog row per track / episode. */
+export type CatalogCollection = {
+  type: "album" | "series";
+  id: string;
+  title: string;
+  index?: number;
+};
+
 /** Accept legacy `essay` from stored uploads. */
 export function normalizeMediaKind(kind: string): MediaKind {
   if (kind === "essay") return "writing";
@@ -33,6 +41,8 @@ export type CatalogItem = {
   blurb: string;
   /** Long-form house writing / notes (admin compose). */
   body?: string;
+  /** Album or series membership (one item per track/episode). */
+  collection?: CatalogCollection;
 };
 
 /** House stills — open in the Photos-style gallery, not the AV player. */
@@ -72,6 +82,7 @@ export function isPaywalled(item: CatalogItem): boolean {
   return false;
 }
 
+/** Kinds the dock player will load — writings/stills never belong here. */
 export const PLAYABLE_KINDS: ReadonlySet<MediaKind> = new Set([
   "audio",
   "video",
@@ -79,8 +90,21 @@ export const PLAYABLE_KINDS: ReadonlySet<MediaKind> = new Set([
   "live",
 ]);
 
-export function isPlayableMedia(item: CatalogItem): boolean {
-  return PLAYABLE_KINDS.has(item.kind);
+/**
+ * Map a catalog kind to the native player lane.
+ * `vlog` / `live` play as video; writings/stills return null.
+ */
+export function playerAvKind(
+  kind: string | undefined | null,
+): "audio" | "video" | null {
+  const k = normalizeMediaKind(kind || "");
+  if (k === "audio") return "audio";
+  if (k === "video" || k === "vlog" || k === "live") return "video";
+  return null;
+}
+
+export function isPlayableMedia(item: Pick<CatalogItem, "kind">): boolean {
+  return playerAvKind(item.kind) != null;
 }
 
 export function playableCatalog(items: CatalogItem[]): CatalogItem[] {

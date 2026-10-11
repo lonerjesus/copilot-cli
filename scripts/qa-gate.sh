@@ -34,6 +34,9 @@ run "qa:player-queue" npm run qa:player-queue
 run "qa:playable-house" npm run qa:playable-house
 run "qa:large-av" npm run qa:large-av
 run "qa:av" npm run qa:av
+run "qa:player-av" npm run qa:player-av
+run "qa:playback-memory" npm run qa:playback-memory
+run "qa:collection-zip" npm run qa:collection-zip
 run "qa:media-ref" npm run qa:media-ref
 run "qa:media-meta" npm run qa:media-meta
 run "qa:smoke" bash scripts/qa-smoke.sh "$BASE"

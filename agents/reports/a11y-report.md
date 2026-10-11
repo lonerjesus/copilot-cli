@@ -1,6 +1,5 @@
-# a11y
+# a11y-report — stack
 
-- Sticky actions remain reachable above keyboard/safe-area.
-- Tab min-height 2.75rem on small phones; focus styles unchanged (phosphor outline).
-- Status/alert roles preserved on compose messages.
-PASS
+**Verdict:** PASS
+
+Space / Shift+arrows ignore typing + reader/gallery. Mute aria-pressed. Collection/CONTINUE shelves use ShelfTrack keyboard scroll. Batch mode aria-pressed chips.

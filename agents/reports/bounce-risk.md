@@ -1,8 +1,5 @@
-# bounce-risk.md
+# bounce-risk — stack
 
-**Agent:** `analytics-bounce`  
-**Verdict:** `PASS` (follow-up)
+**Verdict:** PASS
 
-- Essay play path opens magazine (qtoss vols) instead of dead AV queue
-- Empty VIDEOS/MUSIC/PHOTOS shelves explain wait state
-- Session kick no longer silent replace
+Landing ▶ starts AV · CONTINUE rail · collection shelves · writing share/related · batch album publish path.
