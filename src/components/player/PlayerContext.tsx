@@ -11,6 +11,7 @@ import {
   type ReactNode,
 } from "react";
 import { getQueue, isPlayableMedia, playableCatalog, type CatalogItem } from "@/data/catalog";
+import { queueItemNext } from "@/components/player/queue";
 
 const AUTOPLAY_KEY = "kn.player.autoplay";
 
@@ -140,14 +141,11 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
   const queueNext = useCallback((item: CatalogItem) => {
     if (!isPlayableMedia(item)) return;
-    setQueue((q) => {
-      const playable = playableCatalog(q);
-      const without = playable.filter((entry) => entry.id !== item.id);
-      const at = Math.min(index + 1, without.length);
-      return [...without.slice(0, at), item, ...without.slice(at)];
-    });
+    const result = queueItemNext(playableCatalog(queue), index, item);
+    setQueue(result.queue);
+    setIndex(result.currentIndex);
     setExpanded(true);
-  }, [index]);
+  }, [queue, index]);
 
   const toggle = useCallback(() => setPlaying((p) => !p), []);
   const pause = useCallback(() => setPlaying(false), []);
