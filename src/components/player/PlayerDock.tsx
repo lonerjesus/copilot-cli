@@ -932,11 +932,17 @@ export function PlayerDock() {
             onClick={() => {
               if (!expanded) setExpanded(true);
               if (current) {
-                if (!playing) track("play", { id: current.id, via: "dock" });
+                // Force play when paused — never toggle-pause from the main dock CTA
+                // when the user is recovering from an idle/NO SIGNAL state.
+                if (!playing) {
+                  track("play", { id: current.id, via: "dock" });
+                  playItem(current, undefined, { forcePlay: true });
+                  return;
+                }
                 toggle();
                 return;
               }
-              // Idle DECK — load first house AV instead of toggling nothing.
+              // Idle DECK — load latest house AV (newest-first) instead of toggling nothing.
               track("enter_stream", { via: "dock" });
               void fetchPlayableHouse()
                 .then((items) => {

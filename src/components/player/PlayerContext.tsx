@@ -195,6 +195,11 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     [queue, index],
   );
 
+  // Never show Pause + "NO SIGNAL" — empty/non-AV slots cannot be "playing".
+  useEffect(() => {
+    if (!current && playing) setPlaying(false);
+  }, [current, playing]);
+
   const clearTimer = () => {
     if (timer.current) {
       window.clearInterval(timer.current);
@@ -236,6 +241,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
   const enterStream = useCallback(
     (items: CatalogItem[], opts?: { forcePlay?: boolean }) => {
+      // Caller should pass newest-first (fetchPlayableHouse); re-filter only.
       const q = playableCatalog(items);
       const first = q[0];
       if (!first) return false;
@@ -255,6 +261,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     setQueue((prev) => {
       // Do not clobber an active / already-selected queue.
       if (prev.some((entry) => isPlayableMedia(entry))) return prev;
+      // Soft seed keeps caller order (StreamDeck should pass newest-first).
       return q;
     });
   }, []);

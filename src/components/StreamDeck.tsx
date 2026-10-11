@@ -182,9 +182,13 @@ export function StreamDeck({ compact = false }: { compact?: boolean }) {
     };
   }, [house, current?.id]);
 
-  // Soft-fill empty player queue once live catalog arrives (landing idle had no seed AV).
+  // Soft-fill empty player queue once live catalog arrives (newest → older).
   useEffect(() => {
-    seedQueue(house);
+    if (!house.length) return;
+    const newestFirst = [...house].sort(
+      (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime(),
+    );
+    seedQueue(newestFirst);
   }, [house, seedQueue]);
 
   const shelves = useMemo(
