@@ -89,17 +89,28 @@ if (page.url().includes("/access")) {
   await page.waitForURL((u) => !u.pathname.includes("/access"), { timeout: 20000 }).catch(() => {});
 }
 const bootSkip = page.locator("button.boot__skip");
-if ((await bootSkip.count()) > 0) {
-  await bootSkip.click({ force: true, timeout: 8000 }).catch(() => {});
+for (let i = 0; i < 3; i++) {
+  if ((await page.locator(".boot").count()) === 0) break;
+  if ((await bootSkip.count()) > 0) {
+    await bootSkip.click({ force: true, timeout: 3000 }).catch(() => {});
+  }
+  await page.waitForTimeout(400);
 }
 await page
-  .waitForFunction(() => !document.querySelector(".boot"), null, { timeout: 15000 })
+  .waitForFunction(() => !document.querySelector(".boot"), null, { timeout: 20000 })
   .catch(() => {});
 await page.waitForSelector("button.hero__play", { timeout: 20000 });
-await page.waitForTimeout(600);
+await page.waitForTimeout(800);
 
 await page.locator("button.hero__play").click({ force: true });
-await page.waitForTimeout(800);
+// enterStream is async (catalog fetch) — wait for signal
+await page
+  .waitForFunction(() => {
+    const label = document.querySelector(".deck__label")?.textContent?.trim() || "";
+    return label.length > 0 && label !== "NO SIGNAL" && label !== "—";
+  }, null, { timeout: 12000 })
+  .catch(() => {});
+await page.waitForTimeout(400);
 
 const deckOpen = (await page.locator(".deck--open").count()) > 0;
 ok("hero-expands-deck", deckOpen);
