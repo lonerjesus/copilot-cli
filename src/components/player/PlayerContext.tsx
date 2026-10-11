@@ -43,7 +43,21 @@ type PlayerStateValue = {
   autoplay: boolean;
   /** Items after the current index — Spotify-style Up Next. */
   upNext: CatalogItem[];
-  playItem: (item: CatalogItem, queue?: CatalogItem[]) => void;
+  playItem: (
+    item: CatalogItem,
+    queue?: CatalogItem[],
+    opts?: { forcePlay?: boolean },
+  ) => void;
+  /**
+   * Start the first playable item in `items` (landing Play / idle dock).
+   * Returns false when the catalog has no AV yet.
+   */
+  enterStream: (
+    items: CatalogItem[],
+    opts?: { forcePlay?: boolean },
+  ) => boolean;
+  /** Soft-fill an empty queue from live catalog without starting playback. */
+  seedQueue: (items: CatalogItem[]) => void;
   /** Insert after current without interrupting playback (Play Next). */
   queueNext: (item: CatalogItem) => void;
   toggle: () => void;
@@ -125,18 +139,47 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     setPlaying(keepPlaying);
   }, [queue]);
 
-  const playItem = useCallback((item: CatalogItem, nextQueue?: CatalogItem[]) => {
-    if (!isPlayableMedia(item)) return;
-    const raw = nextQueue ?? queue;
-    const q = playableCatalog(raw);
-    const withItem = q.some((entry) => entry.id === item.id) ? q : [item, ...q];
-    const found = withItem.findIndex((entry) => entry.id === item.id);
-    setQueue(withItem);
-    setIndex(found >= 0 ? found : 0);
-    setProgress(0);
-    setPlaying(autoplayRef.current);
-    setExpanded(true);
-  }, [queue]);
+  const playItem = useCallback(
+    (item: CatalogItem, nextQueue?: CatalogItem[], opts?: { forcePlay?: boolean }) => {
+      if (!isPlayableMedia(item)) return;
+      const raw = nextQueue ?? queue;
+      const q = playableCatalog(raw);
+      const withItem = q.some((entry) => entry.id === item.id) ? q : [item, ...q];
+      const found = withItem.findIndex((entry) => entry.id === item.id);
+      setQueue(withItem);
+      setIndex(found >= 0 ? found : 0);
+      setProgress(0);
+      // Explicit CTAs (hero / idle dock) force play even when autoplay pref is "tap".
+      setPlaying(opts?.forcePlay ? true : autoplayRef.current);
+      setExpanded(true);
+    },
+    [queue],
+  );
+
+  const enterStream = useCallback(
+    (items: CatalogItem[], opts?: { forcePlay?: boolean }) => {
+      const q = playableCatalog(items);
+      const first = q[0];
+      if (!first) return false;
+      setQueue(q);
+      setIndex(0);
+      setProgress(0);
+      setPlaying(opts?.forcePlay ? true : autoplayRef.current);
+      setExpanded(true);
+      return true;
+    },
+    [],
+  );
+
+  const seedQueue = useCallback((items: CatalogItem[]) => {
+    const q = playableCatalog(items);
+    if (!q.length) return;
+    setQueue((prev) => {
+      // Do not clobber an active / already-selected queue.
+      if (prev.some((entry) => isPlayableMedia(entry))) return prev;
+      return q;
+    });
+  }, []);
 
   const queueNext = useCallback((item: CatalogItem) => {
     if (!isPlayableMedia(item)) return;
@@ -191,6 +234,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       autoplay,
       upNext,
       playItem,
+      enterStream,
+      seedQueue,
       queueNext,
       toggle,
       pause,
@@ -208,6 +253,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       autoplay,
       upNext,
       playItem,
+      enterStream,
+      seedQueue,
       queueNext,
       toggle,
       pause,

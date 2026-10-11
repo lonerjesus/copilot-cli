@@ -9,6 +9,7 @@ import {
   HOUSE_AV_BLOB_MAX_BYTES,
   isHouseMediaUrl,
 } from "@/lib/media-store";
+import { fetchPlayableHouse } from "@/lib/playable-house";
 
 function youtubeId(raw?: string): string | null {
   if (!raw) return null;
@@ -604,6 +605,7 @@ export function PlayerDock() {
     next,
     prev,
     playItem,
+    enterStream,
     setExpanded,
     setAutoplay,
     setProgress,
@@ -736,9 +738,22 @@ export function PlayerDock() {
             type="button"
             className="deck__play"
             onClick={() => {
-              if (!playing) track("play", { id: current?.id ?? "idle" });
               if (!expanded) setExpanded(true);
-              toggle();
+              if (current) {
+                if (!playing) track("play", { id: current.id, via: "dock" });
+                toggle();
+                return;
+              }
+              // Idle DECK — load first house AV instead of toggling nothing.
+              track("enter_stream", { via: "dock" });
+              void fetchPlayableHouse()
+                .then((items) => {
+                  const started = enterStream(items, { forcePlay: true });
+                  if (started && items[0]) {
+                    track("play", { id: items[0].id, via: "dock" });
+                  }
+                })
+                .catch(() => undefined);
             }}
             aria-label={playing ? "Pause" : "Play"}
           >

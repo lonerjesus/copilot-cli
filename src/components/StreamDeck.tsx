@@ -2,6 +2,7 @@
 
 import {
   useCallback,
+  useEffect,
   useMemo,
   useRef,
   type KeyboardEvent,
@@ -158,9 +159,14 @@ function rowItems(rowId: string, pinnedIds: string[], house: CatalogItem[]): Cat
 }
 
 export function StreamDeck({ compact = false }: { compact?: boolean }) {
-  const { current, playItem, queueNext } = usePlayerState();
+  const { current, playItem, queueNext, seedQueue } = usePlayerState();
   const { openReadable, isReadable } = useReader();
   const { items: house } = useLiveCatalog();
+
+  // Soft-fill empty player queue once live catalog arrives (landing idle had no seed AV).
+  useEffect(() => {
+    seedQueue(house);
+  }, [house, seedQueue]);
 
   const shelves = useMemo(
     () =>

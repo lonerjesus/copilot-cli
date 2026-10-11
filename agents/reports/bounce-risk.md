@@ -1,8 +1,5 @@
-# bounce-risk.md
+# bounce-risk — hero play handoff
 
-**Agent:** `analytics-bounce`  
-**Verdict:** `PASS` (follow-up)
+**Verdict:** PASS
 
-- Essay play path opens magazine (qtoss vols) instead of dead AV queue
-- Empty VIDEOS/MUSIC/PHOTOS shelves explain wait state
-- Session kick no longer silent replace
+Landing ▶ no longer dead-ends on idle DECK. First playable house AV starts; refresh/scroll/tile click no longer required.
