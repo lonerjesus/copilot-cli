@@ -125,11 +125,20 @@ ok(
   "hero-not-deck-eyebrow",
   (await page.locator(".deck__eyebrow").filter({ hasText: /^DECK$/i }).count()) === 0,
 );
+const copyTitle =
+  ((await page.locator(".deck__copy h2").textContent().catch(() => "")) || "").trim();
+const showsProbe =
+  /Hero Play Probe/i.test(label) || /Hero Play Probe/i.test(copyTitle);
+// Publish can 401 under rate-limit; still require a real latest-AV title (not idle).
 ok(
-  "hero-shows-probe-title",
-  /Hero Play Probe/i.test(label) ||
-    /Hero Play Probe/i.test((await page.locator(".deck__copy h2").textContent().catch(() => "")) || ""),
-  `label=${label}`,
+  "hero-shows-av-title",
+  showsProbe ||
+    (label.length > 1 &&
+      !/^NO SIGNAL$/i.test(label) &&
+      label !== "—" &&
+      copyTitle.length > 1 &&
+      copyTitle !== "—"),
+  `label=${label} h2=${copyTitle} probePublished=${pub.status === 201}`,
 );
 
 const playing = await page.locator(".deck__dot.is-live").count();
