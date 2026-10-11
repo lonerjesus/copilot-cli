@@ -9,19 +9,11 @@
 import {
   houseCatalog,
   playableCatalog,
+  sortNewestFirst,
   type CatalogItem,
 } from "@/data/catalog";
 
-/** Newest publish date first; stable id tie-break for same-day rows. */
-export function sortNewestFirst(items: CatalogItem[]): CatalogItem[] {
-  return [...items].sort((a, b) => {
-    const tb = new Date(b.publishedAt).getTime();
-    const ta = new Date(a.publishedAt).getTime();
-    const dt = (Number.isFinite(tb) ? tb : 0) - (Number.isFinite(ta) ? ta : 0);
-    if (dt !== 0) return dt;
-    return b.id.localeCompare(a.id);
-  });
-}
+export { sortNewestFirst };
 
 export async function fetchPlayableHouse(
   signal?: AbortSignal,

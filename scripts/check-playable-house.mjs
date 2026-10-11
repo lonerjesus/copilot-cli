@@ -2,7 +2,7 @@
  * Landing queue: newest publishedAt first so ▶ starts latest AV.
  */
 import assert from "node:assert/strict";
-import { sortNewestFirst } from "../src/lib/playable-house.ts";
+import { sortNewestFirst } from "../src/data/catalog.ts";
 
 const rows = [
   {
