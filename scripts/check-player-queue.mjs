@@ -28,7 +28,7 @@ ok("move item before current after current", ids(result) === "BACD" && result.cu
   `queue=${ids(result)}, index=${result.currentIndex}`);
 
 result = queueItemNext(items, 1, d);
-ok("move item after current immediately next", ids(result) === "BDAC" && result.currentIndex === 1,
+ok("move item after current immediately next", ids(result) === "ABDC" && result.currentIndex === 1,
   `queue=${ids(result)}, index=${result.currentIndex}`);
 
 result = queueItemNext(items, 1, b);
