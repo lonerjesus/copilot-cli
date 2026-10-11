@@ -82,6 +82,7 @@ export function isPaywalled(item: CatalogItem): boolean {
   return false;
 }
 
+/** Kinds the dock player will load — writings/stills never belong here. */
 export const PLAYABLE_KINDS: ReadonlySet<MediaKind> = new Set([
   "audio",
   "video",
@@ -89,8 +90,21 @@ export const PLAYABLE_KINDS: ReadonlySet<MediaKind> = new Set([
   "live",
 ]);
 
-export function isPlayableMedia(item: CatalogItem): boolean {
-  return PLAYABLE_KINDS.has(item.kind);
+/**
+ * Map a catalog kind to the native player lane.
+ * `vlog` / `live` play as video; writings/stills return null.
+ */
+export function playerAvKind(
+  kind: string | undefined | null,
+): "audio" | "video" | null {
+  const k = normalizeMediaKind(kind || "");
+  if (k === "audio") return "audio";
+  if (k === "video" || k === "vlog" || k === "live") return "video";
+  return null;
+}
+
+export function isPlayableMedia(item: Pick<CatalogItem, "kind">): boolean {
+  return playerAvKind(item.kind) != null;
 }
 
 export function playableCatalog(items: CatalogItem[]): CatalogItem[] {

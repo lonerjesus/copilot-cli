@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { usePlayer } from "@/components/player/PlayerContext";
 import { BrandMark } from "@/components/BrandMark";
 import { useHouseMediaSrc } from "@/components/HouseMediaImage";
+import { playerAvKind } from "@/data/catalog";
 import { kindGlyph } from "@/lib/format";
 import { track } from "@/lib/analytics";
 import { ContentPayActions } from "@/components/ContentPayActions";
@@ -539,10 +540,13 @@ function EmbedStage({
     };
   }, [isBandcamp, bandcampId, url]);
 
-  if (src && (kind === "audio" || kind === "video")) {
+  const avKind = playerAvKind(kind);
+
+  // House binaries — audio + video (+ vlog/live as video).
+  if (src && avKind) {
     return (
       <NativeMedia
-        kind={kind}
+        kind={avKind}
         src={src}
         title={title}
         poster={poster}
@@ -557,8 +561,8 @@ function EmbedStage({
     );
   }
 
-  // Player is AV-only — writings/stills never render a stage.
-  if (kind === "writing" || kind === "essay" || kind === "still") {
+  // Player is AV-only — writings/stills/unknown never render a stage.
+  if (!avKind) {
     return (
       <div className="deck__visual deck__visual--blocked" aria-hidden>
         <BrandMark tone="phosphor" size={72} decorative className="deck__art-logo" />
@@ -810,9 +814,7 @@ export function PlayerDock() {
   };
 
   const isTheater =
-    current?.kind === "video" ||
-    current?.kind === "live" ||
-    current?.kind === "vlog" ||
+    playerAvKind(current?.kind) === "video" ||
     current?.embed?.provider === "twitch" ||
     current?.embed?.provider === "youtube" ||
     current?.embed?.provider === "vimeo";
