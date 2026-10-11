@@ -45,9 +45,11 @@ function ShellInner() {
   const ageOk = useAgeConfirmed();
   const {
     current,
+    queue,
     playing,
     setExpanded,
     toggle,
+    playItem,
     enterStream,
     next,
     prev,
@@ -61,12 +63,12 @@ function ShellInner() {
   } = useReader();
   const { user, logout, refresh } = useAuth();
 
-  /** Landing ▶ — must select AV, not only expand an empty DECK. */
+  /** Landing ▶ — always force play; never toggle-pause an active track. */
   const onHeroPlay = useCallback(async () => {
     setExpanded(true);
     if (current) {
       if (!playing) track("play", { id: current.id, via: "hero" });
-      toggle();
+      playItem(current, queue, { forcePlay: true });
       return;
     }
     track("enter_stream", { via: "hero" });
@@ -79,7 +81,7 @@ function ShellInner() {
     } catch {
       /* leave expanded idle DECK when catalog unavailable */
     }
-  }, [current, playing, setExpanded, toggle, enterStream]);
+  }, [current, queue, playing, setExpanded, playItem, enterStream]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
