@@ -158,9 +158,11 @@ export function videoAcceptAttribute(): string {
 
 /**
  * Max finished object size (chunked upload path).
- * Single Worker requests stay under ~100 MiB — use chunked upload above that.
+ * ~1.5 GiB covers ~15 min of high-bitrate phone HEVC (≈8 Mbps → ~900 MB)
+ * with headroom. Single Worker requests stay small — always chunk above
+ * SINGLE_SHOT_MAX_BYTES (and all video).
  */
-export const MAX_MEDIA_BYTES = 512 * 1024 * 1024;
+export const MAX_MEDIA_BYTES = 1536 * 1024 * 1024;
 
 /**
  * Safe single-request ceiling for Workers.
@@ -169,8 +171,15 @@ export const MAX_MEDIA_BYTES = 512 * 1024 * 1024;
  */
 export const SINGLE_SHOT_MAX_BYTES = 20 * 1024 * 1024;
 
-/** Chunk size for multi-part admin uploads (under KV’s 25 MiB value cap). */
-export const UPLOAD_CHUNK_BYTES = 8 * 1024 * 1024;
+/**
+ * Upload part size — aligned with durable KV part size so complete can
+ * promote parts without re-buffering the whole object (fixes Error 1102 /
+ * CPU timeouts on 100 MB+ phone videos).
+ */
+export const UPLOAD_CHUNK_BYTES = KV_CHUNK;
+
+/** Parts promoted per `/complete` call (keeps Worker CPU under budget). */
+export const COMPLETE_PROMOTE_BATCH = 32;
 
 export function buildMediaUrl(key: string): string {
   const encoded = key
@@ -311,6 +320,10 @@ const MIME_ALIASES: Record<string, string> = {
   "video/x-m4v": "video/mp4",
   "video/3gpp": "video/mp4",
   "video/3gpp2": "video/mp4",
+  // iPhone HEVC / Dolby Vision phone clips often declare these
+  "video/hevc": "video/mp4",
+  "video/h265": "video/mp4",
+  "video/hevc-sequence": "video/mp4",
 };
 
 /** Extension → canonical MIME when browsers send empty/`octet-stream`. */
@@ -452,7 +465,15 @@ export function sniffMediaContentType(data: ArrayBuffer): string | null {
     }
     const audioBrands = new Set(["m4a", "m4b", "m4p", "mp4a"]);
     if (brands.some((b) => audioBrands.has(b))) return "audio/mp4";
+    // HEVC / Dolby Vision video (not still HEIC) — play as mp4/mov container.
     if (brands.some((b) => b === "qt")) return "video/quicktime";
+    if (
+      brands.some((b) =>
+        ["hev1", "hvc1", "dvh1", "dvhe", "dvav", "dva1"].includes(b),
+      )
+    ) {
+      return "video/mp4";
+    }
     return "video/mp4";
   }
 
@@ -538,11 +559,11 @@ export function uploadErrorMessage(
     case "invalid_type":
       return role === "poster"
         ? "Use JPEG, PNG, WebP, or GIF for thumbnails"
-        : "Unsupported AV type — use MP3, M4A/AAC, WAV, FLAC, OGG, MP4, MOV, or WebM";
+        : "Unsupported AV type — use MP3, M4A/AAC, WAV, FLAC, OGG, MP4/MOV (incl. HEVC), or WebM";
     case "empty_file":
       return "That file was empty";
     case "file_too_large":
-      return `File too large (max ${Math.floor(MAX_MEDIA_BYTES / (1024 * 1024))} MB)`;
+      return `File too large (max ${Math.floor(MAX_MEDIA_BYTES / (1024 * 1024))} MB — ~15 min phone video)`;
     case "media_store_unavailable":
       return "Media store unavailable — try again after deploy";
     case "rate_limited":
@@ -867,6 +888,8 @@ type UploadSession = {
   totalChunks: number;
   received: number[];
   createdAt: string;
+  /** Durable parts already promoted during resumable complete (KV path). */
+  promoted?: number;
 };
 
 async function putUploadMeta(session: UploadSession): Promise<void> {
@@ -1025,10 +1048,55 @@ export async function putChunkedUploadPart(
 }
 
 /**
- * Assemble staged upload chunks into durable house storage without holding the
- * whole object in Worker memory (avoids Error 1102 on phone-sized videos).
+ * Promote upload parts → durable KV media parts in batches.
+ * Upload chunk size equals KV_CHUNK, so each part copies 1:1 (no full-file
+ * rebuffer). Returns true when the object is fully durable.
  */
-async function materializeKvFromChunks(
+async function promoteKvUploadParts(
+  session: UploadSession,
+  contentType: string,
+): Promise<{ done: boolean; promoted: number; totalChunks: number }> {
+  const kv = await getAuthKv();
+  if (!kv) throw new MediaStoreUnavailableError();
+
+  // Legacy sessions used larger upload chunks — fall back to streamed merge.
+  if (session.chunkBytes !== KV_CHUNK) {
+    await materializeKvFromChunksLegacy(session, contentType);
+    return { done: true, promoted: session.totalChunks, totalChunks: session.totalChunks };
+  }
+
+  const start = Math.max(0, session.promoted ?? 0);
+  const end = Math.min(session.totalChunks, start + COMPLETE_PROMOTE_BATCH);
+
+  for (let i = start; i < end; i++) {
+    const part = await getUploadChunk(session.id, i);
+    if (!part) throw new Error("upload_incomplete");
+    const expected =
+      i === session.totalChunks - 1
+        ? session.size - session.chunkBytes * (session.totalChunks - 1)
+        : session.chunkBytes;
+    if (part.byteLength !== expected) throw new Error("upload_corrupt");
+    await kv.put(`${KV_PREFIX}${session.key}:${i}`, part);
+  }
+
+  session.promoted = end;
+  if (end < session.totalChunks) {
+    await putUploadMeta(session);
+    return { done: false, promoted: end, totalChunks: session.totalChunks };
+  }
+
+  await kv.put(
+    `${KV_PREFIX}${session.key}:meta`,
+    JSON.stringify({ contentType, size: session.size, parts: session.totalChunks }),
+  );
+  return { done: true, promoted: end, totalChunks: session.totalChunks };
+}
+
+/**
+ * Legacy complete for sessions whose upload chunk size ≠ KV part size.
+ * Streams without holding the whole object (pre–aligned-chunk path).
+ */
+async function materializeKvFromChunksLegacy(
   session: UploadSession,
   contentType: string,
 ): Promise<void> {
@@ -1049,7 +1117,6 @@ async function materializeKvFromChunks(
       totalWritten += KV_CHUNK;
       rest = rest.subarray(KV_CHUNK);
     }
-    // Fresh copy so carry stays a concrete ArrayBuffer-backed view for tsc.
     return rest.byteLength ? new Uint8Array(rest) : new Uint8Array(0);
   };
 
@@ -1127,10 +1194,13 @@ async function materializeFsFromChunks(
 }
 
 export async function completeChunkedUpload(uploadId: string): Promise<{
-  url: string;
-  key: string;
-  contentType: string;
-  bytes: number;
+  url?: string;
+  key?: string;
+  contentType?: string;
+  bytes?: number;
+  pending?: boolean;
+  promoted?: number;
+  totalChunks?: number;
 }> {
   const session = await getUploadMeta(uploadId);
   if (!session) throw new Error("upload_not_found");
@@ -1153,7 +1223,17 @@ export async function completeChunkedUpload(uploadId: string): Promise<{
 
   const mode = await resolveBackend();
   if (mode === "kv") {
-    await materializeKvFromChunks(session, contentType);
+    const progress = await promoteKvUploadParts(session, contentType);
+    if (!progress.done) {
+      return {
+        pending: true,
+        promoted: progress.promoted,
+        totalChunks: progress.totalChunks,
+        key: session.key,
+        contentType,
+        bytes: session.size,
+      };
+    }
   } else if (mode === "r2") {
     await materializeR2FromChunks(session, contentType);
   } else {
