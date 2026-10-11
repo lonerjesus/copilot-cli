@@ -4,6 +4,14 @@ Autonomous portfolio + vlog platform for **Kendrick-Kamau Negasi, LLC**.
 
 Futuristic terminal UI · streaming-style browse · chronic social footprint feed · custom audio/video deck that pulls posts from connected platforms.
 
+## Admin batch upload (albums / series)
+
+In `/admin` → Compose, switch **Album** or **Series**:
+
+1. Enter the collection title (exact house names only, e.g. **Telling Songs As Content**).
+2. Multi-select tracks/episodes **or** drop a `.zip`.
+3. ZIP unpacks **in the browser** (store + deflate) — never on the Worker — then each file uses the existing chunked `/api/admin/media` pipeline and publishes with `collection` metadata.
+
 ## Access policy
 
 - **Account required** — unauthenticated visitors are sent to `/access`

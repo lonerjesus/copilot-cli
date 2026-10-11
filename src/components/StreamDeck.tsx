@@ -23,6 +23,7 @@ import { MediaPoster } from "@/components/MediaPoster";
 import { track } from "@/lib/analytics";
 import { useLiveCatalog } from "@/components/useLiveCatalog";
 import { EMPTY_SHELF } from "@/data/empty-copy";
+import { groupByCollection } from "@/lib/collection";
 
 function Tile({
   item,
@@ -177,6 +178,8 @@ export function StreamDeck({ compact = false }: { compact?: boolean }) {
     [house],
   );
 
+  const collections = useMemo(() => groupByCollection(house).slice(0, 8), [house]);
+
   const activate = useCallback(
     (item: CatalogItem, queue: CatalogItem[], via: string) => {
       track("enter_stream", { id: item.id, via });
@@ -201,6 +204,43 @@ export function StreamDeck({ compact = false }: { compact?: boolean }) {
           </div>
         </header>
       ) : null}
+
+      {collections.map((group) => (
+        <div
+          key={`${group.collection.type}-${group.collection.id}`}
+          className="row row--collection"
+          data-kn-collection={group.collection.type}
+        >
+          <div className="row__head">
+            <div>
+              <h3>{group.collection.title}</h3>
+              <span className="row__hint">
+                {group.collection.type} · {group.items.length}{" "}
+                {group.items.length === 1 ? "piece" : "pieces"}
+              </span>
+            </div>
+          </div>
+          <ShelfTrack label={group.collection.title}>
+            {group.items.map((item) => (
+              <div key={item.id} role="listitem">
+                <Tile
+                  item={item}
+                  active={current?.id === item.id}
+                  onActivate={() => activate(item, group.items, "collection")}
+                  onQueueNext={
+                    isPlayableMedia(item)
+                      ? () => {
+                          track("queue_next", { id: item.id, via: "collection" });
+                          queueNext(item);
+                        }
+                      : undefined
+                  }
+                />
+              </div>
+            ))}
+          </ShelfTrack>
+        </div>
+      ))}
 
       {shelves.map(({ row, items }) => {
         const featured = row.id === "now";

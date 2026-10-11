@@ -1851,6 +1851,69 @@ a.drive .drive__face {
   font-size: 0.92rem;
 }
 
+.admin__batch-modes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.75rem 0 0.85rem;
+}
+
+.admin__batch-mode {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--steel);
+  padding: 0.45rem 0.75rem;
+  font: inherit;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  min-height: 2.4rem;
+}
+
+.admin__batch-mode.is-active {
+  color: var(--phosphor);
+  border-color: var(--phosphor-dim);
+}
+
+.admin__batch-mode:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.admin__collection-title {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0 0 0.85rem;
+}
+
+.admin__collection-title > span {
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.admin__collection-title input {
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+}
+
+.admin__batch-note {
+  margin: 0 0 1rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+  max-width: 36rem;
+}
+
+.row--collection .row__hint {
+  text-transform: lowercase;
+}
+
 .admin__presets {
   display: flex;
   flex-wrap: wrap;

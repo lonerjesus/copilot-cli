@@ -1,5 +1,5 @@
-# verify-verdict — hero play handoff
+# verify-verdict — stack play + batch
 
-**Verdict:** MERGE_OK
+**Verdict:** MERGE_OK (pending elite merge + CI)
 
-`qa:hero-play` 7/7 · `tsc` green · exact-name untouched · no new deps.
+Stacked so far: #42 hero play · #41 batch album/series. Next: #40 elite player (CONTINUE / Media Session / share).

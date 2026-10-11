@@ -1,6 +1,8 @@
-# a11y
+# a11y-report — batch album/series
 
-- Sticky actions remain reachable above keyboard/safe-area.
-- Tab min-height 2.75rem on small phones; focus styles unchanged (phosphor outline).
-- Status/alert roles preserved on compose messages.
-PASS
+**Verdict:** PASS
+
+- Mode group has `aria-label` / `aria-pressed`
+- Collection title is a labeled input
+- File input keeps `multiple` only in batch modes
+- Progress text exposed via existing drop `aria-busy`
