@@ -7,6 +7,7 @@ import {
   MediaStoreUnavailableError,
   newHouseObjectKey,
   putHouseMedia,
+  SINGLE_SHOT_MAX_BYTES,
   validateUploadFile,
 } from "@/lib/media-store";
 
@@ -30,6 +31,11 @@ export async function POST(request: Request) {
   const roleRaw = String(form.get("role") ?? "media").trim();
   const role = roleRaw === "poster" ? "poster" : "media";
 
+  // Single-request path stays under isolate memory — large AV must chunk.
+  if (file.size > SINGLE_SHOT_MAX_BYTES) {
+    return jsonError("file_too_large", 413);
+  }
+
   try {
     const key = newHouseObjectKey(file.name || "upload.bin");
     const data = await file.arrayBuffer();
@@ -37,6 +43,9 @@ export async function POST(request: Request) {
     // the client duration probe used the full local File.
     if (data.byteLength !== file.size) {
       return jsonError("upload_size_mismatch", 400);
+    }
+    if (data.byteLength > SINGLE_SHOT_MAX_BYTES) {
+      return jsonError("file_too_large", 413);
     }
     // Sniff bytes — mobile Safari often sends empty/`image/jpg` MIME for photos.
     const { contentType } = validateUploadFile(

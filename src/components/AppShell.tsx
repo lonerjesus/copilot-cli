@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, type ComponentType } from "react";
+import { useCallback, useEffect, useRef, useState, type ComponentType } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { AgeGate } from "@/components/AgeGate";
@@ -63,6 +63,8 @@ function ShellInner() {
   } = useReader();
   const { user, logout, refresh } = useAuth();
 
+  const enterAbortRef = useRef<AbortController | null>(null);
+
   /** Landing ▶ — latest house AV, force play; never empty-queue toggle. */
   const onHeroPlay = useCallback(async () => {
     setExpanded(true);
@@ -72,13 +74,18 @@ function ShellInner() {
       return;
     }
     track("enter_stream", { via: "hero" });
+    enterAbortRef.current?.abort();
+    const ac = new AbortController();
+    enterAbortRef.current = ac;
     try {
-      const items = await fetchPlayableHouse();
+      const items = await fetchPlayableHouse(ac.signal);
+      if (ac.signal.aborted) return;
       const started = enterStream(items, { forcePlay: true });
       if (started && items[0]) {
         track("play", { id: items[0].id, via: "hero" });
       }
-    } catch {
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") return;
       /* leave expanded idle DECK when catalog unavailable */
     }
   }, [current, queue, playing, setExpanded, playItem, enterStream]);

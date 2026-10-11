@@ -5,6 +5,7 @@ import assert from "node:assert/strict";
 import {
   COMPLETE_PROMOTE_BATCH,
   MAX_MEDIA_BYTES,
+  SINGLE_SHOT_MAX_BYTES,
   UPLOAD_CHUNK_BYTES,
   sniffMediaContentType,
   validateUploadFile,
@@ -42,6 +43,13 @@ assert.throws(
   () => validateUploadFile({ type: "video/mp4", size: MAX_MEDIA_BYTES + 1 }, "media"),
   /file_too_large/,
 );
+
+// Single-shot ceiling must stay well under isolate memory (chunked path above).
+assert.ok(
+  SINGLE_SHOT_MAX_BYTES <= 20 * 1024 * 1024,
+  "single-shot ≤ 20 MiB",
+);
+assert.ok(SINGLE_SHOT_MAX_BYTES < MAX_MEDIA_BYTES, "chunked ceiling above single-shot");
 
 console.log("PASS  large AV upload guards");
 console.log("== large-av-upload ok ==");

@@ -17,14 +17,16 @@ function getSnapshot() {
   }
 }
 
+/** SSR / first paint must not claim the visitor already passed 18+. */
 function getServerSnapshot() {
-  return true;
+  return false;
 }
 
 /** True when the visitor has passed the 18+ gate (or age gate is off). */
 export function useAgeConfirmed(): boolean {
   const stored = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
-  if (typeof document === "undefined") return true;
+  // Prefer the sync-external snapshot on the server (false) to avoid flashing the stream.
+  if (typeof document === "undefined") return stored;
   if (document.documentElement.dataset.ageGate === "0") return true;
   return stored;
 }

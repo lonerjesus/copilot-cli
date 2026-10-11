@@ -9,8 +9,12 @@ const CENTRAL_SIG = 0x02014b50;
 const EOCD_SIG = 0x06054b50;
 
 const DEFAULT_MAX_FILES = 48;
-/** Cap uncompressed payload across the archive (fits many tracks under house limits). */
-const DEFAULT_MAX_TOTAL = 1.5 * 1024 * 1024 * 1024;
+/**
+ * Cap archive + uncompressed payload in the admin tab.
+ * Browser holds the ZIP + inflated entries in RAM — keep well under the 1.5 GiB
+ * per-file house ceiling so a series ZIP cannot OOM the station.
+ */
+const DEFAULT_MAX_TOTAL = 512 * 1024 * 1024;
 
 export type ZipUnpackOptions = {
   maxFiles?: number;
@@ -143,14 +147,13 @@ export async function unpackZip(
   const entries = parseCentral(buf);
 
   const out: File[] = [];
-  let totalUncomp = 0;
+  /** Budget on actual inflated bytes — never trust central-directory sizes alone. */
+  let actualTotal = 0;
 
   for (const entry of entries) {
     if (shouldSkipEntry(entry.name)) continue;
     if (entry.method !== 0 && entry.method !== 8) throw new Error("zip_unsupported_method");
     if (entry.uncompSize > maxTotal) throw new Error("zip_entry_too_large");
-    totalUncomp += entry.uncompSize;
-    if (totalUncomp > maxTotal) throw new Error("zip_too_large");
     if (out.length >= maxFiles) throw new Error("zip_too_many_files");
 
     const local = entry.localOffset;
@@ -166,13 +169,16 @@ export async function unpackZip(
     let raw: Uint8Array;
     if (entry.method === 0) {
       raw = compressed;
+      if (entry.uncompSize > 0 && raw.byteLength !== entry.uncompSize) {
+        throw new Error("zip_corrupt");
+      }
     } else {
       raw = await inflateRaw(compressed);
     }
-    if (raw.byteLength !== entry.uncompSize && entry.uncompSize > 0) {
-      // Some writers lie about size — accept inflate output when store sizes mismatch.
-      if (entry.method === 0) throw new Error("zip_corrupt");
-    }
+    // Cap on real output (ZIP-bomb / lied uncompSize).
+    if (raw.byteLength > maxTotal) throw new Error("zip_entry_too_large");
+    actualTotal += raw.byteLength;
+    if (actualTotal > maxTotal) throw new Error("zip_too_large");
 
     const name = basename(entry.name);
     out.push(

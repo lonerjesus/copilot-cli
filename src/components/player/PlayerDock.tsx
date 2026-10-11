@@ -270,6 +270,7 @@ function NativeMedia({
   muted,
   onProgress,
   onEnded,
+  onPlayBlocked,
 }: {
   kind: "audio" | "video";
   src: string;
@@ -284,6 +285,8 @@ function NativeMedia({
   muted: boolean;
   onProgress: (value: number) => void;
   onEnded?: () => void;
+  /** Autoplay / gesture policy rejected play() — reset dock to honest ▶. */
+  onPlayBlocked?: () => void;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -323,12 +326,17 @@ function NativeMedia({
     if (!node || !playSrc) return;
     if (playing) {
       const p = node.play();
-      if (p && typeof p.catch === "function") p.catch(() => undefined);
+      if (p && typeof p.catch === "function") {
+        p.catch(() => {
+          // Don't leave ❚❚ + silence after NotAllowedError / load races.
+          onPlayBlocked?.();
+        });
+      }
     } else {
       node.pause();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mediaNode reads refs
-  }, [playing, kind, playSrc]);
+  }, [playing, kind, playSrc, onPlayBlocked]);
 
   // Seek only when the scrubber fires (not on every timeupdate → progress tick).
   useEffect(() => {
@@ -493,6 +501,7 @@ function EmbedStage({
   muted,
   onProgress,
   onEnded,
+  onPlayBlocked,
 }: {
   provider?: string;
   id?: string;
@@ -508,6 +517,7 @@ function EmbedStage({
   muted: boolean;
   onProgress: (value: number) => void;
   onEnded?: () => void;
+  onPlayBlocked?: () => void;
 }) {
   const [resolvedBandcampId, setResolvedBandcampId] = useState<string | null>(null);
   const isBandcamp = provider === "bandcamp" || Boolean(url && /bandcamp\.com/i.test(url));
@@ -557,6 +567,7 @@ function EmbedStage({
         muted={muted}
         onProgress={onProgress}
         onEnded={onEnded}
+        onPlayBlocked={onPlayBlocked}
       />
     );
   }
@@ -731,6 +742,7 @@ export function PlayerDock() {
     setProgress,
   } = usePlayer();
   const [seekTo, setSeekTo] = useState<number | null>(null);
+  const enterAbortRef = useRef<AbortController | null>(null);
   const resumePercent = useMemo(
     () => (current?.id ? resumeSeekPercent(current.id) : null),
     [current?.id],
@@ -850,6 +862,7 @@ export function PlayerDock() {
               track("next", { id: current.id, via: "ended" });
               next();
             }}
+            onPlayBlocked={() => pause()}
           />
         ) : (
           <DeckArt playing={false} bars={0} />
@@ -944,14 +957,20 @@ export function PlayerDock() {
               }
               // Idle DECK — load latest house AV (newest-first) instead of toggling nothing.
               track("enter_stream", { via: "dock" });
-              void fetchPlayableHouse()
+              enterAbortRef.current?.abort();
+              const ac = new AbortController();
+              enterAbortRef.current = ac;
+              void fetchPlayableHouse(ac.signal)
                 .then((items) => {
+                  if (ac.signal.aborted) return;
                   const started = enterStream(items, { forcePlay: true });
                   if (started && items[0]) {
                     track("play", { id: items[0].id, via: "dock" });
                   }
                 })
-                .catch(() => undefined);
+                .catch((err) => {
+                  if (err instanceof DOMException && err.name === "AbortError") return;
+                });
             }}
             aria-label={playing ? "Pause" : "Play"}
           >

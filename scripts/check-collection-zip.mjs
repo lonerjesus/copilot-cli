@@ -163,4 +163,23 @@ assert.equal(await unpacked[0].text(), "ALPHA");
 assert.equal(unpacked[1].name, "02-beta.mp3");
 assert.equal(await unpacked[1].text(), "BETA");
 
+// ZIP bomb: lied tiny uncompSize must still budget on inflated bytes.
+const bombPayload = Buffer.alloc(64 * 1024, 0x41);
+const bombZip = buildZip([{ name: "bomb.bin", data: bombPayload, method: 8 }]);
+// Patch central uncompSize to 1 (lie) while keeping real deflate payload.
+{
+  const view = new DataView(bombZip.buffer, bombZip.byteOffset, bombZip.byteLength);
+  // Find first central directory header and force uncompSize=1.
+  for (let i = 0; i < bombZip.length - 46; i++) {
+    if (view.getUint32(i, true) === 0x02014b50) {
+      view.setUint32(i + 24, 1, true);
+      break;
+    }
+  }
+}
+await assert.rejects(
+  () => unpackZip(new File([bombZip], "bomb.zip"), { maxTotalBytes: 1024 }),
+  /zip_too_large|zip_entry_too_large/,
+);
+
 console.log("PASS  collection + zip checks");

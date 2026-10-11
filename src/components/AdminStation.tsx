@@ -1289,7 +1289,7 @@ export function AdminStation() {
                 <p className="admin__drop-hint">
                   multi-select · folder drop · ZIP unpacks in-browser (never on the
                   Worker) · up to {Math.floor(MAX_MEDIA_BYTES / (1024 * 1024))} MB per
-                  file · publishes each piece in order
+                  file · ZIP archive ≤ 512 MB inflated · publishes each piece in order
                 </p>
               </>
             ) : form.src ? (
