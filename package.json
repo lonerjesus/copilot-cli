@@ -19,6 +19,7 @@
     "qa:av-e2e": "node scripts/e2e-av-upload.mjs",
     "qa:edit-save": "node scripts/e2e-admin-edit-save.mjs",
     "qa:media-ref": "node --experimental-strip-types scripts/check-media-ref.mjs",
+    "qa:player-queue": "node --experimental-strip-types scripts/check-player-queue.mjs",
     "qa:media-meta": "node --experimental-strip-types scripts/check-media-meta.mjs",
     "qa:media-range": "node scripts/e2e-media-range.mjs",
     "qa:writing-open": "node --experimental-strip-types scripts/e2e-writing-open.mjs",
